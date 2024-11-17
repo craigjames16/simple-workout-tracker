@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import type { PlanInstanceWithCompletion } from '@/types/prisma';
 
 export async function POST(
   request: Request,
@@ -14,6 +15,7 @@ export async function POST(
         id: parseInt(params.id)
       },
       include: {
+        plan: true,
         days: {
           include: {
             planDay: {
@@ -21,11 +23,15 @@ export async function POST(
                 workout: true
               }
             },
-            workoutInstance: true
+            workoutInstance: {
+              include: {
+                workout: true
+              }
+            }
           }
         }
       }
-    });
+    }) as PlanInstanceWithCompletion | null;
 
     if (!planInstance) {
       console.log('Plan instance not found');
@@ -39,21 +45,23 @@ export async function POST(
 
     // Check if all days are complete
     const allDaysComplete = planInstance.days.every(day => {
-      const isComplete = day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null;
+      const { planDay, workoutInstance, isComplete } = day;
+      const isDayComplete = planDay.isRestDay ? isComplete : workoutInstance?.completedAt != null;
+      
       console.log(`Day ${day.id} completion status:`, {
-        isRestDay: day.planDay.isRestDay,
-        isComplete: day.isComplete,
-        workoutCompleted: day.workoutInstance?.completedAt != null,
-        finalStatus: isComplete
+        isRestDay: planDay.isRestDay,
+        isComplete: isComplete,
+        workoutCompleted: workoutInstance?.completedAt != null,
+        finalStatus: isDayComplete
       });
-      return isComplete;
+      
+      return isDayComplete;
     });
 
     console.log('All days complete:', allDaysComplete);
 
     if (allDaysComplete) {
       console.log('Updating plan instance status to COMPLETE');
-      // Update plan instance status to complete
       const updatedPlanInstance = await prisma.planInstance.update({
         where: {
           id: planInstance.id
@@ -63,6 +71,7 @@ export async function POST(
           completedAt: new Date()
         },
         include: {
+          plan: true,
           days: {
             include: {
               planDay: {
@@ -70,11 +79,15 @@ export async function POST(
                   workout: true
                 }
               },
-              workoutInstance: true
+              workoutInstance: {
+                include: {
+                  workout: true
+                }
+              }
             }
           }
         }
-      });
+      }) as PlanInstanceWithCompletion;
 
       console.log('Plan instance updated:', updatedPlanInstance);
       return NextResponse.json(updatedPlanInstance);

@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+
+interface SetData {
+  reps: number;
+  weight: number;
+}
+
+interface RequestBody {
+  exerciseId: number;
+  sets: SetData[];
+}
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const json = await request.json();
+    const json = await request.json() as RequestBody;
     const { exerciseId, sets } = json;
 
     // Delete existing sets for this exercise in this workout instance
@@ -19,14 +30,14 @@ export async function POST(
 
     // Create new sets
     const createdSets = await Promise.all(
-      sets.map((set: any, index: number) => 
+      sets.map((set, index) => 
         prisma.exerciseSet.create({
           data: {
             exerciseId: exerciseId,
             workoutInstanceId: parseInt(params.id),
             setNumber: index + 1,
-            weight: parseFloat(set.weight) || 0,
-            reps: parseInt(set.reps) || 0,
+            weight: set.weight,
+            reps: set.reps,
           }
         })
       )
@@ -38,7 +49,7 @@ export async function POST(
     return NextResponse.json(
       { 
         error: 'Error saving exercise sets', 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );

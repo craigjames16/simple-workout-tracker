@@ -1,99 +1,124 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+import type { WorkoutInstanceWithRelations } from '@/types/prisma';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const workoutInstance = await prisma.workoutInstance.findUnique({
+    // First, complete the workout instance
+    const workoutInstance = await prisma.workoutInstance.update({
       where: {
         id: parseInt(params.id)
+      },
+      data: {
+        completedAt: new Date()
       },
       include: {
         planInstanceDay: {
           include: {
+            planDay: {
+              include: {
+                workout: true
+              }
+            },
             planInstance: true
           }
+        },
+        workout: {
+          include: {
+            exercises: {
+              include: {
+                exercise: true
+              }
+            }
+          }
+        },
+        sets: {
+          include: {
+            exercise: true
+          }
         }
       }
     });
 
-    if (!workoutInstance) {
-      return NextResponse.json(
-        { error: 'Workout instance not found' },
-        { status: 404 }
-      );
+    if (!workoutInstance.planInstanceDay?.[0]) {
+      // If this workout isn't part of a plan, just return the completed workout
+      return NextResponse.json(workoutInstance);
     }
 
-    const updatedWorkoutInstance = await prisma.workoutInstance.update({
+    // If this workout is part of a plan, mark the day as complete
+    const planInstanceDay = await prisma.planInstanceDay.update({
       where: {
-        id: workoutInstance.id
+        id: workoutInstance.planInstanceDay[0].id
       },
       data: {
-        completedAt: new Date()
+        isComplete: true
+      },
+      include: {
+        planDay: {
+          include: {
+            workout: true
+          }
+        },
+        planInstance: true
       }
     });
 
-    const planInstanceDay = await prisma.planInstanceDay.findFirst({
+    // Check if all days in the plan are complete
+    const planInstance = await prisma.planInstance.findUnique({
       where: {
-        workoutInstanceId: workoutInstance.id
+        id: planInstanceDay.planInstanceId
+      },
+      include: {
+        days: {
+          include: {
+            planDay: {
+              include: {
+                workout: true
+              }
+            },
+            workoutInstance: true
+          }
+        }
       }
     });
 
-    if (planInstanceDay) {
-      await prisma.planInstanceDay.update({
-        where: {
-          id: planInstanceDay.id
-        },
-        data: {
-          isComplete: true
-        }
-      });
-
-      const planInstance = await prisma.planInstance.findUnique({
-        where: {
-          id: planInstanceDay.planInstanceId
-        },
-        include: {
-          days: {
-            include: {
-              workoutInstance: true
-            }
-          }
-        }
-      });
-
-      if (planInstance) {
-        const allDaysComplete = planInstance.days.every(day => {
-          if (day.isRestDay) {
-            return day.isComplete;
-          } else {
-            return day.workoutInstance?.completedAt != null;
-          }
-        });
-
-        if (allDaysComplete) {
-          await prisma.planInstance.update({
-            where: {
-              id: planInstance.id
-            },
-            data: {
-              status: 'COMPLETE',
-              completedAt: new Date()
-            }
-          });
-        }
-      }
+    if (!planInstance) {
+      throw new Error('Plan instance not found');
     }
 
-    return NextResponse.json(updatedWorkoutInstance);
+    const allDaysComplete = planInstance.days.every(day => {
+      const { planDay, workoutInstance, isComplete } = day;
+      return planDay.isRestDay ? isComplete : workoutInstance?.completedAt != null;
+    });
+
+    if (allDaysComplete) {
+      // Update plan instance status to complete
+      await prisma.planInstance.update({
+        where: {
+          id: planInstance.id
+        },
+        data: {
+          status: 'COMPLETE',
+          completedAt: new Date()
+        }
+      });
+    }
+
+    return NextResponse.json({
+      workoutInstance,
+      planInstanceDay,
+      planInstanceCompleted: allDaysComplete
+    });
   } catch (error) {
     console.error('Error completing workout:', error);
     return NextResponse.json(
       { 
         error: 'Error completing workout', 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );

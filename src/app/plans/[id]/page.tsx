@@ -5,16 +5,13 @@ import {
   Container,
   Paper,
   Typography,
-  Box,
   Button,
   Grid,
   Card,
   CardContent,
-  Alert,
+  Box,
   CircularProgress,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import Link from 'next/link';
 
 interface Exercise {
@@ -39,6 +36,18 @@ interface PlanDay {
   workout: Workout | null;
 }
 
+interface WorkoutInstance {
+  id: number;
+  completedAt: string | null;
+}
+
+interface PlanInstanceDay {
+  id: number;
+  planDay: PlanDay;
+  workoutInstance: WorkoutInstance | null;
+  isComplete: boolean;
+}
+
 interface PlanInstance {
   id: number;
   status: string | null;
@@ -51,117 +60,65 @@ interface Plan {
   id: number;
   name: string;
   days: PlanDay[];
-  createdAt: string;
   instances: PlanInstance[];
 }
 
 export default function PlanDetail({ params }: { params: { id: string } }) {
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchPlanAndInstances();
-  }, []);
-
-  const fetchPlanAndInstances = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`/api/plans/${params.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch plan data');
+    const fetchPlan = async () => {
+      try {
+        const response = await fetch(`/api/plans/${params.id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch plan');
+        }
+        const data = await response.json();
+        setPlan(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await response.json();
-      setPlan(data);
-    } catch (error) {
-      console.error('Error fetching plan data:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch plan data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    fetchPlan();
+  }, [params.id]);
 
-  const handleStartPlan = async () => {
-    try {
-      const response = await fetch('/api/plan-instances', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId: params.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start plan');
-      }
-
-      const data = await response.json();
-      window.location.href = `/plans/instance/${data.id}`;
-    } catch (error) {
-      console.error('Error starting plan:', error);
-      setError(error instanceof Error ? error.message : 'Failed to start plan');
-    }
-  };
-
-  const getActivePlanInstance = (plan: Plan): PlanInstance | undefined => {
-    return plan.instances?.find(instance => instance.status === 'IN_PROGRESS');
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <Container maxWidth="lg">
-        <Paper sx={{ p: 3, mt: 3, display: 'flex', justifyContent: 'center' }}>
-          <CircularProgress />
-        </Paper>
+      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
       </Container>
     );
   }
 
-  if (!plan) {
+  if (error || !plan) {
     return (
-      <Container maxWidth="lg">
-        <Paper sx={{ p: 3, mt: 3 }}>
-          <Alert severity="error">Plan not found</Alert>
-        </Paper>
+      <Container sx={{ mt: 4 }}>
+        <Typography color="error">{error || 'Plan not found'}</Typography>
       </Container>
     );
   }
-
-  const activePlanInstance = getActivePlanInstance(plan);
 
   return (
-    <Container maxWidth="lg">
-      <Paper sx={{ p: 3, mt: 3 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4">{plan.name}</Typography>
-          {activePlanInstance ? (
-            <Button
-              variant="contained"
-              color="primary"
-              component={Link}
-              href={`/plans/instance/${activePlanInstance.id}`}
-              startIcon={<PlayArrowIcon />}
-            >
-              Continue Plan
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleStartPlan}
-              startIcon={<AddIcon />}
-            >
-              Start Plan
-            </Button>
-          )}
+          <Typography variant="h4" component="h1">
+            {plan.name}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            component={Link}
+            href={`/plans/instance/${plan.id}`}
+            disabled={plan.instances.some(i => i.status === 'IN_PROGRESS')}
+          >
+            Start Plan
+          </Button>
         </Box>
 
         <Grid container spacing={2}>

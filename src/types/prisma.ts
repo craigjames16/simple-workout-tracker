@@ -66,12 +66,19 @@ export type WorkoutInstanceWithRelations = Prisma.WorkoutInstanceGetPayload<{
         exercise: true
       }
     }
+    planInstanceDay: {
+      include: {
+        planDay: true
+        planInstance: true
+      }
+    }
   }
 }>;
 
-// Add this type to your existing types
+// Update the PlanInstanceWithCompletion type to include the plan relation
 export type PlanInstanceWithCompletion = Prisma.PlanInstanceGetPayload<{
   include: {
+    plan: true,
     days: {
       include: {
         planDay: {
@@ -79,7 +86,11 @@ export type PlanInstanceWithCompletion = Prisma.PlanInstanceGetPayload<{
             workout: true
           }
         }
-        workoutInstance: true
+        workoutInstance: {
+          include: {
+            workout: true
+          }
+        }
       }
     }
   }
