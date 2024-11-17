@@ -148,6 +148,17 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     }
   };
 
+  const handleCompleteExercise = (exerciseIndex: number) => {
+    setExerciseTrackings(prev => {
+      const updated = [...prev];
+      updated[exerciseIndex] = {
+        ...updated[exerciseIndex],
+        isCompleted: true
+      };
+      return updated;
+    });
+  };
+
   if (loading) {
     return (
       <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -183,7 +194,22 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
               }}
             >
               <Box sx={{ width: '100%', mb: 2 }}>
-                <Typography variant="h6">{exercise.exerciseName}</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="h6">{exercise.exerciseName}</Typography>
+                  {!exercise.isCompleted && exercise.sets.length > 0 && (
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      onClick={() => handleCompleteExercise(exerciseIndex)}
+                    >
+                      Complete Exercise
+                    </Button>
+                  )}
+                  {exercise.isCompleted && (
+                    <Typography color="success.main">✓ Completed</Typography>
+                  )}
+                </Box>
                 
                 {exercise.sets.map((set, setIndex) => (
                   <Grid container spacing={2} key={setIndex} sx={{ mt: 1 }}>
@@ -199,6 +225,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           parseInt(e.target.value)
                         )}
                         size="small"
+                        disabled={exercise.isCompleted}
                       />
                     </Grid>
                     <Grid item xs={4}>
@@ -213,12 +240,14 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           parseInt(e.target.value)
                         )}
                         size="small"
+                        disabled={exercise.isCompleted}
                       />
                     </Grid>
                     <Grid item xs={4}>
                       <IconButton
                         onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
                         color="error"
+                        disabled={exercise.isCompleted}
                       >
                         <DeleteIcon />
                       </IconButton>
@@ -230,6 +259,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   startIcon={<AddIcon />}
                   onClick={() => handleAddSet(exerciseIndex)}
                   sx={{ mt: 1 }}
+                  disabled={exercise.isCompleted}
                 >
                   Add Set
                 </Button>
@@ -244,7 +274,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             color="primary"
             fullWidth
             onClick={handleCompleteWorkout}
-            disabled={!exerciseTrackings.every(t => t.sets.length > 0)}
+            disabled={!exerciseTrackings.every(t => t.isCompleted)}
           >
             Complete Workout
           </Button>
