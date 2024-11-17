@@ -1,0 +1,41 @@
+{
+  "name": "workout-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "clean": "rm -rf .next",
+    "seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
+    "test-db": "ts-node src/lib/db-test.ts"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.13.0",
+    "@mui/x-date-pickers": "^6.5.0",
+    "@prisma/client": "^5.22.0",
+    "@types/node": "20.5.0",
+    "@types/react": "18.2.20",
+    "@types/react-beautiful-dnd": "^13.1.8",
+    "@types/react-dom": "18.2.7",
+    "date-fns": "^2.30.0",
+    "next": "13.4.19",
+    "react": "18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "eslint": "8.47.0",
+    "eslint-config-next": "13.4.19",
+    "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
+    "typescript": "5.1.6"
+  },
+  "prisma": {
+    "seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts"
+  }
+}

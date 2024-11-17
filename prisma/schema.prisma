@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Exercise {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  workouts    WorkoutExercise[]
+  sets        ExerciseSet[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Workout {
+  id          Int       @id @default(autoincrement())
+  name        String
+  exercises   WorkoutExercise[]
+  instances   WorkoutInstance[]
+  planDays    PlanDay[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model WorkoutExercise {
+  id          Int       @id @default(autoincrement())
+  workout     Workout   @relation(fields: [workoutId], references: [id])
+  workoutId   Int
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
+  exerciseId  Int
+  order       Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workoutId, exerciseId])
+}
+
+model Plan {
+  id          Int           @id @default(autoincrement())
+  name        String
+  days        PlanDay[]
+  instances   PlanInstance[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model PlanDay {
+  id          Int       @id @default(autoincrement())
+  plan        Plan      @relation(fields: [planId], references: [id])
+  planId      Int
+  dayNumber   Int
+  isRestDay   Boolean   @default(false)
+  workout     Workout?  @relation(fields: [workoutId], references: [id])
+  workoutId   Int?
+  instanceDays PlanInstanceDay[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([planId, dayNumber])
+}
+
+model PlanInstance {
+  id          Int               @id @default(autoincrement())
+  plan        Plan              @relation(fields: [planId], references: [id])
+  planId      Int
+  status      String?          // "IN_PROGRESS" or "COMPLETE" or null
+  days        PlanInstanceDay[]
+  startedAt   DateTime         @default(now())
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model PlanInstanceDay {
+  id                Int             @id @default(autoincrement())
+  planInstance      PlanInstance    @relation(fields: [planInstanceId], references: [id])
+  planInstanceId    Int
+  planDay          PlanDay         @relation(fields: [planDayId], references: [id])
+  planDayId        Int
+  workoutInstance   WorkoutInstance? @relation(fields: [workoutInstanceId], references: [id])
+  workoutInstanceId Int?
+  isComplete        Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model WorkoutInstance {
+  id              Int               @id @default(autoincrement())
+  workout         Workout           @relation(fields: [workoutId], references: [id])
+  workoutId       Int
+  planInstanceDay PlanInstanceDay[]
+  startedAt       DateTime          @default(now())
+  completedAt     DateTime?
+  sets            ExerciseSet[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model ExerciseSet {
+  id                Int             @id @default(autoincrement())
+  exercise         Exercise        @relation(fields: [exerciseId], references: [id])
+  exerciseId       Int
+  workoutInstance  WorkoutInstance @relation(fields: [workoutInstanceId], references: [id])
+  workoutInstanceId Int
+  setNumber        Int
+  weight           Float
+  reps             Int
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+} 
