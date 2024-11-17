@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import type { PlanInstanceDayWithRelations } from '@/types/prisma';
 
+// Add export to make it a module
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: Request,
   { params }: { params: { id: string; dayId: string } }
