@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function GET() {
   try {
@@ -14,7 +15,10 @@ export async function GET() {
   } catch (error) {
     console.error('Error in exercises API:', error);
     return NextResponse.json(
-      { error: 'Error fetching exercises', details: error.message },
+      { 
+        error: 'Error fetching exercises', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
       { status: 500 }
     );
   }
@@ -30,9 +34,23 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(exercise);
   } catch (error) {
+    // Handle specific Prisma errors
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'An exercise with this name already exists' },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Handle general errors
     console.error('Error creating exercise:', error);
     return NextResponse.json(
-      { error: 'Error creating exercise', details: error.message },
+      { 
+        error: 'Error creating exercise', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
       { status: 500 }
     );
   }

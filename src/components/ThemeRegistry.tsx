@@ -7,7 +7,48 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { ReactNode, useState } from 'react';
 
 const theme = createTheme({
-  // You can customize your theme here
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#90caf9',
+    },
+    secondary: {
+      main: '#f48fb1',
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        'html, body': {
+          backgroundColor: '#121212',
+          minHeight: '100vh',
+          margin: 0,
+          padding: 0,
+        },
+        '#__next': {
+          minHeight: '100vh',
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1e1e1e',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1e1e1e',
+        },
+      },
+    },
+  },
 });
 
 export default function ThemeRegistry({ children }: { children: ReactNode }) {
