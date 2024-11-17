@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function POST(
   request: Request,
@@ -15,6 +16,11 @@ export async function POST(
       include: {
         days: {
           include: {
+            planDay: {
+              include: {
+                workout: true
+              }
+            },
             workoutInstance: true
           }
         }
@@ -33,9 +39,9 @@ export async function POST(
 
     // Check if all days are complete
     const allDaysComplete = planInstance.days.every(day => {
-      const isComplete = day.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null;
+      const isComplete = day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null;
       console.log(`Day ${day.id} completion status:`, {
-        isRestDay: day.isRestDay,
+        isRestDay: day.planDay.isRestDay,
         isComplete: day.isComplete,
         workoutCompleted: day.workoutInstance?.completedAt != null,
         finalStatus: isComplete
@@ -59,6 +65,11 @@ export async function POST(
         include: {
           days: {
             include: {
+              planDay: {
+                include: {
+                  workout: true
+                }
+              },
               workoutInstance: true
             }
           }
@@ -69,14 +80,13 @@ export async function POST(
       return NextResponse.json(updatedPlanInstance);
     }
 
-    console.log('Plan instance not yet complete');
     return NextResponse.json(planInstance);
   } catch (error) {
     console.error('Error checking plan completion:', error);
     return NextResponse.json(
       { 
         error: 'Error checking plan completion', 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );
