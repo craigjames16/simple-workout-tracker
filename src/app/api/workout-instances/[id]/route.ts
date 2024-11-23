@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 
 export async function GET(
   request: Request,
@@ -16,7 +15,21 @@ export async function GET(
           include: {
             exercises: {
               include: {
-                exercise: true
+                exercise: {
+                  include: {
+                    sets: {
+                      where: {
+                        workoutInstance: {
+                          completedAt: { not: null }
+                        }
+                      },
+                      orderBy: [
+                        { workoutInstance: { completedAt: 'desc' } }
+                      ],
+                      distinct: ['setNumber']
+                    }
+                  }
+                }
               }
             }
           }

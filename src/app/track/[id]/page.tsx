@@ -13,6 +13,7 @@ import {
   IconButton,
   Grid,
   CircularProgress,
+  InputAdornment,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -21,6 +22,12 @@ import type { WorkoutInstanceWithRelations } from '@/types/prisma';
 interface ExerciseTracking {
   exerciseId: number;
   exerciseName: string;
+  lastCompletedSets: {
+    [setNumber: number]: {
+      weight: number;
+      reps: number;
+    };
+  };
   sets: Array<{
     reps: number;
     weight: number;
@@ -49,42 +56,38 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchWorkout = async () => {
+    const fetchWorkoutInstance = async () => {
       try {
         const response = await fetch(`/api/workout-instances/${params.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch workout');
         }
-        const data = await response.json() as WorkoutInstanceWithRelations;
+        const data = await response.json();
         setWorkoutInstance(data);
 
-        // Initialize exercise trackings with existing sets or 3 empty sets
-        const initialTrackings = data.workout.exercises.map((ex: WorkoutExercise) => {
-          const existingSets = data.sets
-            .filter((set: ExerciseSet) => set.exerciseId === ex.exercise.id)
-            .sort((a: ExerciseSet, b: ExerciseSet) => a.setNumber - b.setNumber)
-            .map((set: ExerciseSet) => ({
-              reps: set.reps,
+        // Initialize exercise trackings with last completed set data and 3 default sets
+        const initialTrackings = data.workout.exercises.map((ex: any) => ({
+          exerciseId: ex.exercise.id,
+          exerciseName: ex.exercise.name,
+          lastCompletedSets: ex.exercise.sets.reduce((acc: any, set: any) => {
+            acc[set.setNumber] = {
               weight: set.weight,
-            }));
-
-          return {
-            exerciseId: ex.exercise.id,
-            exerciseName: ex.exercise.name,
-            sets: existingSets.length > 0 ? existingSets : Array(3).fill({ reps: 0, weight: 0 }),
-            isCompleted: existingSets.length > 0,
-          };
-        });
-
+              reps: set.reps
+            };
+            return acc;
+          }, {}),
+          sets: Array(3).fill({ reps: 0, weight: 0 }), // Initialize with 3 empty sets
+          isCompleted: false,
+        }));
         setExerciseTrackings(initialTrackings);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : 'Failed to fetch workout');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkout();
+    fetchWorkoutInstance();
   }, [params.id]);
 
   const handleUpdateSet = (exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: number) => {
@@ -103,7 +106,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   const handleAddSet = (exerciseIndex: number) => {
     setExerciseTrackings(prev => {
       const updated = [...prev];
-      updated[exerciseIndex].sets.push({ reps: 0, weight: 0 });
+      updated[exerciseIndex] = {
+        ...updated[exerciseIndex],
+        sets: [...updated[exerciseIndex].sets, { reps: 0, weight: 0 }]
+      };
       return updated;
     });
   };
@@ -232,49 +238,58 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   )}
                 </Box>
                 
-                {exercise.sets.map((set, setIndex) => (
-                  <Grid container spacing={2} key={setIndex} sx={{ mt: 1 }}>
-                    <Grid item xs={4}>
-                      <TextField
-                        label="Reps"
-                        type="number"
-                        value={set.reps}
-                        onChange={(e) => handleUpdateSet(
-                          exerciseIndex,
-                          setIndex,
-                          'reps',
-                          parseInt(e.target.value)
-                        )}
-                        size="small"
-                        disabled={exercise.isCompleted}
-                      />
+                {exercise.sets.map((set, setIndex) => {
+                  const lastSet = exercise.lastCompletedSets?.[setIndex + 1];
+                  const placeholderWeight = lastSet?.weight || '0';
+                  const placeholderReps = lastSet?.reps || '0';
+
+                  return (
+                    <Grid container spacing={2} key={setIndex} sx={{ mt: 1 }}>
+                      <Grid item xs={4}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          type="number"
+                          placeholder={`${placeholderWeight}`}
+                          value={set.weight || ''}
+                          onChange={(e) => handleUpdateSet(
+                            exerciseIndex,
+                            setIndex,
+                            'weight',
+                            parseFloat(e.target.value)
+                          )}
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">kg</InputAdornment>,
+                          }}
+                        />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <TextField
+                          size="small"
+                          fullWidth
+                          type="number"
+                          placeholder={`${placeholderReps}`}
+                          value={set.reps || ''}
+                          onChange={(e) => handleUpdateSet(
+                            exerciseIndex,
+                            setIndex,
+                            'reps',
+                            parseInt(e.target.value)
+                          )}
+                        />
+                      </Grid>
+                      <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center' }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
+                          sx={{ ml: 1 }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Grid>
                     </Grid>
-                    <Grid item xs={4}>
-                      <TextField
-                        label="Weight (kg)"
-                        type="number"
-                        value={set.weight}
-                        onChange={(e) => handleUpdateSet(
-                          exerciseIndex,
-                          setIndex,
-                          'weight',
-                          parseInt(e.target.value)
-                        )}
-                        size="small"
-                        disabled={exercise.isCompleted}
-                      />
-                    </Grid>
-                    <Grid item xs={4}>
-                      <IconButton
-                        onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
-                        color="error"
-                        disabled={exercise.isCompleted}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Grid>
-                  </Grid>
-                ))}
+                  );
+                })}
 
                 <Button
                   startIcon={<AddIcon />}
