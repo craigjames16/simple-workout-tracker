@@ -1,4 +1,5 @@
 import { createTheme } from '@mui/material/styles';
+import type { Components, Theme } from '@mui/material/styles';
 
 const theme = createTheme({
   components: {
@@ -8,15 +9,11 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          paddingLeft: {
-            xs: 2,
-            sm: 3,
-          },
-          paddingRight: {
-            xs: 2,
-            sm: 3,
-          },
-        },
+          padding: {
+            xs: '16px',
+            sm: '24px',
+          }
+        } as any
       },
     },
     MuiCard: {

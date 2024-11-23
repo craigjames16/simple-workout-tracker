@@ -18,6 +18,9 @@ import {
   CircularProgress,
   Switch,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  ListSubheader,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -27,6 +30,11 @@ import TextField from '@mui/material/TextField';
 interface Exercise {
   id: number;
   name: string;
+  category: string;
+}
+
+interface ExerciseResponse {
+  [category: string]: Exercise[];
 }
 
 interface WorkoutDay {
@@ -36,6 +44,10 @@ interface WorkoutDay {
   exercises: Exercise[];
 }
 
+interface ExercisesByCategory {
+  [category: string]: Exercise[];
+}
+
 export default function CreatePlan() {
   const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([]);
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
@@ -43,29 +55,43 @@ export default function CreatePlan() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [planName, setPlanName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   useEffect(() => {
+    const fetchExercises = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/exercises');
+        if (!response.ok) {
+          throw new Error('Failed to fetch exercises');
+        }
+        const data = await response.json() as ExerciseResponse;
+        
+        const allExercises = Object.values(data).flat() as Exercise[];
+        setAvailableExercises(allExercises);
+      } catch (error) {
+        console.error('Error fetching exercises:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch exercises');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchExercises();
   }, []);
 
-  const fetchExercises = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/exercises');
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch exercises');
-      }
-
-      setAvailableExercises(data);
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch exercises');
-    } finally {
-      setIsLoading(false);
+  const groupedExercises = availableExercises.reduce((acc: ExercisesByCategory, exercise) => {
+    const category = exercise.category;
+    if (!acc[category]) {
+      acc[category] = [];
     }
-  };
+    acc[category].push(exercise);
+    return acc;
+  }, {});
+
+  const filteredExercises = selectedCategory === 'ALL' 
+    ? availableExercises 
+    : groupedExercises[selectedCategory] || [];
 
   const addWorkoutDay = () => {
     const newDay: WorkoutDay = {
@@ -251,25 +277,65 @@ export default function CreatePlan() {
 
                     {!day.isRestDay && (
                       <Box sx={{ mb: 2 }}>
-                        <Select
-                          fullWidth
-                          value={selectedExercise}
-                          onChange={(e) => {
-                            const exercise = availableExercises.find(ex => ex.id.toString() === e.target.value);
-                            if (exercise) {
-                              addExerciseToDay(day.id, exercise);
-                              setSelectedExercise('');
-                            }
-                          }}
-                          displayEmpty
-                        >
-                          <MenuItem value="" disabled>Add Exercise</MenuItem>
-                          {availableExercises.map((exercise) => (
-                            <MenuItem key={exercise.id} value={exercise.id.toString()}>
-                              {exercise.name}
+                        <FormControl fullWidth>
+                          <InputLabel>Category</InputLabel>
+                          <Select
+                            value={selectedCategory}
+                            label="Category"
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            sx={{ mb: 2 }}
+                          >
+                            <MenuItem value="ALL">All Categories</MenuItem>
+                            {Object.keys(groupedExercises).map((category) => (
+                              <MenuItem key={category} value={category}>
+                                {category.charAt(0) + category.slice(1).toLowerCase()}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth>
+                          <Select
+                            value={selectedExercise}
+                            onChange={(e) => {
+                              const exercise = filteredExercises.find(ex => ex.id.toString() === e.target.value);
+                              if (exercise) {
+                                addExerciseToDay(day.id, exercise);
+                                setSelectedExercise('');
+                              }
+                            }}
+                            displayEmpty
+                          >
+                            <MenuItem value="" disabled>
+                              Select Exercise
                             </MenuItem>
-                          ))}
-                        </Select>
+                            {selectedCategory === 'ALL' ? (
+                              Object.entries(groupedExercises).map(([category, exercises]) => [
+                                <ListSubheader key={category}>
+                                  {category.charAt(0) + category.slice(1).toLowerCase()}
+                                </ListSubheader>,
+                                ...exercises.map((exercise) => (
+                                  <MenuItem 
+                                    key={exercise.id} 
+                                    value={exercise.id.toString()}
+                                    sx={{ pl: 4 }}
+                                  >
+                                    {exercise.name}
+                                  </MenuItem>
+                                ))
+                              ]).flat()
+                            ) : (
+                              filteredExercises.map((exercise) => (
+                                <MenuItem 
+                                  key={exercise.id} 
+                                  value={exercise.id.toString()}
+                                >
+                                  {exercise.name}
+                                </MenuItem>
+                              ))
+                            )}
+                          </Select>
+                        </FormControl>
                       </Box>
                     )}
                     
