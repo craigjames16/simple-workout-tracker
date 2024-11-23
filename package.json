@@ -9,7 +9,8 @@
     "lint": "next lint",
     "clean": "rm -rf .next",
     "seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
-    "test-db": "ts-node src/lib/db-test.ts"
+    "test-db": "ts-node src/lib/db-test.ts",
+    "generate-icons": "ts-node scripts/generate-icons.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.11.0",
@@ -32,6 +33,7 @@
     "eslint": "8.47.0",
     "eslint-config-next": "13.4.19",
     "prisma": "^5.22.0",
+    "sharp": "^0.33.5",
     "ts-node": "^10.9.2",
     "typescript": "5.1.6"
   },

@@ -18,8 +18,10 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Link from 'next/link';
 import type { PlanInstanceWithCompletion } from '@/types/prisma';
+import { useRouter } from 'next/navigation';
 
 export default function PlanInstanceDetail({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const [planInstance, setPlanInstance] = useState<PlanInstanceWithCompletion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,28 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
 
     fetchPlanInstance();
   }, [params.id]);
+
+  const handleCompleteRestDay = async (dayId: number) => {
+    try {
+      const response = await fetch(
+        `/api/plan-instances/${params.id}/days/${dayId}/complete-rest`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to complete rest day');
+      }
+
+      // Refresh the page data
+      const updatedPlanInstance = await fetch(`/api/plan-instances/${params.id}`);
+      const data = await updatedPlanInstance.json();
+      setPlanInstance(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
 
   if (loading) {
     return (
@@ -67,7 +91,9 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
         </Typography>
 
         <Grid container spacing={2}>
-          {planInstance.days.map((day) => (
+          {planInstance.days
+            .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
+            .map((day) => (
             <Grid item xs={12} sm={6} md={4} key={day.id}>
               <Card>
                 <CardContent>
@@ -92,8 +118,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
                           startIcon={<CheckCircleIcon />}
                           fullWidth
                           sx={{ mt: 2 }}
-                          component={Link}
-                          href={`/plans/instance/${planInstance.id}/days/${day.id}/complete-rest`}
+                          onClick={() => handleCompleteRestDay(day.id)}
                         >
                           Complete Rest Day
                         </Button>
