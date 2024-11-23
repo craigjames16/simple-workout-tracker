@@ -156,12 +156,7 @@ export default function CreatePlan() {
     setWorkoutDays(newWorkoutDays);
   };
 
-  const handleSavePlan = async () => {
-    if (!planName || workoutDays.length === 0) {
-      setError('Please provide a plan name and at least one day');
-      return;
-    }
-
+  const handleSave = async () => {
     try {
       const response = await fetch('/api/plans', {
         method: 'POST',
@@ -178,17 +173,14 @@ export default function CreatePlan() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to save plan');
+        throw new Error('Failed to create plan');
       }
 
-      // Reset form
-      setPlanName('');
-      setWorkoutDays([]);
-      setError(null);
+      const data = await response.json();
+      window.location.href = data.redirect;
     } catch (error) {
       console.error('Error saving plan:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save plan');
+      setError(error instanceof Error ? error.message : 'Failed to create plan');
     }
   };
 
@@ -343,7 +335,7 @@ export default function CreatePlan() {
             fullWidth
             variant="contained"
             color="primary"
-            onClick={handleSavePlan}
+            onClick={handleSave}
             disabled={!planName || workoutDays.length === 0}
           >
             Save Plan

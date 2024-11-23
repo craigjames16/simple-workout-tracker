@@ -1,17 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
-import type { PlanInstanceDayWithRelations } from '@/types/prisma';
-
-// Add export to make it a module
-export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string; dayId: string } }
 ) {
   try {
-    // First, get the plan instance day
+    // First, check if a workout instance already exists
     const planInstanceDay = await prisma.planInstanceDay.findUnique({
       where: {
         id: parseInt(params.dayId)
@@ -21,7 +16,8 @@ export async function POST(
           include: {
             workout: true
           }
-        }
+        },
+        workoutInstance: true
       }
     });
 
@@ -30,6 +26,11 @@ export async function POST(
         { error: 'Plan instance day not found' },
         { status: 404 }
       );
+    }
+
+    // If a workout instance already exists, just return it
+    if (planInstanceDay.workoutInstance) {
+      return NextResponse.json(planInstanceDay.workoutInstance);
     }
 
     if (!planInstanceDay.planDay.workout) {

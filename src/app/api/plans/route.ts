@@ -5,18 +5,7 @@ export async function GET() {
   try {
     const plans = await prisma.plan.findMany({
       include: {
-        instances: {
-          where: {
-            OR: [
-              { status: 'IN_PROGRESS' },
-              { status: 'COMPLETE' }
-            ]
-          }
-        },
         days: {
-          orderBy: {
-            dayNumber: 'asc'
-          },
           include: {
             workout: {
               include: {
@@ -53,7 +42,7 @@ export async function POST(request: Request) {
     const json = await request.json();
     const { name, days } = json;
 
-    // Create the plan with its days
+    // Create the plan with its days in a transaction
     const plan = await prisma.plan.create({
       data: {
         name,
@@ -62,18 +51,20 @@ export async function POST(request: Request) {
             if (day.isRestDay) {
               return {
                 dayNumber: index + 1,
-                isRestDay: true
+                isRestDay: true,
               };
             }
 
-            // Create a new workout for this day
+            // Create a workout for this day
             const workout = await prisma.workout.create({
               data: {
                 name: `${name} - Day ${index + 1}`,
                 exercises: {
                   create: day.exercises.map((exercise: any, exerciseIndex: number) => ({
                     exercise: {
-                      connect: { id: exercise.id }
+                      connect: {
+                        id: exercise.id
+                      }
                     },
                     order: exerciseIndex
                   }))
@@ -106,7 +97,10 @@ export async function POST(request: Request) {
       }
     });
 
-    return NextResponse.json(plan);
+    return NextResponse.json({ 
+      plan,
+      redirect: '/plans'
+    });
   } catch (error) {
     console.error('Error creating plan:', error);
     return NextResponse.json(

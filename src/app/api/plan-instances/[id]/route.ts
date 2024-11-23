@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import type { PlanInstanceWithCompletion } from '@/types/prisma';
 
 export async function GET(
   request: Request,
@@ -14,6 +13,7 @@ export async function GET(
       },
       include: {
         plan: true,
+        mesocycle: true,
         days: {
           include: {
             planDay: {

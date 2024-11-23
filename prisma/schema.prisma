@@ -45,6 +45,7 @@ model Plan {
   name        String
   days        PlanDay[]
   instances   PlanInstance[]
+  mesocycles  Mesocycle[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
@@ -68,6 +69,10 @@ model PlanInstance {
   id          Int               @id @default(autoincrement())
   plan        Plan              @relation(fields: [planId], references: [id])
   planId      Int
+  mesocycle   Mesocycle?       @relation(fields: [mesocycleId], references: [id])
+  mesocycleId Int?
+  iterationNumber Int?         // Position in the mesocycle (1, 2, 3, etc.)
+  rir         Int?             // Reps In Reserve (0-3)
   status      String?          // "IN_PROGRESS" or "COMPLETE" or null
   days        PlanInstanceDay[]
   startedAt   DateTime         @default(now())
@@ -112,4 +117,18 @@ model ExerciseSet {
   reps             Int
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+}
+
+model Mesocycle {
+  id          Int               @id @default(autoincrement())
+  name        String
+  plan        Plan              @relation(fields: [planId], references: [id])
+  planId      Int
+  iterations  Int
+  status      String?          // "IN_PROGRESS" or "COMPLETE" or null
+  instances   PlanInstance[]
+  startedAt   DateTime         @default(now())
+  completedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 } 

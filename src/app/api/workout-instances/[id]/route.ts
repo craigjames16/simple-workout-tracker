@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function GET(
   request: Request,
@@ -24,6 +25,17 @@ export async function GET(
           include: {
             exercise: true
           }
+        },
+        planInstanceDay: {
+          include: {
+            planDay: true,
+            planInstance: {
+              include: {
+                mesocycle: true,
+                plan: true
+              }
+            }
+          }
         }
       }
     });
@@ -41,7 +53,7 @@ export async function GET(
     return NextResponse.json(
       { 
         error: 'Error fetching workout instance', 
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
     );

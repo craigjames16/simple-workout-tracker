@@ -60,16 +60,21 @@ export type WorkoutInstanceWithRelations = Prisma.WorkoutInstanceGetPayload<{
           }
         }
       }
-    }
+    },
     sets: {
       include: {
         exercise: true
       }
-    }
+    },
     planInstanceDay: {
       include: {
-        planDay: true
-        planInstance: true
+        planDay: true,
+        planInstance: {
+          include: {
+            mesocycle: true,
+            plan: true
+          }
+        }
       }
     }
   }
@@ -79,6 +84,7 @@ export type WorkoutInstanceWithRelations = Prisma.WorkoutInstanceGetPayload<{
 export type PlanInstanceWithCompletion = Prisma.PlanInstanceGetPayload<{
   include: {
     plan: true,
+    mesocycle: true,
     days: {
       include: {
         planDay: {
@@ -141,6 +147,18 @@ export type ExerciseSetWithRelations = Prisma.ExerciseSetGetPayload<{
     workoutInstance: {
       include: {
         workout: true
+      }
+    }
+  }
+}>;
+
+// Add new types for Mesocycles
+export type MesocycleWithRelations = Prisma.MesocycleGetPayload<{
+  include: {
+    plan: true
+    instances: {
+      include: {
+        plan: true
       }
     }
   }

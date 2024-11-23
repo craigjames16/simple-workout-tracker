@@ -141,8 +141,18 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         throw new Error('Failed to complete workout');
       }
 
-      // Redirect or show success message
-      window.location.href = '/plans';
+      const data = await response.json();
+
+      // If this workout is part of a plan instance, redirect there
+      if (workoutInstance?.planInstanceDay?.[0]?.planInstance) {
+        window.location.href = `/plans/instance/${workoutInstance.planInstanceDay[0].planInstance.id}`;
+      } else if (workoutInstance?.planInstanceDay?.[0]?.planInstance?.mesocycle) {
+        // If it's part of a mesocycle, redirect to the mesocycle page
+        window.location.href = `/mesocycles/${workoutInstance.planInstanceDay[0].planInstance.mesocycle.id}`;
+      } else {
+        // Otherwise, redirect to plans page
+        window.location.href = '/plans';
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete workout');
     }
@@ -181,6 +191,17 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         <Typography variant="h4" gutterBottom>
           {workoutInstance.workout.name}
         </Typography>
+        
+        {workoutInstance.planInstanceDay?.[0]?.planInstance?.rir !== undefined && (
+          <Box sx={{ mb: 2 }}>
+            <Typography color="text.secondary" gutterBottom>
+              Target RIR (Reps In Reserve): {workoutInstance.planInstanceDay[0].planInstance.rir}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Leave this many reps in reserve for each set
+            </Typography>
+          </Box>
+        )}
 
         <List>
           {exerciseTrackings.map((exercise, exerciseIndex) => (
