@@ -5,7 +5,6 @@ import {
   Container,
   Paper,
   Typography,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -13,11 +12,14 @@ import {
   TableHead,
   TableRow,
   CircularProgress,
+  Button,
   Box,
 } from '@mui/material';
 import Link from 'next/link';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddIcon from '@mui/icons-material/Add';
+import FloatingActionButton from '@/components/FloatingActionButton';
+import { useRouter } from 'next/navigation';
 
 interface Plan {
   id: number;
@@ -37,6 +39,7 @@ interface Plan {
 }
 
 export default function PlansPage() {
+  const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,60 +79,61 @@ export default function PlansPage() {
     );
   }
 
+  const handleCreatePlan = () => {
+    router.push('/plans/create');
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4" component="h1">
+    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
+      <Container maxWidth="lg" sx={{ mt: 4, pb: 10 }}>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
             Training Plans
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            component={Link}
-            href="/plans/create"
-          >
-            Create Plan
-          </Button>
-        </Box>
 
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Days</TableCell>
-                <TableCell>Workouts</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {plans.map((plan) => (
-                <TableRow key={plan.id}>
-                  <TableCell>{plan.name}</TableCell>
-                  <TableCell>{plan.days.length}</TableCell>
-                  <TableCell>
-                    {plan.days.filter(day => !day.isRestDay).length}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="small"
-                      component={Link}
-                      href={`/plans/${plan.id}/details`}
-                      startIcon={<VisibilityIcon />}
-                    >
-                      View Details
-                    </Button>
-                  </TableCell>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Days</TableCell>
+                  <TableCell>Workouts</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
-    </Container>
+              </TableHead>
+              <TableBody>
+                {plans.map((plan) => (
+                  <TableRow key={plan.id}>
+                    <TableCell>{plan.name}</TableCell>
+                    <TableCell>{plan.days.length}</TableCell>
+                    <TableCell>
+                      {plan.days.filter(day => !day.isRestDay).length}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        component={Link}
+                        href={`/plans/${plan.id}/details`}
+                        startIcon={<VisibilityIcon />}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+      </Container>
+
+      <FloatingActionButton
+        icon={<AddIcon />}
+        onClick={handleCreatePlan}
+        position="right"
+      />
+    </Box>
   );
 } 
