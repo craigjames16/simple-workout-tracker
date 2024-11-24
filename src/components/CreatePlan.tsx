@@ -144,14 +144,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   };
 
   const removeWorkoutDay = (dayId: string) => {
-    setWorkoutDays(prevDays => {
-      const filteredDays = prevDays.filter(day => day.id !== dayId);
-      return filteredDays.map((day, index) => ({
-        ...day,
-        id: `day-${index + 1}`,
-        name: `Day ${index + 1}`
-      }));
-    });
+    setWorkoutDays(prevDays => prevDays.filter(day => day.id !== dayId));
   };
 
   const toggleRestDay = (dayId: string) => {
@@ -160,7 +153,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
         return {
           ...day,
           isRestDay: !day.isRestDay,
-          exercises: !day.isRestDay ? [] : day.exercises, // Clear exercises when switching to rest day
+          exercises: !day.isRestDay ? [] : day.exercises,
         };
       }
       return day;
@@ -266,7 +259,6 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
 
   const handleCreateAndAddExercise = async () => {
     try {
-      // Create the new exercise
       const response = await fetch('/api/exercises', {
         method: 'POST',
         headers: {
@@ -281,7 +273,6 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
 
       const createdExercise = await response.json();
 
-      // Add the newly created exercise to the day
       if (creatingExerciseForDayIndex !== null) {
         setWorkoutDays(workoutDays.map((day, index) => {
           if (index === creatingExerciseForDayIndex && !day.isRestDay) {
@@ -294,12 +285,11 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
         }));
       }
 
-      // Refresh available exercises
       const exercisesResponse = await fetch('/api/exercises');
       if (exercisesResponse.ok) {
-        const data = await exercisesResponse.json();
-        const exercises = Object.entries(data).flatMap(([category, exercises]: [string, any[]]) =>
-          exercises.map(exercise => ({
+        const data = await exercisesResponse.json() as ExerciseResponse;
+        const exercises = Object.entries(data).flatMap(([category, exerciseList]) =>
+          exerciseList.map(exercise => ({
             ...exercise,
             category: category as ExerciseCategory
           }))

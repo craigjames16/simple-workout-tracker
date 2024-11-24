@@ -1,4 +1,5 @@
 import { Prisma } from '.prisma/client';
+import { ExerciseCategory } from '@prisma/client';
 
 // Plan Instance Day with all relations
 export type PlanInstanceDayWithRelations = Prisma.PlanInstanceDayGetPayload<{
@@ -50,35 +51,35 @@ export type PlanWithRelations = Prisma.PlanGetPayload<{
 }>;
 
 // Workout Instance with all relations
-export type WorkoutInstanceWithRelations = Prisma.WorkoutInstanceGetPayload<{
-  include: {
-    workout: {
-      include: {
-        exercises: {
-          include: {
-            exercise: true
-          }
-        }
-      }
-    },
-    sets: {
-      include: {
-        exercise: true
-      }
-    },
-    planInstanceDay: {
-      include: {
-        planDay: true,
-        planInstance: {
-          include: {
-            mesocycle: true,
-            plan: true
-          }
-        }
-      }
-    }
-  }
-}>;
+export interface WorkoutInstanceWithRelations {
+  id: number;
+  workout: {
+    id: number;
+    name: string;
+    exercises: Array<{
+      exercise: {
+        id: number;
+        name: string;
+        category: ExerciseCategory;
+        sets?: Array<{
+          setNumber: number;
+          weight: number;
+          reps: number;
+        }>;
+      };
+    }>;
+  };
+  planInstanceDay?: Array<{
+    planInstance: {
+      id: number;
+      rir?: number;
+      mesocycle?: {
+        id: number;
+        name: string;
+      };
+    };
+  }>;
+}
 
 // Update the PlanInstanceWithCompletion type to include the plan relation
 export type PlanInstanceWithCompletion = Prisma.PlanInstanceGetPayload<{

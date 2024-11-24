@@ -65,6 +65,14 @@ interface ExerciseWithCategory {
   category: ExerciseCategory;
 }
 
+interface ExerciseResponse {
+  [category: string]: Array<{
+    id: number;
+    name: string;
+    category: ExerciseCategory;
+  }>;
+}
+
 export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [workoutInstance, setWorkoutInstance] = useState<WorkoutInstanceWithRelations | null>(null);
   const [exerciseTrackings, setExerciseTrackings] = useState<ExerciseTracking[]>([]);
@@ -90,13 +98,13 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         const initialTrackings = data.workout.exercises.map((ex: any) => ({
           exerciseId: ex.exercise.id,
           exerciseName: ex.exercise.name,
-          lastCompletedSets: ex.exercise.sets.reduce((acc: any, set: any) => {
+          lastCompletedSets: ex.exercise.sets?.reduce((acc: Record<number, { weight: number; reps: number }>, set: any) => {
             acc[set.setNumber] = {
               weight: set.weight,
               reps: set.reps
             };
             return acc;
-          }, {}),
+          }, {} as Record<number, { weight: number; reps: number }>),
           sets: Array(3).fill({ reps: 0, weight: 0 }),
           completedSetIndexes: new Set<number>(),
           isCompleted: false,
@@ -119,10 +127,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         if (!response.ok) {
           throw new Error('Failed to fetch exercises');
         }
-        const data = await response.json();
+        const data = await response.json() as ExerciseResponse;
         // Transform the categorized exercises into a flat array with category information
-        const exercises = Object.entries(data).flatMap(([category, exercises]: [string, any[]]) =>
-          exercises.map(exercise => ({
+        const exercises = Object.entries(data).flatMap(([category, exerciseList]) =>
+          exerciseList.map(exercise => ({
             ...exercise,
             category: category as ExerciseCategory
           }))

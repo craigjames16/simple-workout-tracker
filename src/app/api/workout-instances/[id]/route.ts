@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+interface SetsByNumber {
+  [key: number]: {
+    weight: number;
+    reps: number;
+  };
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.$connect();
-
     const workoutInstance = await prisma.workoutInstance.findUnique({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
       },
       include: {
         workout: {
@@ -19,41 +24,23 @@ export async function GET(
               include: {
                 exercise: {
                   include: {
-                    sets: {
-                      where: {
-                        workoutInstance: {
-                          completedAt: { not: null },
-                          id: { not: parseInt(params.id) }
-                        }
-                      },
-                      orderBy: [
-                        { workoutInstance: { completedAt: 'desc' } }
-                      ],
-                      take: 10
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        sets: {
-          include: {
-            exercise: true
-          }
+                    sets: true,
+                  },
+                },
+              },
+            },
+          },
         },
         planInstanceDay: {
           include: {
-            planDay: true,
             planInstance: {
               include: {
                 mesocycle: true,
-                plan: true
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!workoutInstance) {
@@ -71,7 +58,7 @@ export async function GET(
           ...ex,
           exercise: {
             ...ex.exercise,
-            lastCompletedSets: ex.exercise.sets?.reduce((acc, set) => {
+            lastCompletedSets: ex.exercise.sets?.reduce((acc: SetsByNumber, set) => {
               acc[set.setNumber] = {
                 weight: set.weight,
                 reps: set.reps
@@ -93,7 +80,5 @@ export async function GET(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 } 
