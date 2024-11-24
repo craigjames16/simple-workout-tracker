@@ -17,7 +17,22 @@ export async function GET(
           include: {
             exercises: {
               include: {
-                exercise: true
+                exercise: {
+                  include: {
+                    sets: {
+                      where: {
+                        workoutInstance: {
+                          completedAt: { not: null },
+                          id: { not: parseInt(params.id) }
+                        }
+                      },
+                      orderBy: [
+                        { workoutInstance: { completedAt: 'desc' } }
+                      ],
+                      take: 10
+                    }
+                  }
+                }
               }
             }
           }
@@ -48,7 +63,27 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(workoutInstance);
+    const processedWorkoutInstance = {
+      ...workoutInstance,
+      workout: {
+        ...workoutInstance.workout,
+        exercises: workoutInstance.workout.exercises.map(ex => ({
+          ...ex,
+          exercise: {
+            ...ex.exercise,
+            lastCompletedSets: ex.exercise.sets?.reduce((acc, set) => {
+              acc[set.setNumber] = {
+                weight: set.weight,
+                reps: set.reps
+              };
+              return acc;
+            }, {}) || {}
+          }
+        }))
+      }
+    };
+
+    return NextResponse.json(processedWorkoutInstance);
   } catch (error) {
     console.error('Error in workout instance API:', error);
     return NextResponse.json(

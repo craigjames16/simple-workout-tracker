@@ -24,6 +24,9 @@ import {
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 
 interface Plan {
   id: number;
@@ -110,6 +113,17 @@ export default function MesocyclesPage() {
     }
   };
 
+  const getStatusIcon = (status: string | null) => {
+    switch (status) {
+      case 'COMPLETE':
+        return <CheckCircleIcon color="success" />;
+      case 'IN_PROGRESS':
+        return <PlayCircleIcon color="primary" />;
+      default:
+        return <PauseCircleIcon color="action" />;
+    }
+  };
+
   if (loading) {
     return (
       <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -126,38 +140,61 @@ export default function MesocyclesPage() {
             Mesocycles
           </Typography>
 
-          <Grid container spacing={2}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {mesocycles.map((mesocycle) => (
-              <Grid item xs={12} sm={6} md={4} key={mesocycle.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
+              <Card 
+                key={mesocycle.id}
+                component={Link}
+                href={`/mesocycles/${mesocycle.id}`}
+                sx={{ 
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { sm: 'center' },
+                  p: 2,
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 3,
+                    backgroundColor: 'action.hover'
+                  }
+                }}
+              >
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  flex: 1,
+                  gap: 2,
+                }}>
+                  {getStatusIcon(mesocycle.status)}
+                  <Box>
+                    <Typography variant="h6" sx={{ mb: 0.5 }}>
                       {mesocycle.name}
                     </Typography>
-                    <Typography color="text.secondary">
+                    <Typography variant="body2" color="text.secondary">
                       Based on: {mesocycle.plan.name}
                     </Typography>
-                    <Typography color="text.secondary">
+                    <Typography variant="body2" color="text.secondary">
                       Iterations: {mesocycle.iterations}
                     </Typography>
-                    <Typography color="text.secondary">
-                      Status: {mesocycle.status || 'Not Started'}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      component={Link}
-                      href={`/mesocycles/${mesocycle.id}`}
-                      sx={{ mt: 2 }}
-                      fullWidth
-                    >
-                      {mesocycle.status === 'IN_PROGRESS' ? 'Continue Mesocycle' : 'View Details'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
+                  </Box>
+                </Box>
+                <Typography 
+                  variant="body2" 
+                  color="primary"
+                  sx={{ 
+                    mt: { xs: 2, sm: 0 },
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5
+                  }}
+                >
+                  {mesocycle.status === 'IN_PROGRESS' ? 'Continue Mesocycle' : 'View Details'} →
+                </Typography>
+              </Card>
             ))}
-          </Grid>
+          </Box>
         </Paper>
 
         <FloatingActionButton

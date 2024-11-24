@@ -122,23 +122,48 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     });
   };
 
+  const handleCompleteExercise = async (exerciseIndex: number) => {
+    try {
+      const tracking = exerciseTrackings[exerciseIndex];
+      
+      // Map sets, using placeholder values if set values are empty
+      const setsWithValues = tracking.sets.map((set, setIndex) => {
+        const lastSet = tracking.lastCompletedSets?.[setIndex + 1];
+        return {
+          weight: set.weight || (lastSet?.weight ?? 0),
+          reps: set.reps || (lastSet?.reps ?? 0)
+        };
+      });
+
+      // Save the sets for this exercise
+      await fetch(`/api/workout-instances/${params.id}/sets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exerciseId: tracking.exerciseId,
+          sets: setsWithValues,
+        }),
+      });
+
+      // Update local state
+      setExerciseTrackings(prev => {
+        const updated = [...prev];
+        updated[exerciseIndex] = {
+          ...updated[exerciseIndex],
+          sets: setsWithValues,
+          isCompleted: true
+        };
+        return updated;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to complete exercise');
+    }
+  };
+
   const handleCompleteWorkout = async () => {
     try {
-      // First save all the sets
-      for (const tracking of exerciseTrackings) {
-        await fetch(`/api/workout-instances/${params.id}/sets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            exerciseId: tracking.exerciseId,
-            sets: tracking.sets,
-          }),
-        });
-      }
-
-      // Then complete the workout
       const response = await fetch(`/api/workout-instances/${params.id}/complete`, {
         method: 'POST',
       });
@@ -146,8 +171,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       if (!response.ok) {
         throw new Error('Failed to complete workout');
       }
-
-      const data = await response.json();
 
       // If this workout is part of a plan instance, redirect there
       if (workoutInstance?.planInstanceDay?.[0]?.planInstance) {
@@ -162,17 +185,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete workout');
     }
-  };
-
-  const handleCompleteExercise = (exerciseIndex: number) => {
-    setExerciseTrackings(prev => {
-      const updated = [...prev];
-      updated[exerciseIndex] = {
-        ...updated[exerciseIndex],
-        isCompleted: true
-      };
-      return updated;
-    });
   };
 
   if (loading) {
@@ -250,6 +262,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           size="small"
                           fullWidth
                           type="number"
+                          inputMode="numeric"
                           placeholder={`${placeholderWeight}`}
                           value={set.weight || ''}
                           onChange={(e) => handleUpdateSet(
@@ -258,8 +271,19 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                             'weight',
                             parseFloat(e.target.value)
                           )}
-                          InputProps={{
-                            endAdornment: <InputAdornment position="end">kg</InputAdornment>,
+                          disabled={exercise.isCompleted}
+                          sx={{
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                              '-webkit-appearance': 'none',
+                              margin: 0,
+                            },
+                            '& input[type=number]': {
+                              '-moz-appearance': 'textfield',
+                            },
+                            '& .Mui-disabled': {
+                              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                              color: 'rgba(0, 0, 0, 0.87)',
+                            }
                           }}
                         />
                       </Grid>
@@ -268,6 +292,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           size="small"
                           fullWidth
                           type="number"
+                          inputMode="numeric"
                           placeholder={`${placeholderReps}`}
                           value={set.reps || ''}
                           onChange={(e) => handleUpdateSet(
@@ -276,12 +301,27 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                             'reps',
                             parseInt(e.target.value)
                           )}
+                          disabled={exercise.isCompleted}
+                          sx={{
+                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                              '-webkit-appearance': 'none',
+                              margin: 0,
+                            },
+                            '& input[type=number]': {
+                              '-moz-appearance': 'textfield',
+                            },
+                            '& .Mui-disabled': {
+                              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                              color: 'rgba(0, 0, 0, 0.87)',
+                            }
+                          }}
                         />
                       </Grid>
                       <Grid item xs={4} sx={{ display: 'flex', alignItems: 'center' }}>
                         <IconButton
                           size="small"
                           onClick={() => handleRemoveSet(exerciseIndex, setIndex)}
+                          disabled={exercise.isCompleted}
                           sx={{ ml: 1 }}
                         >
                           <DeleteIcon />

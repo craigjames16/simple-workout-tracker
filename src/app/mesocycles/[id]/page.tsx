@@ -25,6 +25,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 interface PlanInstance {
   id: number;
@@ -217,63 +219,85 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
           </Box>
         </Box>
 
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {mesocycle.instances
             .sort((a, b) => a.iterationNumber - b.iterationNumber)
-            .map((instance) => (
-              <Grid item xs={12} sm={6} md={4} key={instance.id}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">
+            .map((instance) => {
+              const isComplete = isInstanceComplete(instance);
+              const isInProgress = instance.status === 'IN_PROGRESS';
+              const canStart = !isComplete && !isInProgress && 
+                mesocycle.instances
+                  .filter(i => i.iterationNumber < instance.iterationNumber)
+                  .every(i => isInstanceComplete(i));
+
+              let href = '';
+              if (isInProgress || canStart) {
+                href = `/plans/instance/${instance.id}`;
+              }
+
+              return (
+                <Card
+                  key={instance.id}
+                  component={href ? Link : 'div'}
+                  href={href}
+                  sx={{ 
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { sm: 'center' },
+                    p: 2,
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'all 0.2s',
+                    ...(href && {
+                      cursor: 'pointer',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 3,
+                        backgroundColor: 'action.hover'
+                      }
+                    })
+                  }}
+                >
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    flex: 1,
+                    gap: 2,
+                  }}>
+                    {isComplete ? (
+                      <CheckCircleIcon color="success" />
+                    ) : isInProgress ? (
+                      <PlayCircleIcon color="primary" />
+                    ) : (
+                      <PauseCircleIcon color="action" />
+                    )}
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 0.5 }}>
                         Iteration {instance.iterationNumber}
                       </Typography>
-                      {isInstanceComplete(instance) && (
-                        <CheckCircleIcon color="success" />
-                      )}
+                      <Typography variant="body2" color="text.secondary">
+                        Target RIR: {instance.rir}
+                      </Typography>
                     </Box>
-                    
-                    <Typography color="text.secondary" gutterBottom>
-                      RIR: {instance.rir}
+                  </Box>
+                  {href && (
+                    <Typography 
+                      variant="body2" 
+                      color="primary"
+                      sx={{ 
+                        mt: { xs: 2, sm: 0 },
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}
+                    >
+                      {isInProgress ? 'Continue Iteration' : 'Start Iteration'} →
                     </Typography>
-                    <Typography color="text.secondary" gutterBottom>
-                      Status: {isInstanceComplete(instance) ? 'Complete' : instance.status || 'Not Started'}
-                    </Typography>
-
-                    {!isInstanceComplete(instance) && (
-                      <>
-                        {instance.status === 'IN_PROGRESS' ? (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<ArrowForwardIcon />}
-                            fullWidth
-                            sx={{ mt: 2 }}
-                            component={Link}
-                            href={`/plans/instance/${instance.id}`}
-                          >
-                            Continue Iteration
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<PlayArrowIcon />}
-                            fullWidth
-                            sx={{ mt: 2 }}
-                            onClick={() => handleStartIteration(instance.id)}
-                            disabled={!canStartIteration(instance, mesocycle.instances)}
-                          >
-                            Start Iteration
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </CardContent>
+                  )}
                 </Card>
-              </Grid>
-            ))}
-        </Grid>
+              );
+            })}
+        </Box>
 
         {mesocycle.status === 'COMPLETE' && (
           <Alert severity="success" sx={{ mt: 3 }}>

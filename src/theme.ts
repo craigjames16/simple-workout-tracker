@@ -9,12 +9,32 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          padding: {
-            xs: '16px',
-            sm: '24px',
+          '&.MuiContainer-root': {
+            padding: {
+              xs: '0 !important',
+              sm: '24px',
+            },
+            marginTop: {
+              xs: '0 !important',
+              sm: '32px',
+            }
           }
         } as any
       },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          padding: {
+            xs: '8px',
+            sm: '24px',
+          },
+          borderRadius: {
+            xs: '0',
+            sm: '4px',
+          }
+        } as any
+      }
     },
     MuiCard: {
       styleOverrides: {

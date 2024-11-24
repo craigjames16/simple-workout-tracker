@@ -22,6 +22,8 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import Link from 'next/link';
 import LaunchIcon from '@mui/icons-material/Launch';
 import type { PlanInstanceWithCompletion } from '@/types/prisma';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 export default function PlanInstanceDetail({ params }: { params: { id: string } }) {
   const [planInstance, setPlanInstance] = useState<PlanInstanceWithCompletion | null>(null);
@@ -196,82 +198,98 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
           </Box>
         </Box>
 
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {planInstance.days
             .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
-            .map((day) => (
-            <Grid item xs={12} sm={6} md={4} key={day.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h6">
-                      Day {day.planDay.dayNumber}
-                    </Typography>
-                    {(day.isComplete || day.workoutInstance?.completedAt) && (
-                      <CheckCircleIcon color="success" />
-                    )}
-                  </Box>
+            .map((day) => {
+              const isComplete = day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt;
+              const isInProgress = !isComplete && day.workoutInstance && !day.workoutInstance.completedAt;
+              
+              let href = '';
+              let onClick = undefined;
+              
+              if (day.planDay.isRestDay && !day.isComplete) {
+                onClick = () => handleCompleteRestDay(day.id);
+              } else if (!day.workoutInstance) {
+                onClick = () => handleStartWorkout(day.id);
+              } else if (!day.workoutInstance.completedAt) {
+                href = `/track/${day.workoutInstance.id}`;
+              }
 
-                  {day.planDay.isRestDay ? (
-                    <>
-                      <Typography color="text.secondary" gutterBottom>
-                        Rest Day
+              return (
+                <Card
+                  key={day.id}
+                  component={href ? Link : 'div'}
+                  href={href}
+                  onClick={onClick}
+                  sx={{ 
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { sm: 'center' },
+                    p: 2,
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'all 0.2s',
+                    ...(href || onClick ? {
+                      cursor: 'pointer',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 3,
+                        backgroundColor: 'action.hover'
+                      }
+                    } : {})
+                  }}
+                >
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    flex: 1,
+                    gap: 2,
+                  }}>
+                    {isComplete ? (
+                      <CheckCircleIcon color="success" />
+                    ) : isInProgress ? (
+                      <PlayCircleIcon color="primary" />
+                    ) : (
+                      <PauseCircleIcon color="action" />
+                    )}
+                    <Box>
+                      <Typography variant="h6" sx={{ mb: 0.5 }}>
+                        Day {day.planDay.dayNumber}
                       </Typography>
-                      <Box sx={{ flex: 1 }} />
-                      {!day.isComplete && (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          startIcon={<CheckCircleIcon />}
-                          fullWidth
-                          sx={{ mt: 2 }}
-                          onClick={() => handleCompleteRestDay(day.id)}
-                        >
-                          Complete Rest Day
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                        <FitnessCenterIcon sx={{ mr: 1 }} />
+                      {day.planDay.isRestDay ? (
                         <Typography color="text.secondary">
-                          {day.planDay.workout?.name}
+                          Rest Day
                         </Typography>
-                      </Box>
-                      <Box sx={{ flex: 1 }} />
-                      {!day.workoutInstance && (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          startIcon={<PlayArrowIcon />}
-                          fullWidth
-                          sx={{ mt: 2 }}
-                          onClick={() => handleStartWorkout(day.id)}
-                        >
-                          Start Workout
-                        </Button>
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <FitnessCenterIcon sx={{ fontSize: '1rem' }} />
+                          <Typography color="text.secondary">
+                            {day.planDay.workout?.name}
+                          </Typography>
+                        </Box>
                       )}
-                      {day.workoutInstance && !day.workoutInstance.completedAt && (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          startIcon={<ArrowForwardIcon />}
-                          fullWidth
-                          sx={{ mt: 2 }}
-                          component={Link}
-                          href={`/track/${day.workoutInstance.id}`}
-                        >
-                          Continue Workout
-                        </Button>
-                      )}
-                    </>
+                    </Box>
+                  </Box>
+                  {href && (
+                    <Typography 
+                      variant="body2" 
+                      color="primary"
+                      sx={{ 
+                        mt: { xs: 2, sm: 0 },
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}
+                    >
+                      {day.planDay.isRestDay ? 'Complete Rest Day' : 
+                        isInProgress ? 'Continue Workout' : 'Start Workout'} →
+                    </Typography>
                   )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                </Card>
+              );
+            })}
+        </Box>
 
         {planInstance.status === 'COMPLETE' && (
           <Alert severity="success" sx={{ mt: 3 }}>
