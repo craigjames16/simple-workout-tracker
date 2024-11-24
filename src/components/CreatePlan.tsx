@@ -26,11 +26,16 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import { ExerciseCategory } from '@prisma/client';
 
 interface Exercise {
   id: number;
   name: string;
-  category: string;
+  category: ExerciseCategory;
 }
 
 interface ExerciseResponse {
@@ -48,14 +53,49 @@ interface ExercisesByCategory {
   [category: string]: Exercise[];
 }
 
-export default function CreatePlan() {
-  const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([]);
+interface Props {
+  initialPlan?: {
+    id: number;
+    name: string;
+    days: Array<{
+      id: number;
+      dayNumber: number;
+      isRestDay: boolean;
+      workout?: {
+        exercises: Array<{
+          exercise: Exercise;
+        }>;
+      };
+    }>;
+  };
+  mode?: 'create' | 'edit';
+}
+
+export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
+  const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>(() => {
+    if (initialPlan) {
+      return initialPlan.days.map((day, index) => ({
+        id: `day-${index + 1}`,
+        name: `Day ${index + 1}`,
+        isRestDay: day.isRestDay,
+        exercises: day.workout?.exercises.map(e => e.exercise) || [],
+      }));
+    }
+    return [];
+  });
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [selectedExercise, setSelectedExercise] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [planName, setPlanName] = useState('');
+  const [planName, setPlanName] = useState(initialPlan?.name || '');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [openNewExerciseDialog, setOpenNewExerciseDialog] = useState(false);
+  const [newExercise, setNewExercise] = useState({
+    name: '',
+    category: '' as ExerciseCategory
+  });
+  const [creatingExerciseForDayIndex, setCreatingExerciseForDayIndex] = useState<number | null>(null);
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -184,8 +224,11 @@ export default function CreatePlan() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch('/api/plans', {
-        method: 'POST',
+      const endpoint = mode === 'edit' ? `/api/plans/${initialPlan?.id}` : '/api/plans';
+      const method = mode === 'edit' ? 'PUT' : 'POST';
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -193,20 +236,98 @@ export default function CreatePlan() {
           name: planName,
           days: workoutDays.map(day => ({
             isRestDay: day.isRestDay,
-            exercises: day.exercises
+            exercises: day.exercises.map(ex => ({ id: ex.id }))
           }))
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create plan');
+        throw new Error(`Failed to ${mode} plan`);
       }
 
       const data = await response.json();
-      window.location.href = data.redirect;
+      window.location.href = data.redirect || '/plans';
     } catch (error) {
-      console.error('Error saving plan:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create plan');
+      console.error(`Error ${mode}ing plan:`, error);
+      setError(error instanceof Error ? error.message : `Failed to ${mode} plan`);
+    }
+  };
+
+  const handleOpenNewExerciseDialog = (dayIndex: number) => {
+    setCreatingExerciseForDayIndex(dayIndex);
+    setOpenNewExerciseDialog(true);
+  };
+
+  const handleCloseNewExerciseDialog = () => {
+    setOpenNewExerciseDialog(false);
+    setNewExercise({ name: '', category: '' as ExerciseCategory });
+    setCreatingExerciseForDayIndex(null);
+  };
+
+  const handleCreateAndAddExercise = async () => {
+    try {
+      // Create the new exercise
+      const response = await fetch('/api/exercises', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newExercise),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create exercise');
+      }
+
+      const createdExercise = await response.json();
+
+      // Add the newly created exercise to the day
+      if (creatingExerciseForDayIndex !== null) {
+        setWorkoutDays(workoutDays.map((day, index) => {
+          if (index === creatingExerciseForDayIndex && !day.isRestDay) {
+            return {
+              ...day,
+              exercises: [...day.exercises, createdExercise]
+            };
+          }
+          return day;
+        }));
+      }
+
+      // Refresh available exercises
+      const exercisesResponse = await fetch('/api/exercises');
+      if (exercisesResponse.ok) {
+        const data = await exercisesResponse.json();
+        const exercises = Object.entries(data).flatMap(([category, exercises]: [string, any[]]) =>
+          exercises.map(exercise => ({
+            ...exercise,
+            category: category as ExerciseCategory
+          }))
+        );
+        setAvailableExercises(exercises);
+      }
+
+      handleCloseNewExerciseDialog();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create exercise');
+    }
+  };
+
+  const handleAddExercise = () => {
+    if (selectedDayIndex !== null && selectedExercise) {
+      const exercise = availableExercises.find(ex => ex.id === parseInt(selectedExercise));
+      if (exercise) {
+        setWorkoutDays(workoutDays.map((day, index) => {
+          if (index === selectedDayIndex && !day.isRestDay) {
+            return {
+              ...day,
+              exercises: [...day.exercises, exercise]
+            };
+          }
+          return day;
+        }));
+        setSelectedExercise(''); // Reset selected exercise after adding
+      }
     }
   };
 
@@ -230,7 +351,9 @@ export default function CreatePlan() {
         )}
         
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h5">Create Workout Plan</Typography>
+          <Typography variant="h5">
+            {mode === 'edit' ? 'Edit Workout Plan' : 'Create Workout Plan'}
+          </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -252,7 +375,7 @@ export default function CreatePlan() {
 
         <DragDropContext onDragEnd={handleDragEnd}>
           <Grid container spacing={2}>
-            {workoutDays.map((day) => (
+            {workoutDays.map((day, dayIndex) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
                 <Card>
                   <CardHeader
@@ -282,11 +405,11 @@ export default function CreatePlan() {
                           <Select
                             value={selectedCategory}
                             label="Category"
-                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            onChange={(e) => setSelectedCategory(e.target.value as ExerciseCategory | 'ALL')}
                             sx={{ mb: 2 }}
                           >
                             <MenuItem value="ALL">All Categories</MenuItem>
-                            {Object.keys(groupedExercises).map((category) => (
+                            {Object.values(ExerciseCategory).map((category) => (
                               <MenuItem key={category} value={category}>
                                 {category.charAt(0) + category.slice(1).toLowerCase()}
                               </MenuItem>
@@ -295,47 +418,40 @@ export default function CreatePlan() {
                         </FormControl>
 
                         <FormControl fullWidth>
+                          <InputLabel>Exercise</InputLabel>
                           <Select
                             value={selectedExercise}
-                            onChange={(e) => {
-                              const exercise = filteredExercises.find(ex => ex.id.toString() === e.target.value);
-                              if (exercise) {
-                                addExerciseToDay(day.id, exercise);
-                                setSelectedExercise('');
-                              }
-                            }}
-                            displayEmpty
+                            label="Exercise"
+                            onChange={(e) => setSelectedExercise(e.target.value)}
+                            onClick={() => setSelectedDayIndex(dayIndex)}
                           >
-                            <MenuItem value="" disabled>
-                              Select Exercise
-                            </MenuItem>
-                            {selectedCategory === 'ALL' ? (
-                              Object.entries(groupedExercises).map(([category, exercises]) => [
-                                <ListSubheader key={category}>
-                                  {category.charAt(0) + category.slice(1).toLowerCase()}
-                                </ListSubheader>,
-                                ...exercises.map((exercise) => (
-                                  <MenuItem 
-                                    key={exercise.id} 
-                                    value={exercise.id.toString()}
-                                    sx={{ pl: 4 }}
-                                  >
-                                    {exercise.name}
-                                  </MenuItem>
-                                ))
-                              ]).flat()
-                            ) : (
-                              filteredExercises.map((exercise) => (
-                                <MenuItem 
-                                  key={exercise.id} 
-                                  value={exercise.id.toString()}
-                                >
+                            {availableExercises
+                              .filter(exercise => selectedCategory === 'ALL' || exercise.category === selectedCategory)
+                              .map((exercise) => (
+                                <MenuItem key={exercise.id} value={exercise.id}>
                                   {exercise.name}
                                 </MenuItem>
-                              ))
-                            )}
+                              ))}
                           </Select>
                         </FormControl>
+
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="contained"
+                            onClick={handleAddExercise}
+                            disabled={!selectedExercise || selectedDayIndex !== dayIndex}
+                            sx={{ flex: 1 }}
+                          >
+                            Add Exercise
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={() => handleOpenNewExerciseDialog(dayIndex)}
+                            startIcon={<AddIcon />}
+                          >
+                            Create New
+                          </Button>
+                        </Box>
                       </Box>
                     )}
                     
@@ -408,6 +524,43 @@ export default function CreatePlan() {
           </Button>
         </Box>
       </Paper>
+      <Dialog open={openNewExerciseDialog} onClose={handleCloseNewExerciseDialog}>
+        <DialogTitle>Create New Exercise</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Exercise Name"
+            fullWidth
+            value={newExercise.name}
+            onChange={(e) => setNewExercise(prev => ({ ...prev, name: e.target.value }))}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={newExercise.category}
+              label="Category"
+              onChange={(e) => setNewExercise(prev => ({ ...prev, category: e.target.value as ExerciseCategory }))}
+            >
+              {Object.values(ExerciseCategory).map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category.charAt(0) + category.slice(1).toLowerCase()}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewExerciseDialog}>Cancel</Button>
+          <Button 
+            onClick={handleCreateAndAddExercise}
+            disabled={!newExercise.name || !newExercise.category}
+          >
+            Create & Add
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 } 

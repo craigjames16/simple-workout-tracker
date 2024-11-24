@@ -5,21 +5,21 @@ import {
   Container,
   Paper,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
   CircularProgress,
   Chip,
   Box,
-  Button,
+  Divider,
 } from '@mui/material';
-import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import { useRouter } from 'next/navigation';
+import { format } from 'date-fns';
 
 interface WorkoutInstance {
   id: number;
@@ -54,6 +54,7 @@ export default function WorkoutsPage() {
   const [workouts, setWorkouts] = useState<WorkoutInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchWorkouts = async () => {
@@ -65,7 +66,7 @@ export default function WorkoutsPage() {
         const data = await response.json();
         setWorkouts(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : 'Failed to fetch workouts');
       } finally {
         setLoading(false);
       }
@@ -73,6 +74,10 @@ export default function WorkoutsPage() {
 
     fetchWorkouts();
   }, []);
+
+  const handleWorkoutClick = (workoutId: number) => {
+    router.push(`/track/${workoutId}`);
+  };
 
   if (loading) {
     return (
@@ -91,103 +96,84 @@ export default function WorkoutsPage() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Workouts
-        </Typography>
-
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Workout</TableCell>
-                <TableCell>Plan</TableCell>
-                <TableCell>Started</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Sets</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {workouts
-                .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
-                .map((workout) => (
-                  <TableRow key={workout.id}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <FitnessCenterIcon sx={{ mr: 1 }} />
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper>
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="h5">Workout History</Typography>
+        </Box>
+        
+        <List sx={{ p: 0 }}>
+          {workouts.map((workout, index) => (
+            <Box key={workout.id}>
+              <ListItem
+                onClick={() => handleWorkoutClick(workout.id)}
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FitnessCenterIcon color="action" />
+                      <Typography variant="subtitle1">
                         {workout.workout.name}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {format(new Date(workout.startedAt), 'MMM d, yyyy h:mm a')}
+                      </Typography>
+                      {workout.planInstanceDay?.[0]?.planInstance && (
+                        <Typography variant="body2" color="text.secondary">
+                          Plan: {workout.planInstanceDay[0].planInstance.plan.name}
+                          {workout.planInstanceDay[0].planInstance.mesocycle && 
+                            ` (${workout.planInstanceDay[0].planInstance.mesocycle.name})`}
+                        </Typography>
+                      )}
+                      <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {workout.sets.length > 0 && (
+                          <Chip
+                            size="small"
+                            label={`${workout.sets.length} sets`}
+                            color="primary"
+                            variant="outlined"
+                          />
+                        )}
+                        {workout.completedAt ? (
+                          <Chip
+                            size="small"
+                            icon={<CheckCircleIcon />}
+                            label="Completed"
+                            color="success"
+                            variant="outlined"
+                          />
+                        ) : (
+                          <Chip
+                            size="small"
+                            label="In Progress"
+                            color="warning"
+                            variant="outlined"
+                          />
+                        )}
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      {workout.planInstanceDay[0] && (
-                        <Box>
-                          <Typography variant="body2">
-                            {workout.planInstanceDay[0].planInstance.plan.name}
-                          </Typography>
-                          {workout.planInstanceDay[0].planInstance.mesocycle && (
-                            <Box sx={{ mt: 0.5 }}>
-                              <Chip
-                                size="small"
-                                component={Link}
-                                href={`/mesocycles/${workout.planInstanceDay[0].planInstance.mesocycle.id}`}
-                                label={`${workout.planInstanceDay[0].planInstance.mesocycle.name} - Iteration ${workout.planInstanceDay[0].planInstance.iterationNumber}`}
-                                clickable
-                              />
-                              {workout.planInstanceDay[0].planInstance.rir !== undefined && (
-                                <Chip
-                                  size="small"
-                                  label={`RIR: ${workout.planInstanceDay[0].planInstance.rir}`}
-                                  sx={{ ml: 0.5 }}
-                                />
-                              )}
-                            </Box>
-                          )}
-                        </Box>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(workout.startedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {workout.completedAt ? (
-                        <Chip
-                          icon={<CheckCircleIcon />}
-                          color="success"
-                          size="small"
-                          label="Completed"
-                        />
-                      ) : (
-                        <Chip
-                          color="primary"
-                          size="small"
-                          label="In Progress"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {workout.sets.length} sets
-                    </TableCell>
-                    <TableCell align="right">
-                      {!workout.completedAt && (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          size="small"
-                          component={Link}
-                          href={`/track/${workout.id}`}
-                          startIcon={<ArrowForwardIcon />}
-                        >
-                          Continue
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                    </Box>
+                  }
+                />
+                <ListItemSecondaryAction>
+                  <IconButton edge="end" onClick={() => handleWorkoutClick(workout.id)}>
+                    <ArrowForwardIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+              {index < workouts.length - 1 && <Divider />}
+            </Box>
+          ))}
+        </List>
       </Paper>
     </Container>
   );

@@ -5,17 +5,23 @@ import {
   Container,
   Paper,
   Typography,
-  Grid,
-  Card,
-  CardContent,
   Box,
   CircularProgress,
   List,
   ListItem,
   ListItemText,
   Divider,
+  IconButton,
+  Menu,
+  MenuItem,
+  Chip,
 } from '@mui/material';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import HotelIcon from '@mui/icons-material/Hotel';
+import { useRouter } from 'next/navigation';
 
 interface Exercise {
   exercise: {
@@ -42,10 +48,12 @@ interface Plan {
   createdAt: string;
 }
 
-export default function PlanDetails({ params }: { params: { id: string } }) {
+export default function PlanDetailsPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -66,6 +74,19 @@ export default function PlanDetails({ params }: { params: { id: string } }) {
     fetchPlan();
   }, [params.id]);
 
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handleEditPlan = () => {
+    router.push(`/plans/${params.id}/edit`);
+    handleMenuClose();
+  };
+
   if (loading) {
     return (
       <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -83,79 +104,103 @@ export default function PlanDetails({ params }: { params: { id: string } }) {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          {plan.name}
-        </Typography>
-        
-        <Box sx={{ mb: 4 }}>
-          <Typography color="text.secondary" gutterBottom>
-            Created: {new Date(plan.createdAt).toLocaleDateString()}
-          </Typography>
-          <Typography color="text.secondary" gutterBottom>
-            Total Days: {plan.days.length}
-          </Typography>
-          <Typography color="text.secondary" gutterBottom>
-            Workout Days: {plan.days.filter(day => !day.isRestDay).length}
-          </Typography>
-          <Typography color="text.secondary" gutterBottom>
-            Rest Days: {plan.days.filter(day => day.isRestDay).length}
-          </Typography>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper>
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h5">{plan.name}</Typography>
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVertIcon />
+            </IconButton>
+          </Box>
+          <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              size="small"
+              icon={<CalendarTodayIcon />}
+              label={`Created ${new Date(plan.createdAt).toLocaleDateString()}`}
+              variant="outlined"
+            />
+            <Chip
+              size="small"
+              icon={<FitnessCenterIcon />}
+              label={`${plan.days.length} days`}
+              color="primary"
+              variant="outlined"
+            />
+            <Chip
+              size="small"
+              icon={<HotelIcon />}
+              label={`${plan.days.filter(day => day.isRestDay).length} rest days`}
+              variant="outlined"
+            />
+          </Box>
         </Box>
 
-        <Typography variant="h5" gutterBottom>
-          Training Schedule
-        </Typography>
+        <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={handleMenuClose}
+        >
+          <MenuItem onClick={handleEditPlan}>
+            <EditIcon sx={{ mr: 1 }} fontSize="small" />
+            Edit Plan
+          </MenuItem>
+        </Menu>
 
-        <Grid container spacing={2}>
+        <List sx={{ p: 0 }}>
           {plan.days
             .sort((a, b) => a.dayNumber - b.dayNumber)
-            .map((day) => (
-              <Grid item xs={12} sm={6} md={4} key={day.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
+            .map((day, index) => (
+              <Box key={day.id}>
+                <ListItem
+                  sx={{
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    py: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    {day.isRestDay ? (
+                      <HotelIcon sx={{ mr: 1 }} color="action" />
+                    ) : (
+                      <FitnessCenterIcon sx={{ mr: 1 }} color="action" />
+                    )}
+                    <Typography variant="subtitle1">
                       Day {day.dayNumber}
                     </Typography>
-                    
-                    {day.isRestDay ? (
-                      <Typography color="text.secondary">
-                        Rest Day
+                  </Box>
+
+                  {day.isRestDay ? (
+                    <Typography color="text.secondary" variant="body2">
+                      Rest Day
+                    </Typography>
+                  ) : day.workout ? (
+                    <Box>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        {day.workout.exercises.length} exercises
                       </Typography>
-                    ) : day.workout ? (
-                      <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <FitnessCenterIcon sx={{ mr: 1 }} />
-                          <Typography variant="subtitle1">
-                            {day.workout.name}
-                          </Typography>
-                        </Box>
-                        <Divider sx={{ mb: 2 }} />
-                        <List dense disablePadding>
-                          {day.workout.exercises.map((ex, index) => (
-                            <ListItem key={index} disableGutters>
-                              <ListItemText 
-                                primary={ex.exercise.name}
-                                primaryTypographyProps={{
-                                  variant: 'body2',
-                                  color: 'text.secondary'
-                                }}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
-                      </>
-                    ) : (
-                      <Typography color="error">
-                        No workout assigned
-                      </Typography>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        {day.workout.exercises.map((ex, exIndex) => (
+                          <Chip
+                            key={exIndex}
+                            size="small"
+                            label={ex.exercise.name}
+                            variant="outlined"
+                            sx={{ mb: 0.5 }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Typography color="error" variant="body2">
+                      No workout assigned
+                    </Typography>
+                  )}
+                </ListItem>
+                {index < plan.days.length - 1 && <Divider />}
+              </Box>
             ))}
-        </Grid>
+        </List>
       </Paper>
     </Container>
   );

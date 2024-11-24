@@ -5,19 +5,23 @@ import {
   Container,
   Paper,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  CircularProgress,
-  Button,
   Box,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  IconButton,
+  CircularProgress,
+  Chip,
+  Divider,
 } from '@mui/material';
 import Link from 'next/link';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddIcon from '@mui/icons-material/Add';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { useRouter } from 'next/navigation';
 
@@ -36,13 +40,16 @@ interface Plan {
       }>;
     };
   }>;
+  instances: Array<{
+    status: string | null;
+  }>;
 }
 
 export default function PlansPage() {
-  const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -54,7 +61,7 @@ export default function PlansPage() {
         const data = await response.json();
         setPlans(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : 'Failed to fetch plans');
       } finally {
         setLoading(false);
       }
@@ -62,6 +69,32 @@ export default function PlansPage() {
 
     fetchPlans();
   }, []);
+
+  const handlePlanClick = (planId: number) => {
+    router.push(`/plans/${planId}/details`);
+  };
+
+  const handleStartPlan = async (planId: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the ListItem click
+    try {
+      const response = await fetch('/api/plan-instances', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start plan');
+      }
+
+      const data = await response.json();
+      router.push(`/plans/instance/${data.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start plan');
+    }
+  };
 
   if (loading) {
     return (
@@ -79,61 +112,80 @@ export default function PlansPage() {
     );
   }
 
-  const handleCreatePlan = () => {
-    router.push('/plans/create');
-  };
-
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
-      <Container maxWidth="lg" sx={{ mt: 4, pb: 10 }}>
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Training Plans
-          </Typography>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper>
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="h5">Workout Plans</Typography>
+        </Box>
 
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Days</TableCell>
-                  <TableCell>Workouts</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {plans.map((plan) => (
-                  <TableRow key={plan.id}>
-                    <TableCell>{plan.name}</TableCell>
-                    <TableCell>{plan.days.length}</TableCell>
-                    <TableCell>
-                      {plan.days.filter(day => !day.isRestDay).length}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        component={Link}
-                        href={`/plans/${plan.id}/details`}
-                        startIcon={<VisibilityIcon />}
-                      >
-                        View Details
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-      </Container>
+        <List sx={{ p: 0 }}>
+          {plans.map((plan, index) => (
+            <Box key={plan.id}>
+              <ListItem
+                onClick={() => handlePlanClick(plan.id)}
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CalendarTodayIcon color="action" />
+                      <Typography variant="subtitle1">
+                        {plan.name}
+                      </Typography>
+                    </Box>
+                  }
+                  secondary={
+                    <Box sx={{ mt: 1 }}>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                          size="small"
+                          icon={<FitnessCenterIcon />}
+                          label={`${plan.days.length} days`}
+                          color="primary"
+                          variant="outlined"
+                        />
+                        {plan.instances?.some(i => i?.status === 'IN_PROGRESS') && (
+                          <Chip
+                            size="small"
+                            label="In Progress"
+                            color="warning"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  }
+                />
+                <ListItemSecondaryAction>
+                  <IconButton
+                    edge="end"
+                    onClick={(e) => handleStartPlan(plan.id, e)}
+                    disabled={plan.instances?.some(i => i?.status === 'IN_PROGRESS')}
+                    sx={{ mr: 1 }}
+                  >
+                    <PlayArrowIcon />
+                  </IconButton>
+                  <IconButton edge="end" onClick={() => handlePlanClick(plan.id)}>
+                    <ArrowForwardIcon />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+              {index < plans.length - 1 && <Divider />}
+            </Box>
+          ))}
+        </List>
+      </Paper>
 
       <FloatingActionButton
         icon={<AddIcon />}
-        onClick={handleCreatePlan}
-        position="right"
+        onClick={() => router.push('/plans/create')}
       />
-    </Box>
+    </Container>
   );
 } 
