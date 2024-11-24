@@ -6,6 +6,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    await prisma.$connect();
+
     const workoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(params.id)
@@ -15,21 +17,7 @@ export async function GET(
           include: {
             exercises: {
               include: {
-                exercise: {
-                  include: {
-                    sets: {
-                      where: {
-                        workoutInstance: {
-                          completedAt: { not: null }
-                        }
-                      },
-                      orderBy: [
-                        { workoutInstance: { completedAt: 'desc' } }
-                      ],
-                      distinct: ['setNumber']
-                    }
-                  }
-                }
+                exercise: true
               }
             }
           }
@@ -62,7 +50,7 @@ export async function GET(
 
     return NextResponse.json(workoutInstance);
   } catch (error) {
-    console.error('Error fetching workout instance:', error);
+    console.error('Error in workout instance API:', error);
     return NextResponse.json(
       { 
         error: 'Error fetching workout instance', 
@@ -70,5 +58,7 @@ export async function GET(
       },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 } 

@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '.prisma/client';
 
 // Plan Instance Day with all relations
 export type PlanInstanceDayWithRelations = Prisma.PlanInstanceDayGetPayload<{
