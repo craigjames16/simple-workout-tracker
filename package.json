@@ -13,9 +13,10 @@
     "generate-icons": "ts-node scripts/generate-icons.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.7.4",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
-    "@mui/icons-material": "^5.11.16",
+    "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.13.0",
     "@mui/x-date-pickers": "^6.5.0",
     "@prisma/client": "^5.22.0",
@@ -24,7 +25,9 @@
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "18.2.7",
     "date-fns": "^2.30.0",
+    "fs": "^0.0.1-security",
     "next": "13.4.19",
+    "next-auth": "^4.24.10",
     "react": "18.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "18.2.0"
