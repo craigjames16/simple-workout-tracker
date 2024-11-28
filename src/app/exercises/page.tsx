@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import FloatingActionButton from '@/components/FloatingActionButton';
-
+import { useSession } from 'next-auth/react';
 interface Exercise {
   id: number;
   name: string;

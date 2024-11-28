@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../../../../auth/[...nextauth]/route";
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string; dayId: string } }
 ) {
   try {
+    
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // First, check if a workout instance already exists
     const planInstanceDay = await prisma.planInstanceDay.findUnique({
       where: {

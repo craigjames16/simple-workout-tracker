@@ -1,5 +1,7 @@
 import ThemeRegistry from '@/components/ThemeRegistry';
 import Navbar from '@/components/Navbar';
+import { NextAuthProvider } from './provider';
+
 
 export const metadata = {
   title: 'Workout Tracker',
@@ -24,18 +26,23 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  session
 }: {
-  children: React.ReactNode
+  children: React.ReactNode,
+  session: any
 }) {
+
   return (
     <html lang="en">
       <body>
+        <NextAuthProvider session={session}>
         <ThemeRegistry>
-          <Navbar />
-          {children}
-        </ThemeRegistry>
+            <Navbar />
+            {children}
+          </ThemeRegistry>
+        </NextAuthProvider>
       </body>
     </html>
   );
