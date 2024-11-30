@@ -54,7 +54,15 @@ export async function POST(request: Request) {
             dayNumber: 'asc'
           },
           include: {
-            workout: true
+            workout: {
+              include: {
+                exercises: {
+                  include: {
+                    exercise: true
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -67,15 +75,29 @@ export async function POST(request: Request) {
       );
     }
 
+    const userId = session.user.id; // Extract userId from session
+
     // Create new plan instance with its days
     const planInstance = await prisma.planInstance.create({
       data: {
-        planId: plan.id,
+        plan: {
+          connect: { id: plan.id } // Connect to existing plan using planId
+        },
+        user: {
+          connect: { id: userId } // Connect to user using userId
+        },
         status: 'IN_PROGRESS',
         days: {
           create: plan.days.map(planDay => ({
             planDayId: planDay.id,
-            isComplete: false
+            isComplete: false,
+            workoutInstance: {
+              create: {
+                workout: {
+                  connect: { id: planDay.workout.id }
+                }
+              }
+            }
           }))
         }
       },
@@ -95,7 +117,19 @@ export async function POST(request: Request) {
                 }
               }
             },
-            workoutInstance: true
+            workoutInstance: {
+              include: {
+                workout: {
+                  include: {
+                    exercises: {
+                      include: {
+                        exercise: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

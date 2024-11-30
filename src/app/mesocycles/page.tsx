@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Container,
   Paper,
   Typography,
   Grid,
@@ -27,6 +26,7 @@ import FloatingActionButton from '@/components/FloatingActionButton';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 
 interface Plan {
   id: number;
@@ -126,15 +126,15 @@ export default function MesocyclesPage() {
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   return (
     <Box sx={{ position: 'relative', minHeight: '100vh' }}>
-      <Container maxWidth="lg" sx={{ mt: 4, pb: 10 }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 10 }}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h4" component="h1" gutterBottom>
             Mesocycles
@@ -249,7 +249,7 @@ export default function MesocyclesPage() {
             </Button>
           </DialogActions>
         </Dialog>
-      </Container>
+      </ResponsiveContainer>
     </Box>
   );
 } 

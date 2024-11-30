@@ -47,10 +47,11 @@ export async function POST(
         { status: 400 }
       );
     }
-
+    console.log(planInstanceDay.planDay.workout);
     // Create a new workout instance
     const workoutInstance = await prisma.workoutInstance.create({
       data: {
+        userId: session.user.id,
         workoutId: planInstanceDay.planDay.workout.id,
         planInstanceDay: {
           connect: {

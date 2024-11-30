@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Container,
   Paper,
   Typography,
   Grid,
@@ -18,12 +17,17 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  IconButton,
+  Menu,
+  MenuItem,
 } from '@mui/material';
+import { ResponsiveContainer as ResponsiveContainer } from '@/components/ResponsiveContainer';
 import Link from 'next/link';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
@@ -65,6 +69,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     const fetchMesocycle = async () => {
@@ -157,17 +162,17 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   if (error || !mesocycle) {
     return (
-      <Container sx={{ mt: 4 }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
         <Typography color="error">{error || 'Mesocycle not found'}</Typography>
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
@@ -175,21 +180,35 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
   const currentIteration = getCurrentIteration(mesocycle.instances);
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h4" gutterBottom>
               {mesocycle.name}
             </Typography>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={() => setDeleteDialogOpen(true)}
+            <IconButton
+              onClick={(event) => setMenuAnchorEl(event.currentTarget)}
+              size="small"
             >
-              Delete Mesocycle
-            </Button>
+              <MoreVertIcon />
+            </IconButton>
+            <Menu
+              anchorEl={menuAnchorEl}
+              open={Boolean(menuAnchorEl)}
+              onClose={() => setMenuAnchorEl(null)}
+            >
+              <MenuItem
+                onClick={() => {
+                  setMenuAnchorEl(null);
+                  setDeleteDialogOpen(true);
+                }}
+                sx={{ color: 'error.main' }}
+              >
+                <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+                Delete Mesocycle
+              </MenuItem>
+            </Menu>
           </Box>
           <Typography color="text.secondary" gutterBottom>
             Based on plan: {mesocycle.plan.name}
@@ -324,6 +343,6 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </ResponsiveContainer>
   );
 } 

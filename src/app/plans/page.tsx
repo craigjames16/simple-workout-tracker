@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Container,
+  ResponsiveContainer,
   Paper,
   Typography,
   Box,
@@ -15,7 +15,7 @@ import {
   CircularProgress,
   Chip,
   Divider,
-} from '@mui/material';
+} from '@/components';
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -24,6 +24,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { useRouter } from 'next/navigation';
+
 
 interface Plan {
   id: number;
@@ -98,22 +99,22 @@ export default function PlansPage() {
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   if (error) {
     return (
-      <Container sx={{ mt: 4 }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
         <Typography color="error">{error}</Typography>
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h5">Workout Plans</Typography>
@@ -186,6 +187,6 @@ export default function PlansPage() {
         icon={<AddIcon />}
         onClick={() => router.push('/plans/create')}
       />
-    </Container>
+    </ResponsiveContainer>
   );
 } 

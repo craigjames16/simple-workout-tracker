@@ -16,7 +16,8 @@ export async function POST(
   try {
     const planInstance = await prisma.planInstance.update({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
+        userId: session.user.id
       },
       data: {
         status: 'IN_PROGRESS'

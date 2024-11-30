@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Container,
   Paper,
   Typography,
   Box,
@@ -15,7 +14,9 @@ import {
   Menu,
   MenuItem,
   Chip,
+  Container,
 } from '@mui/material';
+import { ResponsiveContainer } from '@/components';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
@@ -104,7 +105,7 @@ export default function PlanDetailsPage({ params }: { params: { id: string } }) 
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -202,6 +203,6 @@ export default function PlanDetailsPage({ params }: { params: { id: string } }) 
             ))}
         </List>
       </Paper>
-    </Container>
+    </ResponsiveContainer>
   );
 } 

@@ -7,6 +7,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 interface SetData {
   reps: number;
   weight: number;
+  setNumber: number;
 }
 
 interface RequestBody {
@@ -26,14 +27,6 @@ export async function POST(
     const json = await request.json() as RequestBody;
     const { exerciseId, sets } = json;
 
-    // Delete existing sets for this exercise in this workout instance
-    await prisma.exerciseSet.deleteMany({
-      where: {
-        workoutInstanceId: parseInt(params.id),
-        exerciseId: exerciseId
-      }
-    });
-
     // Create new sets
     const createdSets = await Promise.all(
       sets.map((set, index) => 
@@ -41,7 +34,7 @@ export async function POST(
           data: {
             exerciseId: exerciseId,
             workoutInstanceId: parseInt(params.id),
-            setNumber: index + 1,
+            setNumber: set.setNumber,
             weight: set.weight,
             reps: set.reps,
           }

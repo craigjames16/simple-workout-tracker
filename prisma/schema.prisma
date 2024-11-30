@@ -27,8 +27,8 @@ model Exercise {
   sets        ExerciseSet[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
-  userId      String            // Add user association
-  user        User              @relation(fields: [userId], references: [id])
+  userId      String?          @db.Text
+  user        User?            @relation(fields: [userId], references: [id])
 }
 
 model Workout {

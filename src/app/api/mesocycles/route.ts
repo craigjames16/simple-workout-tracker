@@ -33,25 +33,7 @@ export async function GET() {
       }
     });
 
-    // Update the status of each mesocycle based on instance completion
-    const updatedMesocycles = mesocycles.map((mesocycle: Mesocycle) => {
-      const allInstancesComplete = mesocycle.instances.every((instance: PlanInstance) => 
-        instance.days.every((day: PlanInstanceDay) => 
-          day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null
-        )
-      );
-
-      if (allInstancesComplete) {
-        return {
-          ...mesocycle,
-          status: 'COMPLETE'
-        };
-      }
-
-      return mesocycle;
-    });
-
-    return NextResponse.json(updatedMesocycles);
+    return NextResponse.json(mesocycles);
   } catch (error) {
     console.error('Error fetching mesocycles:', error);
     return NextResponse.json(
@@ -114,7 +96,7 @@ export async function POST(request: Request) {
             mesocycleId: mesocycle.id,
             iterationNumber,
             rir,
-            status: i === 0 ? 'IN_PROGRESS' : null,
+            status: i === 0 ? 'NOT_STARTED' : null,
             // Create plan instance days for each plan day
             days: {
               create: plan.days.map((planDay: PlanDay) => ({

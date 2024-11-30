@@ -49,14 +49,22 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
   try {
     const json = await request.json();
     const { name, days } = json;
+
+    const userId = session.user.id; // Extract userId from session
 
     // Create the plan with its days in a transaction
     const plan = await prisma.plan.create({
       data: {
         name,
+        userId, // Add userId to plan
         days: {
           create: await Promise.all(days.map(async (day: any, index: number) => {
             if (day.isRestDay) {
@@ -70,6 +78,7 @@ export async function POST(request: Request) {
             const workout = await prisma.workout.create({
               data: {
                 name: `${name} - Day ${index + 1}`,
+                userId, // Use userId from session
                 exercises: {
                   create: day.exercises.map((exercise: any, exerciseIndex: number) => ({
                     exercise: {

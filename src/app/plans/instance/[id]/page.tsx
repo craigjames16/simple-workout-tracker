@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Container,
   Paper,
   Typography,
   Box,
@@ -14,7 +13,8 @@ import {
   CircularProgress,
   LinearProgress,
   Divider,
-} from '@mui/material';
+  ResponsiveContainer
+} from '@/components';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -104,24 +104,24 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   if (error || !planInstance) {
     return (
-      <Container sx={{ mt: 4 }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
         <Typography color="error">{error || 'Plan instance not found'}</Typography>
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   const progress = calculateProgress();
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" gutterBottom>
@@ -297,6 +297,6 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
           </Alert>
         )}
       </Paper>
-    </Container>
+    </ResponsiveContainer>
   );
 } 

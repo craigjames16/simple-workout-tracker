@@ -61,18 +61,42 @@ export async function GET(
       ...workoutInstance,
       workout: {
         ...workoutInstance.workout,
-        exercises: workoutInstance.workout.exercises.map(ex => ({
-          ...ex,
-          exercise: {
-            ...ex.exercise,
-            lastCompletedSets: ex.exercise.sets?.reduce((acc: SetsByNumber, set) => {
-              acc[set.setNumber] = {
-                weight: set.weight,
-                reps: set.reps
-              };
-              return acc;
-            }, {}) || {}
-          }
+        exercises: await Promise.all(workoutInstance.workout.exercises.map(async ex => {
+          // Find the last completed workout instance for this exercise
+          const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
+            where: {
+              id: { not: workoutInstance.id }, // Exclude current workout
+              completedAt: { not: null },
+              workout: {
+                exercises: {
+                  some: {
+                    exerciseId: ex.exerciseId
+                  }
+                }
+              }
+            },
+            include: {
+              sets: {
+                where: {
+                  exerciseId: ex.exerciseId
+                },
+                orderBy: {
+                  setNumber: 'asc'
+                }
+              }
+            },
+            orderBy: {
+              completedAt: 'desc'
+            }
+          });
+
+          return {
+            ...ex,
+            exercise: {
+              ...ex.exercise
+            },
+            lastSets: lastCompletedWorkout?.sets || []
+          };
         }))
       }
     };
