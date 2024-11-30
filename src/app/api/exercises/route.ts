@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ExerciseCategory } from '@prisma/client';
+import { ExerciseCategory, Exercise } from '@prisma/client';
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 
@@ -12,6 +12,12 @@ export async function GET() {
 
   try {
     const exercises = await prisma.exercise.findMany({
+      where: {
+        OR: [
+          { userId: session.user.id },
+          { userId: null }
+        ]
+      },
       orderBy: [
         { category: 'asc' },
         { name: 'asc' }
@@ -20,7 +26,7 @@ export async function GET() {
 
     // Group exercises by category
     const exercisesByCategory = Object.values(ExerciseCategory).reduce((acc, category) => {
-      acc[category] = exercises.filter(exercise => exercise.category === category);
+      acc[category] = exercises.filter((exercise: Exercise) => exercise.category === category);
       return acc;
     }, {} as Record<ExerciseCategory, typeof exercises>);
 
@@ -38,6 +44,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const json = await request.json();
     const { name, category } = json;
@@ -53,7 +64,8 @@ export async function POST(request: Request) {
     const exercise = await prisma.exercise.create({
       data: {
         name,
-        category
+        category,
+        userId: session.user.id
       }
     });
 

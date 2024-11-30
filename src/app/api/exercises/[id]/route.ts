@@ -45,6 +45,11 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const json = await request.json();
     const { name, category } = json;
@@ -59,7 +64,8 @@ export async function PUT(
 
     const exercise = await prisma.exercise.update({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
+        userId: session.user.id
       },
       data: {
         name,
@@ -84,10 +90,16 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     await prisma.exercise.delete({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
+        userId: session.user.id
       }
     });
 
