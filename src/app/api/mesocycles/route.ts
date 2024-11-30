@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
+import { Mesocycle, PlanInstance, PlanInstanceDay, PlanDay, WorkoutInstance } from '@prisma/client';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -33,9 +34,9 @@ export async function GET() {
     });
 
     // Update the status of each mesocycle based on instance completion
-    const updatedMesocycles = mesocycles.map(mesocycle => {
-      const allInstancesComplete = mesocycle.instances.every(instance => 
-        instance.days.every(day => 
+    const updatedMesocycles = mesocycles.map((mesocycle: Mesocycle) => {
+      const allInstancesComplete = mesocycle.instances.every((instance: PlanInstance) => 
+        instance.days.every((day: PlanInstanceDay) => 
           day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null
         )
       );
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
 
     // First, get the plan to access its days
     const plan = await prisma.plan.findUnique({
-      where: { id: parseInt(planId) },
+      where: { id: parseInt(planId), userId: session.user.id },
       include: {
         days: true
       }
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
             status: i === 0 ? 'IN_PROGRESS' : null,
             // Create plan instance days for each plan day
             days: {
-              create: plan.days.map(planDay => ({
+              create: plan.days.map((planDay: PlanDay) => ({
                 planDayId: planDay.id,
                 isComplete: false
               }))
