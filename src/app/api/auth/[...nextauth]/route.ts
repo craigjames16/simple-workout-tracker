@@ -15,7 +15,15 @@ export const authOptions: AuthOptions = {
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
-  }
+  },
+  callbacks: {
+    session: async ({ session, user }) => {
+      if (session?.user) {
+        session.user.id = user.id;
+      }
+      return session;
+    },
+  },
 }
 
 const handler = NextAuth(authOptions)

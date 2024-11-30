@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function GET() {
-
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -12,6 +11,9 @@ export async function GET() {
 
   try {
     const mesocycles = await prisma.mesocycle.findMany({
+      where: {
+        userId: session.user.id
+      },
       include: {
         plan: true,
         instances: {
@@ -62,6 +64,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const json = await request.json();
     const { name, planId, iterations } = json;
@@ -85,9 +92,10 @@ export async function POST(request: Request) {
     const mesocycle = await prisma.mesocycle.create({
       data: {
         name,
+        userId: session.user.id,
         planId: parseInt(planId),
         iterations,
-        status: 'IN_PROGRESS',
+        status: 'NOT_STARTED',
       },
     });
 
@@ -100,6 +108,7 @@ export async function POST(request: Request) {
         // Create plan instance
         const planInstance = await prisma.planInstance.create({
           data: {
+            userId: session.user.id,
             planId: parseInt(planId),
             mesocycleId: mesocycle.id,
             iterationNumber,
@@ -123,8 +132,11 @@ export async function POST(request: Request) {
     );
 
     // Return the mesocycle with its instances
-    const mesocycleWithInstances = await prisma.mesocycle.findUnique({
-      where: { id: mesocycle.id },
+    const mesocycleWithInstances = await prisma.mesocycle.findFirst({
+      where: {
+        id: mesocycle.id,
+        userId: session.user.id
+      },
       include: {
         plan: true,
         instances: {
