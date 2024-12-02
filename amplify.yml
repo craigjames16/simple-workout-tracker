@@ -8,7 +8,7 @@ frontend:
         - echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
         - echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
         - echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
-        # - echo "NEXTAUTH_URL=https://tracker.craigchisholm.me" >> .env
+        - echo "NEXTAUTH_URL=https://tracker.craigchisholm.me" >> .env
         - npx prisma generate
         - npm run generate-icons
     build:
