@@ -4,7 +4,6 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        - echo "DATABASE_URL=$DATABASE_URL" > .env
         - npx prisma generate
         - npm run generate-icons
     build:
