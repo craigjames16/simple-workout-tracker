@@ -53,6 +53,7 @@ export type PlanWithRelations = Prisma.PlanGetPayload<{
 // Workout Instance with all relations
 export interface WorkoutInstanceWithRelations {
   id: number;
+  completedAt: string | null;
   workout: {
     id: number;
     name: string;
@@ -70,7 +71,9 @@ export interface WorkoutInstanceWithRelations {
     }>;
   };
   planInstanceDay?: Array<{
+    planDayId: number;
     planInstance: {
+      iterationNumber?: number;
       id: number;
       rir?: number;
       mesocycle?: {

@@ -55,6 +55,10 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { name, days } = await request.json();
 
@@ -108,6 +112,7 @@ export async function PUT(
         const workout = await tx.workout.create({
           data: {
             name: `${plan.name} - Day ${index + 1}`,
+            userId: session.user.id,
             exercises: {
               create: day.exercises.map((exercise: any, exerciseIndex: number) => ({
                 exercise: {

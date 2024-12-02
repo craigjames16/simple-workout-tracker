@@ -28,6 +28,7 @@
     "fs": "^0.0.1-security",
     "next": "13.4.19",
     "next-auth": "^4.24.10",
+    "next-pwa": "^5.6.0",
     "npx": "^10.2.2",
     "react": "18.2.0",
     "react-beautiful-dnd": "^13.1.1",

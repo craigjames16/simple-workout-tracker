@@ -3,6 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+interface CreatePlanInstanceRequest {
+  planId: string | number;
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -10,13 +14,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    const json = await request.json();
-    const { planId } = json;
+    const json = await request.json() as CreatePlanInstanceRequest;
+    const planId = Number(json.planId);
+    
+    if (isNaN(planId)) {
+      return NextResponse.json({ error: "Invalid planId" }, { status: 400 });
+    }
 
     // Check for existing in-progress plan instance
     const existingInstance = await prisma.planInstance.findFirst({
       where: {
-        planId: parseInt(planId),
+        planId: planId,
         status: 'IN_PROGRESS'
       },
       include: {
@@ -47,7 +55,7 @@ export async function POST(request: Request) {
 
     // Get the plan with its days
     const plan = await prisma.plan.findUnique({
-      where: { id: parseInt(planId) },
+      where: { id: planId },
       include: {
         days: {
           orderBy: {
@@ -91,13 +99,15 @@ export async function POST(request: Request) {
           create: plan.days.map(planDay => ({
             planDayId: planDay.id,
             isComplete: false,
-            workoutInstance: {
-              create: {
-                workout: {
-                  connect: { id: planDay.workout.id }
+            ...(planDay.workout && {
+              workoutInstance: {
+                create: {
+                  workout: {
+                    connect: { id: planDay.workout.id }
+                  }
                 }
               }
-            }
+            })
           }))
         }
       },

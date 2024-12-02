@@ -6,6 +6,13 @@ import { NextAuthProvider } from './provider';
 export const metadata = {
   title: 'Workout Tracker',
   description: 'Track and schedule your workouts',
+  manifest: '/manifest.json',
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Workout Tracker',
+  },
   icons: {
     icon: [
       {

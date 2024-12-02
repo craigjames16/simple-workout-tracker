@@ -98,7 +98,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           exerciseName: ex.exercise.name,
           sets: Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
             // Find the set with matching setNumber (index + 1)
-            const matchingLastSet = ex.lastSets?.find(lastSet => lastSet.setNumber === index + 1);
+            const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
             return {
               reps: 0,
               weight: 0,
@@ -184,8 +184,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       const set = tracking.sets[setIndex];
       
       // Use lastSet values or current values, falling back to placeholders if neither exists
-      const weightToUse = set.weight || ((set.lastSet?.weight ?? tracking.weight) || 0);
-      const repsToUse = set.reps || ((set.lastSet?.reps ?? tracking.reps) || 0);
+      const weightToUse = set.weight || (set.lastSet?.weight ?? 0);
+      const repsToUse = set.reps || (set.lastSet?.reps ?? 0);
 
       // Update local state
       setExerciseTrackings(prev => {
@@ -400,7 +400,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             <Box>
           <Typography variant="h5" gutterBottom>
                 {workoutInstance.planInstanceDay?.[0] ? (
-                  `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber} Day ${workoutInstance.planInstanceDay[0].planDayId}`
+                  `${workoutInstance.planInstanceDay[0].planInstance.iterationNumber ? `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber}` : ''} Day ${workoutInstance.planInstanceDay[0].planDayId}`
                 ) : (
                   workoutInstance.workout.name
                 )}
@@ -474,7 +474,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 handleAddExercise();
                 handleWorkoutMenuClose();
               }}
-              disabled={!selectedExercise || workoutInstance.completedAt}
+              disabled={!selectedExercise || !workoutInstance.completedAt}
               fullWidth
             >
               Add Exercise
@@ -500,7 +500,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     <IconButton
                       color="error"
                       onClick={() => handleRemoveExercise(exercise.exerciseId)}
-                      disabled={exercise.isCompleted || workoutInstance.completedAt}
+                      disabled={exercise.isCompleted || !workoutInstance.completedAt}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -537,7 +537,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         <IconButton
                           size="small"
                           onClick={(e) => handleMenuOpen(e, exerciseIndex, setIndex)}
-                          disabled={isSetCompleted || workoutInstance.completedAt}
+                          disabled={isSetCompleted || !workoutInstance.completedAt}
                         >
                           <MoreVertIcon />
                         </IconButton>
@@ -549,14 +549,14 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           type="number"
                           inputMode="numeric"
                           value={set.weight || ''}
-                          placeholder={set.lastSet ? set.lastSet.weight : 0}
+                          placeholder={set.lastSet ? String(set.lastSet.weight) : "0"}
                           onChange={(e) => handleUpdateSet(
                             exerciseIndex,
                             setIndex,
                             'weight',
                             parseFloat(e.target.value)
                           )}
-                          disabled={isSetCompleted || workoutInstance.completedAt}
+                          disabled={isSetCompleted || !workoutInstance.completedAt}
                           sx={{
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
@@ -579,14 +579,14 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           type="number"
                           inputMode="numeric"
                           value={set.reps || ''}
-                          placeholder={set.lastSet ? set.lastSet.reps : 0}
+                          placeholder={set.lastSet ? String(set.lastSet.reps) : "0"}
                           onChange={(e) => handleUpdateSet(
                             exerciseIndex,
                             setIndex,
                             'reps',
                             parseInt(e.target.value)
                           )}
-                          disabled={isSetCompleted || workoutInstance.completedAt}
+                          disabled={isSetCompleted || !workoutInstance.completedAt}
                           sx={{
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
@@ -606,7 +606,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         <Checkbox
                           checked={isSetCompleted}
                           onChange={(e) => handleSetCompletion(exerciseIndex, setIndex, e.target.checked)}
-                          disabled={exercise.isCompleted || workoutInstance.completedAt}
+                          disabled={exercise.isCompleted || !workoutInstance.completedAt}
                         />
                       </Grid>
                     </Grid>
@@ -617,7 +617,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   startIcon={<AddIcon />}
                   onClick={() => handleAddSet(exerciseIndex)}
                   sx={{ mt: 1 }}
-                  disabled={exercise.isCompleted || workoutInstance.completedAt}
+                  disabled={exercise.isCompleted || !workoutInstance.completedAt}
                 >
                   Add Set
                 </Button>
@@ -646,7 +646,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             color="primary"
             fullWidth
             onClick={handleCompleteWorkout}
-            disabled={!exerciseTrackings.every(t => t.isCompleted) || workoutInstance.completedAt}
+            disabled={!exerciseTrackings.every(t => t.isCompleted) || !workoutInstance.completedAt}
           >
             Complete Workout
           </Button>

@@ -55,6 +55,12 @@ interface PlanInstance {
   startedAt: string;
   completedAt: string | null;
   days: PlanInstanceDay[];
+  iterationNumber?: number;
+  rir?: number;
+  mesocycle?: {
+    id: number;
+    name: string;
+  };
 }
 
 interface Plan {
