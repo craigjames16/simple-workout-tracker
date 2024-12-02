@@ -1,12 +1,14 @@
 import { withAuth } from "next-auth/middleware"
 
-export default withAuth({
+export default withAuth(
+  function middleware(req){},
+  {
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
   },
   callbacks: {
-    authorized: ({ req }) => !!req.cookies.get("next-auth.session-token")
+    authorized: ({ req }) => !!req.cookies.get("next-auth.session-token") || req.cookies.get("__Secure-next-auth.session-token"),
   }
 })
 
