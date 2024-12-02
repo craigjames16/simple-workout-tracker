@@ -13,6 +13,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import Link from 'next/link';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 
 interface Exercise {
   id: number;
@@ -104,7 +105,7 @@ export default function PlanDetail({ params }: { params: { id: string } }) {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h4" component="h1">
@@ -150,6 +151,6 @@ export default function PlanDetail({ params }: { params: { id: string } }) {
           ))}
         </Grid>
       </Paper>
-    </Container>
+    </ResponsiveContainer>
   );
 } 

@@ -133,12 +133,13 @@ export default function MesocyclesPage() {
   }
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 10 }}>
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Mesocycles
-          </Typography>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 4 }}>
+        <Paper>
+          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+            <Typography variant="h5">
+              Mesocycles
+            </Typography>
+          </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {mesocycles.map((mesocycle) => (
@@ -250,6 +251,5 @@ export default function MesocyclesPage() {
           </DialogActions>
         </Dialog>
       </ResponsiveContainer>
-    </Box>
   );
 } 

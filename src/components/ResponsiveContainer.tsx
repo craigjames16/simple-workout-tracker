@@ -9,7 +9,7 @@ export const ResponsiveContainer = ({ sx, ...props }: ContainerProps) => {
       disableGutters
       sx={{
         ...sx,
-        mt: { xs: 0, sm: 0, md: 4 },
+        mt: { xs: 0, sm: 2, md: 4 },
         px: { xs: 0, sm: 2 },
       }}
       {...props}

@@ -124,7 +124,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
     <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h5">
             {planInstance.plan.name}
           </Typography>
 

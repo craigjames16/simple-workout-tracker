@@ -48,6 +48,14 @@ const theme = createTheme({
         },
       },
     },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1e1e1e !important',
+          backgroundImage: 'none'
+        }
+      }
+    },
   },
 });
 

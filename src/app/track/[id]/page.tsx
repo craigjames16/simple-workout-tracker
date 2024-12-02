@@ -280,6 +280,27 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
       const data = await response.json();
       setWorkoutInstance(data);
+
+      // Find the newly added exercise from the response
+      const newExercise = data.workout.exercises.find(
+        (ex: WorkoutExercise) => ex.exercise.id === parseInt(selectedExercise)
+      );
+
+      if (newExercise) {
+        // Add the new exercise to exerciseTrackings
+        setExerciseTrackings(prev => [...prev, {
+          exerciseId: newExercise.exercise.id,
+          exerciseName: newExercise.exercise.name,
+          sets: Array.from({ length: 3 }, () => ({
+            reps: 0,
+            weight: 0,
+            lastSet: null
+          })),
+          completedSetIndexes: new Set<number>(),
+          isCompleted: false,
+        }]);
+      }
+
       setSelectedExercise('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add exercise');
@@ -361,14 +382,47 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         px: { xs: 0, sm: 2 }
       }}
     >
-      <Paper sx={{ p: { xs: 2, sm: 3 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" gutterBottom>
-            {workoutInstance.workout.name}
-          </Typography>
-          <IconButton onClick={handleWorkoutMenuOpen}>
-            <MoreVertIcon />
-          </IconButton>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, position: 'relative' }}>
+        <Box sx={{
+          position: 'sticky',
+          top: {
+            xs: 56,  // Mobile height
+            sm: 64   // Desktop height
+          },
+          opacity: 1,
+          backgroundColor: 'background.paper',
+          zIndex: 1,
+          paddingY: 2,
+          borderBottom: 1,
+          borderColor: 'divider'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Box>
+          <Typography variant="h5" gutterBottom>
+                {workoutInstance.planInstanceDay?.[0] ? (
+                  `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber} Day ${workoutInstance.planInstanceDay[0].planDayId}`
+                ) : (
+                  workoutInstance.workout.name
+                )}
+              </Typography>
+              {workoutInstance.planInstanceDay?.[0]?.planInstance?.mesocycle && (
+                <Typography variant="subtitle1" color="text.secondary" sx={{ mt: -1 }}>
+                  {workoutInstance.planInstanceDay[0].planInstance.mesocycle.name}
+                </Typography>
+              )}
+              {workoutInstance.planInstanceDay?.[0]?.planInstance?.rir !== undefined && (
+                <Typography color="text.secondary">
+                  RIR: {workoutInstance.planInstanceDay[0].planInstance.rir}
+                </Typography>
+              )}
+            </Box>
+            <IconButton
+              onClick={(event) => setWorkoutMenuAnchorEl(event.currentTarget)}
+              size="large"
+            >
+              <MoreVertIcon />
+            </IconButton>
+          </Box>
         </Box>
 
         <Menu
@@ -427,17 +481,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             </Button>
           </Box>
         </Menu>
-
-        {workoutInstance.planInstanceDay?.[0]?.planInstance?.rir !== undefined && (
-          <Box sx={{ mb: 2 }}>
-            <Typography color="text.secondary" gutterBottom>
-              Target RIR (Reps In Reserve): {workoutInstance.planInstanceDay[0].planInstance.rir}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Leave this many reps in reserve for each set
-            </Typography>
-          </Box>
-        )}
 
         <List>
           {exerciseTrackings.map((exercise, exerciseIndex) => (

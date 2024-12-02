@@ -137,29 +137,6 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
     }
   };
 
-  const handleStartIteration = async (instanceId: number) => {
-    try {
-      // Update the plan instance status to IN_PROGRESS
-      const response = await fetch(`/api/plan-instances/${instanceId}/start`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start iteration');
-      }
-
-      // Refresh the mesocycle data
-      const mesocycleResponse = await fetch(`/api/mesocycles/${params.id}`);
-      if (!mesocycleResponse.ok) {
-        throw new Error('Failed to refresh mesocycle data');
-      }
-      const data = await mesocycleResponse.json();
-      setMesocycle(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start iteration');
-    }
-  };
-
   if (loading) {
     return (
       <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>

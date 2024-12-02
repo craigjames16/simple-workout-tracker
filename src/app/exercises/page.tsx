@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import FloatingActionButton from '@/components/FloatingActionButton';
-import { useSession } from 'next-auth/react';
+import {ResponsiveContainer} from '@/components/ResponsiveContainer';
 interface Exercise {
   id: number;
   name: string;
@@ -106,10 +106,9 @@ export default function ExercisesPage() {
     : exercises[selectedCategory] || [];
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
-      <Container maxWidth="lg" sx={{ mt: 4, pb: 10 }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 4 }}>
         <Paper sx={{ p: 3 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h5">
             Exercises
           </Typography>
 
@@ -190,7 +189,6 @@ export default function ExercisesPage() {
             </Button>
           </DialogActions>
         </Dialog>
-      </Container>
-    </Box>
+      </ResponsiveContainer>
   );
 } 

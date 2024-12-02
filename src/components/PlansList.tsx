@@ -89,28 +89,6 @@ export default function PlansList() {
     }
   };
 
-  const handleStartPlan = async (planId: number) => {
-    try {
-      const response = await fetch('/api/plan-instances', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start plan');
-      }
-
-      const data = await response.json();
-      window.location.href = `/plans/instance/${data.id}`;
-    } catch (error) {
-      console.error('Error starting plan:', error);
-      setError(error instanceof Error ? error.message : 'Failed to start plan');
-    }
-  };
-
   const getActivePlanInstance = (plan: Plan): PlanInstance | undefined => {
     console.log("GET ACTIVE PLAN INSTANCE")
     console.log(plan.instances?.find(instance => instance.status === 'IN_PROGRESS'))
@@ -171,16 +149,7 @@ export default function PlansList() {
                         >
                           Continue Plan
                         </Button>
-                      ) : (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => handleStartPlan(plan.id)}
-                          startIcon={<AddIcon />}
-                        >
-                          Start Plan
-                        </Button>
-                      )
+                      ) : null
                     }
                   />
                   <CardContent>

@@ -19,7 +19,6 @@ import {
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FloatingActionButton from '@/components/FloatingActionButton';
@@ -73,28 +72,6 @@ export default function PlansPage() {
 
   const handlePlanClick = (planId: number) => {
     router.push(`/plans/${planId}/details`);
-  };
-
-  const handleStartPlan = async (planId: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the ListItem click
-    try {
-      const response = await fetch('/api/plan-instances', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ planId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start plan');
-      }
-
-      const data = await response.json();
-      router.push(`/plans/instance/${data.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start plan');
-    }
   };
 
   if (loading) {
@@ -164,14 +141,6 @@ export default function PlansPage() {
                   }
                 />
                 <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    onClick={(e) => handleStartPlan(plan.id, e)}
-                    disabled={plan.instances?.some(i => i?.status === 'IN_PROGRESS')}
-                    sx={{ mr: 1 }}
-                  >
-                    <PlayArrowIcon />
-                  </IconButton>
                   <IconButton edge="end" onClick={() => handlePlanClick(plan.id)}>
                     <ArrowForwardIcon />
                   </IconButton>

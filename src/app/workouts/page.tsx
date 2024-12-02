@@ -20,6 +20,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { ResponsiveContainer } from '@/components';
 
 interface WorkoutInstance {
   id: number;
@@ -96,7 +97,7 @@ export default function WorkoutsPage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h5">Workout History</Typography>
@@ -175,6 +176,6 @@ export default function WorkoutsPage() {
           ))}
         </List>
       </Paper>
-    </Container>
+    </ResponsiveContainer>
   );
 } 
