@@ -22,7 +22,7 @@ import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 
@@ -118,7 +118,7 @@ export default function MesocyclesPage() {
       case 'IN_PROGRESS':
         return <PlayCircleIcon color="primary" />;
       default:
-        return <PauseCircleIcon color="action" />;
+        return <PlayCircleOutlineIcon color="action" />;
     }
   };
 

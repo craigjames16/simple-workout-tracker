@@ -23,7 +23,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import LinearProgress from '@mui/material/LinearProgress';
 
 interface PlanInstance {
   id: number;
@@ -132,7 +132,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
 
   if (loading) {
     return (
-      <ResponsiveContainer>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
       </ResponsiveContainer>
     );
@@ -153,7 +153,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h4" gutterBottom>
+            <Typography variant="h5" gutterBottom>
               {mesocycle.name}
             </Typography>
             <IconButton
@@ -194,7 +194,18 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
             </Box>
           </Box>
         </Box>
-
+        <LinearProgress 
+              variant="determinate" 
+              value={progress} 
+              sx={{ 
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: 'grey.300',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 4,
+                }
+              }}
+            />
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {mesocycle.instances
             .sort((a, b) => a.iterationNumber - b.iterationNumber)
