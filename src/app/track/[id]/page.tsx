@@ -13,7 +13,6 @@ import {
   IconButton,
   Grid,
   CircularProgress,
-  InputAdornment,
   FormControl,
   InputLabel,
   Select,
@@ -95,21 +94,35 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         const data = await response.json();
         setWorkoutInstance(data);
         
-        const initialTrackings = data.workout.exercises.map((ex: any) => ({
-          exerciseId: ex.exercise.id,
-          exerciseName: ex.exercise.name,
-          sets: Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
-            // Find the set with matching setNumber (index + 1)
-            const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
-            return {
-              reps: 0,
-              weight: 0,
-              lastSet: matchingLastSet || null
-            };
-          }),
-          completedSetIndexes: new Set<number>(),
-          isCompleted: false,
-        }));
+        const initialTrackings = data.workout.exercises.map((ex: any) => {
+          // Get completed sets for this exercise
+          const completedSets = data.sets?.filter((set: any) => set.exerciseId === ex.exercise.id) || [];
+          
+          return {
+            exerciseId: ex.exercise.id,
+            exerciseName: ex.exercise.name,
+            sets: Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
+              // Find completed set with matching setNumber
+              const completedSet = completedSets.find((set: any) => set.setNumber === index + 1);
+              // Find the set with matching setNumber (index + 1) from last workout
+              const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
+              
+              return completedSet ? {
+                reps: completedSet.reps,
+                weight: completedSet.weight,
+                lastSet: matchingLastSet || null
+              } : {
+                reps: 0,
+                weight: 0,
+                lastSet: matchingLastSet || null
+              };
+            }),
+            completedSetIndexes: new Set<number>(
+              completedSets.map((set: any) => set.setNumber - 1)
+            ),
+            isCompleted: false,
+          };
+        });
         setExerciseTrackings(initialTrackings);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch workout');
@@ -536,7 +549,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 
                 {exercise.sets.map((set, setIndex) => {
                   const isSetCompleted = exercise.completedSetIndexes.has(setIndex);
-                  console.log('set:', set);
 
                   return (
                     <Grid container spacing={1} key={setIndex} sx={{ mt: 0.5, maxWidth: 'sm', mx: 'auto' }}>

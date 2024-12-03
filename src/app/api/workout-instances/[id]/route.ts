@@ -25,6 +25,7 @@ export async function GET(
         id: parseInt(params.id),
       },
       include: {
+        sets: true,
         workout: {
           include: {
             exercises: {
