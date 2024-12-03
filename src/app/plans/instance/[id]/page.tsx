@@ -108,7 +108,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
       return <PlayCircleOutlineIcon color="action" />;
     } else if (!day.planDay.isRestDay && !day.workoutInstance) {
       return <PlayCircleOutlineIcon color="action" />;
-    } else if (!day.planDay.isRestDay && !day.workoutInstance.completedAt) {
+    } else if (!day.planDay.isRestDay && !day.workoutInstance?.completedAt) {
       return <PlayCircleIcon color="primary" />;
     } else {
       return <CheckCircleIcon color="success" />;
@@ -225,8 +225,8 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
                 onClick = () => handleCompleteRestDay(day.id);
               } else if (!day.planDay.isRestDay &&!day.workoutInstance) {
                 onClick = () => handleStartWorkout(day.id);
-              } else if (!day.planDay.isRestDay && !day.workoutInstance.completedAt) {
-                href = `/track/${day.workoutInstance.id}`;
+              } else if (!day.planDay.isRestDay && !day.workoutInstance?.completedAt) {
+                href = `/track/${day.workoutInstance?.id}`;
               }
 
               return (
