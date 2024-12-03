@@ -149,7 +149,9 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       updated[exerciseIndex] = {
         ...updated[exerciseIndex],
         sets: updated[exerciseIndex].sets.map((set, idx) =>
-          idx === setIndex ? { ...set, [field]: value } : set
+          field === 'weight' 
+            ? (idx >= setIndex ? { ...set, weight: value } : set)
+            : (idx === setIndex ? { ...set, reps: value } : set)
         ),
       };
       return updated;
