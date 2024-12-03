@@ -500,7 +500,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     <IconButton
                       color="error"
                       onClick={() => handleRemoveExercise(exercise.exerciseId)}
-                      disabled={exercise.isCompleted || !workoutInstance.completedAt}
+                      disabled={exercise.isCompleted || !!workoutInstance.completedAt}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -527,7 +527,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     </Typography>
                   </Grid>
                 </Grid>
-   
+                
                 {exercise.sets.map((set, setIndex) => {
                   const isSetCompleted = exercise.completedSetIndexes.has(setIndex);
 
@@ -537,7 +537,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         <IconButton
                           size="small"
                           onClick={(e) => handleMenuOpen(e, exerciseIndex, setIndex)}
-                          disabled={isSetCompleted || !workoutInstance.completedAt}
+                          disabled={isSetCompleted || !!workoutInstance.completedAt}
                         >
                           <MoreVertIcon />
                         </IconButton>
@@ -556,7 +556,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                             'weight',
                             parseFloat(e.target.value)
                           )}
-                          disabled={isSetCompleted || !workoutInstance.completedAt}
+                          disabled={isSetCompleted || !!workoutInstance.completedAt}
                           sx={{
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
@@ -586,7 +586,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                             'reps',
                             parseInt(e.target.value)
                           )}
-                          disabled={isSetCompleted || !workoutInstance.completedAt}
+                          disabled={isSetCompleted || !!workoutInstance.completedAt}
                           sx={{
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
@@ -606,7 +606,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         <Checkbox
                           checked={isSetCompleted}
                           onChange={(e) => handleSetCompletion(exerciseIndex, setIndex, e.target.checked)}
-                          disabled={exercise.isCompleted || !workoutInstance.completedAt}
+                          disabled={exercise.isCompleted || !!workoutInstance.completedAt}
                         />
                       </Grid>
                     </Grid>
@@ -617,7 +617,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   startIcon={<AddIcon />}
                   onClick={() => handleAddSet(exerciseIndex)}
                   sx={{ mt: 1 }}
-                  disabled={exercise.isCompleted || !workoutInstance.completedAt}
+                  disabled={exercise.isCompleted || !!workoutInstance.completedAt}
                 >
                   Add Set
                 </Button>
@@ -646,7 +646,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             color="primary"
             fullWidth
             onClick={handleCompleteWorkout}
-            disabled={!exerciseTrackings.every(t => t.isCompleted) || !workoutInstance.completedAt}
+            disabled={!exerciseTrackings.every(t => t.isCompleted) || !!workoutInstance.completedAt}
           >
             Complete Workout
           </Button>

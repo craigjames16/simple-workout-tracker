@@ -31,6 +31,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { ExerciseCategory } from '@prisma/client';
+import { ResponsiveContainer } from './ResponsiveContainer';
 
 interface Exercise {
   id: number;
@@ -84,11 +85,11 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     return [];
   });
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
-  const [selectedExercise, setSelectedExercise] = useState<string>('');
+  const [selectedExercises, setSelectedExercises] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [planName, setPlanName] = useState(initialPlan?.name || '');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, string>>({});
   const [openNewExerciseDialog, setOpenNewExerciseDialog] = useState(false);
   const [newExercise, setNewExercise] = useState({
     name: '',
@@ -129,9 +130,12 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     return acc;
   }, {});
 
-  const filteredExercises = selectedCategory === 'ALL' 
-    ? availableExercises 
-    : groupedExercises[selectedCategory] || [];
+  const filteredExercises = (dayId: string) => {
+    const category = selectedCategories[dayId] || 'ALL';
+    return category === 'ALL' 
+      ? availableExercises 
+      : groupedExercises[category] || [];
+  };
 
   const addWorkoutDay = () => {
     const newDay: WorkoutDay = {
@@ -303,12 +307,13 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     }
   };
 
-  const handleAddExercise = () => {
-    if (selectedDayIndex !== null && selectedExercise) {
+  const handleAddExercise = (dayId: string) => {
+    const selectedExercise = selectedExercises[dayId];
+    if (selectedExercise) {
       const exercise = availableExercises.find(ex => ex.id === parseInt(selectedExercise));
       if (exercise) {
-        setWorkoutDays(workoutDays.map((day, index) => {
-          if (index === selectedDayIndex && !day.isRestDay) {
+        setWorkoutDays(workoutDays.map(day => {
+          if (day.id === dayId && !day.isRestDay) {
             return {
               ...day,
               exercises: [...day.exercises, exercise]
@@ -316,7 +321,10 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           }
           return day;
         }));
-        setSelectedExercise(''); // Reset selected exercise after adding
+        setSelectedExercises(prev => ({
+          ...prev,
+          [dayId]: ''
+        }));
       }
     }
   };
@@ -332,8 +340,8 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   }
 
   return (
-    <Container maxWidth="xl">
-      <Paper sx={{ p: 3, mt: 3 }}>
+    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 4 }}>
+      <Paper sx={{ p: 3 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -393,9 +401,12 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                         <FormControl fullWidth>
                           <InputLabel>Category</InputLabel>
                           <Select
-                            value={selectedCategory}
+                            value={selectedCategories[day.id] || 'ALL'}
                             label="Category"
-                            onChange={(e) => setSelectedCategory(e.target.value as ExerciseCategory | 'ALL')}
+                            onChange={(e) => setSelectedCategories(prev => ({
+                              ...prev,
+                              [day.id]: e.target.value
+                            }))}
                             sx={{ mb: 2 }}
                           >
                             <MenuItem value="ALL">All Categories</MenuItem>
@@ -410,13 +421,14 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                         <FormControl fullWidth>
                           <InputLabel>Exercise</InputLabel>
                           <Select
-                            value={selectedExercise}
+                            value={selectedExercises[day.id] || ''}
                             label="Exercise"
-                            onChange={(e) => setSelectedExercise(e.target.value)}
-                            onClick={() => setSelectedDayIndex(dayIndex)}
+                            onChange={(e) => setSelectedExercises(prev => ({
+                              ...prev,
+                              [day.id]: e.target.value
+                            }))}
                           >
-                            {availableExercises
-                              .filter(exercise => selectedCategory === 'ALL' || exercise.category === selectedCategory)
+                            {filteredExercises(day.id)
                               .map((exercise) => (
                                 <MenuItem key={exercise.id} value={exercise.id}>
                                   {exercise.name}
@@ -428,8 +440,8 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button
                             variant="contained"
-                            onClick={handleAddExercise}
-                            disabled={!selectedExercise || selectedDayIndex !== dayIndex}
+                            onClick={() => handleAddExercise(day.id)}
+                            disabled={!selectedExercises[day.id]}
                             sx={{ flex: 1 }}
                           >
                             Add Exercise
@@ -551,6 +563,6 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </ResponsiveContainer>
   );
 } 

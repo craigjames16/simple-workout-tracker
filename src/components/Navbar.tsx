@@ -18,6 +18,7 @@ import Link from 'next/link';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import SportsGymnasticsIcon from '@mui/icons-material/SportsGymnastics';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import { useState } from 'react';
@@ -25,7 +26,7 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { text: 'Home', href: '/', icon: <HomeIcon /> },
-  { text: 'Exercises', href: '/exercises', icon: <FitnessCenterIcon /> },
+  { text: 'Exercises', href: '/exercises', icon: <SportsGymnasticsIcon /> },
   { text: 'Workouts', href: '/workouts', icon: <FitnessCenterIcon /> },
   { text: 'Plans', href: '/plans', icon: <ListAltIcon /> },
   { text: 'Mesocycles', href: '/mesocycles', icon: <RepeatIcon /> },
