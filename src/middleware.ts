@@ -24,5 +24,6 @@ export const config = {
       "/api/plan-instances/:path*",
       "/api/mesocycles/:path*",
       "/((?!auth|api/auth|$).*)",
+      "/manifest.json",
     ],
   } 
