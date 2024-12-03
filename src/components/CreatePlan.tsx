@@ -48,6 +48,7 @@ interface WorkoutDay {
   name: string;
   isRestDay: boolean;
   exercises: Exercise[];
+  dayNumber: number;
 }
 
 interface ExercisesByCategory {
@@ -75,12 +76,15 @@ interface Props {
 export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>(() => {
     if (initialPlan) {
-      return initialPlan.days.map((day, index) => ({
-        id: `day-${index + 1}`,
-        name: `Day ${index + 1}`,
-        isRestDay: day.isRestDay,
-        exercises: day.workout?.exercises.map(e => e.exercise) || [],
-      }));
+      return initialPlan.days
+        .map((day) => ({
+          id: `day-${day.dayNumber}`,
+          name: `Day ${day.dayNumber}`,
+          isRestDay: day.isRestDay,
+          exercises: day.workout?.exercises.map(e => e.exercise) || [],
+          dayNumber: day.dayNumber,
+        }))
+        .sort((a, b) => a.dayNumber - b.dayNumber);
     }
     return [];
   });
@@ -138,11 +142,13 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   };
 
   const addWorkoutDay = () => {
+    const dayNumber = workoutDays.length + 1;
     const newDay: WorkoutDay = {
-      id: `day-${workoutDays.length + 1}`,
-      name: `Day ${workoutDays.length + 1}`,
+      id: `day-${dayNumber}`,
+      name: `Day ${dayNumber}`,
       isRestDay: false,
       exercises: [],
+      dayNumber: dayNumber,
     };
     setWorkoutDays([...workoutDays, newDay]);
   };
@@ -373,7 +379,9 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
 
         <DragDropContext onDragEnd={handleDragEnd}>
           <Grid container spacing={2}>
-            {workoutDays.map((day, dayIndex) => (
+            {[...workoutDays]
+              .sort((a, b) => a.dayNumber - b.dayNumber)
+              .map((day, dayIndex) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
                 <Card>
                   <CardHeader

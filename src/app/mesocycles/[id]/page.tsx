@@ -4,32 +4,25 @@ import { useEffect, useState } from 'react';
 import {
   Paper,
   Typography,
-  Grid,
-  Card,
-  CardContent,
   Box,
   Button,
   CircularProgress,
-  Alert,
-  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   IconButton,
   Menu,
   MenuItem,
 } from '@mui/material';
-import { ResponsiveContainer as ResponsiveContainer } from '@/components/ResponsiveContainer';
+import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import Link from 'next/link';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useRouter } from 'next/navigation';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 interface PlanInstance {
@@ -108,17 +101,6 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
     return instances.find(i => !isInstanceComplete(i));
   };
 
-  const canStartIteration = (instance: PlanInstance, instances: PlanInstance[]) => {
-    if (isInstanceComplete(instance)) return false;
-
-    if (instance.status === 'IN_PROGRESS') return false;
-
-    if (instance.iterationNumber === 1) return true;
-
-    const previousIterations = instances.filter(i => i.iterationNumber < instance.iterationNumber);
-    return previousIterations.every(i => isInstanceComplete(i));
-  };
-
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/mesocycles/${params.id}`, {
@@ -137,9 +119,20 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
     }
   };
 
+  const getStatusIcon = (status: string | null) => {
+    switch (status) {
+      case 'COMPLETE':
+        return <CheckCircleIcon color="success" />;
+      case 'IN_PROGRESS':
+        return <PlayCircleIcon color="primary" />;
+      default:
+        return <PlayCircleOutlineIcon color="action" />;
+    }
+  };
+
   if (loading) {
     return (
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer>
         <CircularProgress />
       </ResponsiveContainer>
     );
@@ -219,7 +212,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
               }
 
               return (
-                <Card
+                <Box
                   key={instance.id}
                   component={href ? Link : 'div'}
                   href={href}
@@ -247,13 +240,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                     flex: 1,
                     gap: 2,
                   }}>
-                    {isComplete ? (
-                      <CheckCircleIcon color="success" />
-                    ) : isInProgress ? (
-                      <PlayCircleIcon color="primary" />
-                    ) : (
-                      <PauseCircleIcon color="action" />
-                    )}
+                    {getStatusIcon(instance.status)}
                     <Box>
                       <Typography variant="h6" sx={{ mb: 0.5 }}>
                         Iteration {instance.iterationNumber}
@@ -277,15 +264,15 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                       {isInProgress ? 'Continue Iteration' : 'Start Iteration'} →
                     </Typography>
                   )}
-                </Card>
+                </Box>
               );
             })}
         </Box>
 
         {mesocycle.status === 'COMPLETE' && (
-          <Alert severity="success" sx={{ mt: 3 }}>
+          <Box sx={{ mt: 3 }}>
             Mesocycle completed! Great job!
-          </Alert>
+          </Box>
         )}
       </Paper>
 
@@ -295,10 +282,8 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
       >
         <DialogTitle>Delete Mesocycle</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this mesocycle? This will delete all associated plan instances, 
-            workout instances, and progress data. This action cannot be undone.
-          </DialogContentText>
+          Are you sure you want to delete this mesocycle? This will delete all associated plan instances, 
+          workout instances, and progress data. This action cannot be undone.
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>

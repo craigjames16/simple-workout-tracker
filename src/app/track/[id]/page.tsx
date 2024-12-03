@@ -82,6 +82,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [workoutMenuAnchorEl, setWorkoutMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [activeSet, setActiveSet] = useState<{ exerciseIndex: number; setIndex: number } | null>(null);
+  const [exerciseMenuAnchorEl, setExerciseMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [activeExercise, setActiveExercise] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchWorkoutInstance = async () => {
@@ -346,15 +348,21 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     setActiveSet(null);
   };
 
+  const handleExerciseMenuOpen = (event: React.MouseEvent<HTMLElement>, exerciseIndex: number) => {
+    setExerciseMenuAnchorEl(event.currentTarget);
+    setActiveExercise(exerciseIndex);
+  };
+
+  const handleExerciseMenuClose = () => {
+    setExerciseMenuAnchorEl(null);
+    setActiveExercise(null);
+  };
+
   const handleDeleteSet = () => {
     if (activeSet) {
       handleRemoveSet(activeSet.exerciseIndex, activeSet.setIndex);
     }
     handleMenuClose();
-  };
-
-  const handleWorkoutMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setWorkoutMenuAnchorEl(event.currentTarget);
   };
 
   const handleWorkoutMenuClose = () => {
@@ -403,14 +411,16 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 )}
               </Typography>
               {workoutInstance.planInstanceDay?.[0]?.planInstance?.mesocycle && (
-                <Typography variant="subtitle1" color="text.secondary" sx={{ mt: -1 }}>
-                  {workoutInstance.planInstanceDay[0].planInstance.mesocycle.name}
-                </Typography>
-              )}
-              {workoutInstance.planInstanceDay?.[0]?.planInstance?.rir !== undefined && (
-                <Typography color="text.secondary">
-                  RIR: {workoutInstance.planInstanceDay[0].planInstance.rir}
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: -1, gap: 1 }}>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    {`${workoutInstance.planInstanceDay[0].planInstance.mesocycle.name} -`}
+                  </Typography>
+                  {workoutInstance.planInstanceDay?.[0]?.planInstance?.rir !== undefined && (
+                    <Typography color="text.secondary">
+                      RIR: {workoutInstance.planInstanceDay[0].planInstance.rir}
+                    </Typography>
+                  )}
+                </Box>
               )}
             </Box>
             <IconButton
@@ -495,18 +505,17 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   <Typography variant="h6">{exercise.exerciseName}</Typography>
                   <Box>
                     <IconButton
-                      color="error"
-                      onClick={() => handleRemoveExercise(exercise.exerciseId)}
+                      onClick={(event) => handleExerciseMenuOpen(event, exerciseIndex)}
                       disabled={exercise.isCompleted || !!workoutInstance.completedAt}
                     >
-                      <DeleteIcon />
+                      <MoreVertIcon />
                     </IconButton>
                   </Box>
                 </Box>
 
                 <Grid container spacing={1} sx={{ mb: 1, maxWidth: 'sm', mx: 'auto' }}>
-                  <Grid item xs={2} sm={1.5}>
-                    {/* Empty space for menu icon */}
+                  <Grid item xs={1} sm={1.5}>
+                    {/* Empty space for menu icon*/ }
                   </Grid>
                   <Grid item xs={3} sm={2.5}>
                     <Typography variant="subtitle2" color="text.secondary">
@@ -527,10 +536,11 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 
                 {exercise.sets.map((set, setIndex) => {
                   const isSetCompleted = exercise.completedSetIndexes.has(setIndex);
+                  console.log('set:', set);
 
                   return (
                     <Grid container spacing={1} key={setIndex} sx={{ mt: 0.5, maxWidth: 'sm', mx: 'auto' }}>
-                      <Grid item xs={2} sm={1.5} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Grid item xs={1} sm={1.5} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                         <IconButton
                           size="small"
                           onClick={(e) => handleMenuOpen(e, exerciseIndex, setIndex)}
@@ -636,6 +646,25 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           >
             <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
             Delete Set
+          </MenuItem>
+        </Menu>
+
+        <Menu
+          anchorEl={exerciseMenuAnchorEl}
+          open={Boolean(exerciseMenuAnchorEl)}
+          onClose={handleExerciseMenuClose}
+        >
+          <MenuItem 
+            onClick={() => {
+              if (activeExercise !== null) {
+                handleRemoveExercise(exerciseTrackings[activeExercise].exerciseId);
+                handleExerciseMenuClose();
+              }
+            }}
+            sx={{ color: 'error.main' }}
+          >
+            <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+            Delete Exercise
           </MenuItem>
         </Menu>
 

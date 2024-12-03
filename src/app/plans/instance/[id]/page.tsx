@@ -23,6 +23,7 @@ import Link from 'next/link';
 import LaunchIcon from '@mui/icons-material/Launch';
 import type { PlanInstanceWithCompletion } from '@/types/prisma';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 export default function PlanInstanceDetail({ params }: { params: { id: string } }) {
@@ -99,6 +100,18 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
       window.location.href = `/track/${workoutInstance.id}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const getStatusIcon = (day: any) => {
+    if (day.planDay.isRestDay && !day.isComplete) {
+      return <PlayCircleOutlineIcon color="action" />;
+    } else if (!day.planDay.isRestDay && !day.workoutInstance) {
+      return <PlayCircleOutlineIcon color="action" />;
+    } else if (!day.planDay.isRestDay && !day.workoutInstance.completedAt) {
+      return <PlayCircleIcon color="primary" />;
+    } else {
+      return <CheckCircleIcon color="success" />;
     }
   };
 
@@ -210,9 +223,9 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
               
               if (day.planDay.isRestDay && !day.isComplete) {
                 onClick = () => handleCompleteRestDay(day.id);
-              } else if (!day.workoutInstance) {
+              } else if (!day.planDay.isRestDay &&!day.workoutInstance) {
                 onClick = () => handleStartWorkout(day.id);
-              } else if (!day.workoutInstance.completedAt) {
+              } else if (!day.planDay.isRestDay && !day.workoutInstance.completedAt) {
                 href = `/track/${day.workoutInstance.id}`;
               }
 
@@ -246,13 +259,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
                     flex: 1,
                     gap: 2,
                   }}>
-                    {isComplete ? (
-                      <CheckCircleIcon color="success" />
-                    ) : isInProgress ? (
-                      <PlayCircleIcon color="primary" />
-                    ) : (
-                      <PauseCircleIcon color="action" />
-                    )}
+                    {getStatusIcon(day)}
                     <Box>
                       <Typography variant="h6" sx={{ mb: 0.5 }}>
                         Day {day.planDay.dayNumber}
