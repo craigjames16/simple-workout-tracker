@@ -378,7 +378,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   }
 
   return (
-    <ResponsiveContainer maxWidth="md" disableGutters
+    <ResponsiveContainer maxWidth="sm" disableGutters
       sx={{ 
         mt: { xs: 0, sm: 4 },
         px: { xs: 0, sm: 2 }
@@ -509,21 +509,21 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   </Box>
                 </Box>
 
-                <Grid container spacing={2} sx={{ mb: 1 }}>
-                  <Grid item xs={1}>
+                <Grid container spacing={1} sx={{ mb: 1, maxWidth: 'sm', mx: 'auto' }}>
+                  <Grid item xs={2} sm={1.5}>
                     {/* Empty space for menu icon */}
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={3} sm={2.5}>
                     <Typography variant="subtitle2" color="text.secondary">
                       Weight
                     </Typography>
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item xs={3} sm={2.5}>
                     <Typography variant="subtitle2" color="text.secondary">
                       Reps
                     </Typography>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid item xs={4} sm={3}>
                     <Typography variant="subtitle2" color="text.secondary">
                       Complete
                     </Typography>
@@ -534,8 +534,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   const isSetCompleted = exercise.completedSetIndexes.has(setIndex);
 
                   return (
-                    <Grid container spacing={2} key={setIndex} sx={{ mt: 1 }}>
-                      <Grid item xs={1} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Grid container spacing={1} key={setIndex} sx={{ mt: 0.5, maxWidth: 'sm', mx: 'auto' }}>
+                      <Grid item xs={2} sm={1.5} sx={{ display: 'flex', alignItems: 'center' }}>
                         <IconButton
                           size="small"
                           onClick={(e) => handleMenuOpen(e, exerciseIndex, setIndex)}
@@ -544,7 +544,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           <MoreVertIcon />
                         </IconButton>
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid item xs={3} sm={2.5}>
                         <TextField
                           size="small"
                           fullWidth
@@ -560,6 +560,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           )}
                           disabled={isSetCompleted || !!workoutInstance.completedAt}
                           sx={{
+                            maxWidth: '100px',
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
                               margin: 0,
@@ -574,7 +575,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           }}
                         />
                       </Grid>
-                      <Grid item xs={4}>
+                      <Grid item xs={3} sm={2.5}>
                         <TextField
                           size="small"
                           fullWidth
@@ -590,6 +591,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           )}
                           disabled={isSetCompleted || !!workoutInstance.completedAt}
                           sx={{
+                            maxWidth: '100px',
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
                               margin: 0,
@@ -604,7 +606,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           }}
                         />
                       </Grid>
-                      <Grid item xs={3} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Grid item xs={4} sm={3} sx={{ display: 'flex', alignItems: 'center' }}>
                         <Checkbox
                           checked={isSetCompleted}
                           onChange={(e) => handleSetCompletion(exerciseIndex, setIndex, e.target.checked)}
