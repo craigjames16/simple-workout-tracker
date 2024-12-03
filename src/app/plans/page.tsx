@@ -71,12 +71,12 @@ export default function PlansPage() {
   }, []);
 
   const handlePlanClick = (planId: number) => {
-    router.push(`/plans/${planId}/details`);
+    router.push(`/plans/${planId}`);
   };
 
   if (loading) {
     return (
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
       </ResponsiveContainer>
     );
@@ -84,14 +84,14 @@ export default function PlansPage() {
 
   if (error) {
     return (
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
+      <ResponsiveContainer>
         <Typography color="error">{error}</Typography>
       </ResponsiveContainer>
     );
   }
 
   return (
-    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <ResponsiveContainer>
       <Paper>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h5">Workout Plans</Typography>

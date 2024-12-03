@@ -340,7 +340,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   }
 
   return (
-    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 4 }}>
+    <ResponsiveContainer maxWidth="lg">
       <Paper sx={{ p: 3 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -444,7 +444,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                             disabled={!selectedExercises[day.id]}
                             sx={{ flex: 1 }}
                           >
-                            Add Exercise
+                            Add
                           </Button>
                           <Button
                             variant="outlined"

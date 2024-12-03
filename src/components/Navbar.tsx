@@ -21,10 +21,12 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SportsGymnasticsIcon from '@mui/icons-material/SportsGymnastics';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import TimelineIcon from '@mui/icons-material/Timeline';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
+  { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
   { text: 'Home', href: '/', icon: <HomeIcon /> },
   { text: 'Exercises', href: '/exercises', icon: <SportsGymnasticsIcon /> },
   { text: 'Workouts', href: '/workouts', icon: <FitnessCenterIcon /> },
@@ -60,6 +62,13 @@ export default function Navbar() {
                 backgroundColor: 'primary.dark',
               },
             },
+            ...(item.highlight && {
+              background: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
+              },
+              color: 'white',
+            }),
           }}
         >
           <ListItemIcon sx={{ color: 'inherit' }}>
@@ -101,6 +110,12 @@ export default function Navbar() {
                     mx: 1,
                     ...(pathname === item.href && {
                       backgroundColor: 'primary.dark',
+                    }),
+                    ...(item.highlight && {
+                      background: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
+                      },
                     }),
                   }}
                 >

@@ -7,6 +7,7 @@ export const ResponsiveContainer = ({ sx, ...props }: ContainerProps) => {
   return (
     <Container
       disableGutters
+      maxWidth="sm"
       sx={{
         ...sx,
         mt: { xs: 0, sm: 2, md: 4 },

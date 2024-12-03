@@ -106,7 +106,7 @@ export default function ExercisesPage() {
     : exercises[selectedCategory] || [];
 
   return (
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, pb: 4 }}>
+      <ResponsiveContainer maxWidth="md">
         <Paper sx={{ p: 3 }}>
           <Typography variant="h5">
             Exercises

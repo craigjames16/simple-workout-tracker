@@ -147,17 +147,16 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
 
   if (error || !mesocycle) {
     return (
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
+      <ResponsiveContainer>
         <Typography color="error">{error || 'Mesocycle not found'}</Typography>
       </ResponsiveContainer>
     );
   }
 
   const progress = calculateProgress(mesocycle.instances);
-  const currentIteration = getCurrentIteration(mesocycle.instances);
 
   return (
-    <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
+    <ResponsiveContainer>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -200,18 +199,6 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                 {mesocycle.instances.filter(i => i.completedAt).length} / {mesocycle.iterations} iterations completed
               </Typography>
             </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={progress} 
-              sx={{ 
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: 'grey.300',
-                '& .MuiLinearProgress-bar': {
-                  borderRadius: 4,
-                }
-              }}
-            />
           </Box>
         </Box>
 

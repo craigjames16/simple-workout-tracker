@@ -121,7 +121,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
   const progress = calculateProgress();
 
   return (
-    <ResponsiveContainer maxWidth="md" sx={{ mt: 4 }}>
+    <ResponsiveContainer>
       <Paper sx={{ p: 3 }}>
         <Box sx={{ mb: 4 }}>
           <Typography variant="h5">
@@ -144,7 +144,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
                 }}
               >
                 <Typography variant="subtitle1" sx={{ mr: 1 }}>
-                  Part of Mesocycle: {planInstance.mesocycle.name}
+                  {planInstance.mesocycle.name}
                 </Typography>
                 <LaunchIcon fontSize="small" />
               </Box>

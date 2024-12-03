@@ -97,7 +97,7 @@ export default function WorkoutsPage() {
   }
 
   return (
-    <ResponsiveContainer maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+    <ResponsiveContainer>
       <Paper>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Typography variant="h5">Workout History</Typography>

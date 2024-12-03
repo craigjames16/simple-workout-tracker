@@ -378,12 +378,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   }
 
   return (
-    <ResponsiveContainer maxWidth="sm" disableGutters
-      sx={{ 
-        mt: { xs: 0, sm: 4 },
-        px: { xs: 0, sm: 2 }
-      }}
-    >
+    <ResponsiveContainer maxWidth="sm" disableGutters>
       <Paper sx={{ p: { xs: 2, sm: 3 }, position: 'relative' }}>
         <Box sx={{
           position: 'sticky',
