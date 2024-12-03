@@ -72,6 +72,9 @@ export interface WorkoutInstanceWithRelations {
   };
   planInstanceDay?: Array<{
     planDayId: number;
+    planDay: {
+      dayNumber: number; 
+    };
     planInstance: {
       iterationNumber?: number;
       id: number;

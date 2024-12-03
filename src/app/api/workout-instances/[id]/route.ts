@@ -40,6 +40,7 @@ export async function GET(
         },
         planInstanceDay: {
           include: {
+            planDay: true,
             planInstance: {
               include: {
                 mesocycle: true,

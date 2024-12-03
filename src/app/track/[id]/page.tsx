@@ -400,7 +400,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             <Box>
           <Typography variant="h5" gutterBottom>
                 {workoutInstance.planInstanceDay?.[0] ? (
-                  `${workoutInstance.planInstanceDay[0].planInstance.iterationNumber ? `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber}` : ''} Day ${workoutInstance.planInstanceDay[0].planDayId}`
+                  `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDay[0].planDay.dayNumber}`
                 ) : (
                   workoutInstance.workout.name
                 )}
