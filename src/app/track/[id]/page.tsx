@@ -33,13 +33,12 @@ interface ExerciseTracking {
   sets: Array<{
     reps: number;
     weight: number;
+    completed?: boolean;
     lastSet: {
       reps: number;
       weight: number;
     } | null;
   }>;
-  completedSetIndexes: Set<number>;
-  isCompleted: boolean;
 }
 
 interface ExerciseSet {
@@ -110,7 +109,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
               return completedSet ? {
                 reps: completedSet.reps,
                 weight: completedSet.weight,
-                lastSet: matchingLastSet || null
+                lastSet: matchingLastSet || null,
+                completed: true
               } : {
                 reps: 0,
                 weight: 0,
@@ -206,30 +206,19 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
       // Update local state
       setExerciseTrackings(prev => {
-        const updated = [...prev];
-        const newCompletedSetIndexes = new Set(updated[exerciseIndex].completedSetIndexes);
+        const prevExercises = [...prev];
+        const set = prevExercises[exerciseIndex].sets[setIndex]
+        var newSet = { ...set };
         
         if (completed) {
-          newCompletedSetIndexes.add(setIndex);
-          // Update the set with the values we're using
-          updated[exerciseIndex].sets[setIndex] = {
-            weight: weightToUse,
-            reps: repsToUse,
-            lastSet: {
-              reps: repsToUse,
-              weight: weightToUse
-            }
-          };
+          newSet.completed = true
         } else {
-          newCompletedSetIndexes.delete(setIndex);
+          newSet.completed = false
         }
 
-        updated[exerciseIndex] = {
-          ...updated[exerciseIndex],
-          completedSetIndexes: newCompletedSetIndexes,
-          isCompleted: newCompletedSetIndexes.size === updated[exerciseIndex].sets.length
-        };
-        return updated;
+        prevExercises[exerciseIndex].sets[setIndex] = newSet;
+        
+        return prevExercises;
       });
 
       // If the set was completed, save it to the backend
@@ -308,13 +297,16 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         setExerciseTrackings(prev => [...prev, {
           exerciseId: newExercise.exercise.id,
           exerciseName: newExercise.exercise.name,
-          sets: Array.from({ length: 3 }, () => ({
-            reps: 0,
-            weight: 0,
-            lastSet: null
-          })),
-          completedSetIndexes: new Set<number>(),
-          isCompleted: false,
+          sets: Array.from({ length: newExercise.lastSets.length || 3 }, (_, index) => {
+            // Find the set with matching setNumber (index + 1) from last workout
+            const matchingLastSet = newExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
+            
+            return {
+              reps: 0,
+              weight: 0,
+              lastSet: matchingLastSet || null
+            };
+          })
         }]);
       }
 
@@ -519,7 +511,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   <Box>
                     <IconButton
                       onClick={(event) => handleExerciseMenuOpen(event, exerciseIndex)}
-                      disabled={exercise.isCompleted || !!workoutInstance.completedAt}
+                      disabled={!!workoutInstance.completedAt}
                     >
                       <MoreVertIcon />
                     </IconButton>
@@ -548,7 +540,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 </Grid>
                 
                 {exercise.sets.map((set, setIndex) => {
-                  const isSetCompleted = exercise.completedSetIndexes.has(setIndex);
+                  const isSetCompleted = set.completed;
 
                   return (
                     <Grid container spacing={1} key={setIndex} sx={{ mt: 0.5, maxWidth: 'sm', mx: 'auto' }}>
@@ -627,7 +619,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         <Checkbox
                           checked={isSetCompleted}
                           onChange={(e) => handleSetCompletion(exerciseIndex, setIndex, e.target.checked)}
-                          disabled={exercise.isCompleted || !!workoutInstance.completedAt}
+                          disabled={!!workoutInstance.completedAt}
                         />
                       </Grid>
                     </Grid>
@@ -638,7 +630,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   startIcon={<AddIcon />}
                   onClick={() => handleAddSet(exerciseIndex)}
                   sx={{ mt: 1 }}
-                  disabled={exercise.isCompleted || !!workoutInstance.completedAt}
+                  disabled={!!workoutInstance.completedAt}
                 >
                   Add Set
                 </Button>
@@ -686,7 +678,9 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             color="primary"
             fullWidth
             onClick={handleCompleteWorkout}
-            disabled={!exerciseTrackings.every(t => t.isCompleted) || !!workoutInstance.completedAt}
+            disabled={!exerciseTrackings.every(tracking => 
+              tracking.sets.every(set => set.completed === true)
+            ) || !!workoutInstance.completedAt}
           >
             Complete Workout
           </Button>
