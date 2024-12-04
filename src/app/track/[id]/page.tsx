@@ -158,13 +158,13 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     fetchAvailableExercises();
   }, []);
 
-  const handleUpdateSet = (exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: number) => {
+  const handleUpdateSet = (set: any,exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: number) => {
     setExerciseTrackings(prev => {
       const updated = [...prev];
       updated[exerciseIndex] = {
         ...updated[exerciseIndex],
         sets: updated[exerciseIndex].sets.map((set, idx) =>
-          field === 'weight' 
+          field === 'weight' && !set.completed // Might not be needed since when do you adjust the weight of a set above an already completed set
             ? (idx >= setIndex ? { ...set, weight: value } : set)
             : (idx === setIndex ? { ...set, reps: value } : set)
         ),
@@ -173,14 +173,22 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     });
   };
 
-  const handleAddSet = (exerciseIndex: number) => {
+  const handleAddSet = (exerciseIndex: number, workout: any) => {
     setExerciseTrackings(prev => {
-      const updated = [...prev];
-      updated[exerciseIndex] = {
-        ...updated[exerciseIndex],
-        sets: [...updated[exerciseIndex].sets, { reps: 0, weight: 0, lastSet: null }]
+      const newExerciseTracking = [...prev];
+      // get current Exercise Tracker
+      const exerciseTracker = newExerciseTracking[exerciseIndex];
+      // Get last sets for current exercise
+      const lastSets = workout.exercises.find((ex: any) => ex.exerciseId === exerciseTracker.exerciseId).lastSets;
+      // Find the set with matching setNumber (index + 1) from last sets
+      const matchingLastSet = lastSets.find((lastSet: any) => lastSet.setNumber === exerciseTracker.sets.length + 1);
+
+      newExerciseTracking[exerciseIndex] = {
+        ...newExerciseTracking[exerciseIndex],
+        sets: [...newExerciseTracking[exerciseIndex].sets, { reps: 0, weight: 0, lastSet: matchingLastSet || null }]
       };
-      return updated;
+
+      return newExerciseTracking;
     });
   };
 
@@ -562,6 +570,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           value={set.weight || ''}
                           placeholder={set.lastSet ? String(set.lastSet.weight) : "0"}
                           onChange={(e) => handleUpdateSet(
+                            set,
                             exerciseIndex,
                             setIndex,
                             'weight',
@@ -593,6 +602,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           value={set.reps || ''}
                           placeholder={set.lastSet ? String(set.lastSet.reps) : "0"}
                           onChange={(e) => handleUpdateSet(
+                            set,
                             exerciseIndex,
                             setIndex,
                             'reps',
@@ -628,7 +638,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
                 <Button
                   startIcon={<AddIcon />}
-                  onClick={() => handleAddSet(exerciseIndex)}
+                  onClick={() => handleAddSet(exerciseIndex, workoutInstance.workout)}
                   sx={{ mt: 1 }}
                   disabled={!!workoutInstance.completedAt}
                 >
