@@ -30,6 +30,7 @@ import { ExerciseCategory } from '@prisma/client';
 interface ExerciseTracking {
   exerciseId: number;
   exerciseName: string;
+  order: number;
   sets: Array<{
     reps: number;
     weight: number;
@@ -39,13 +40,6 @@ interface ExerciseTracking {
       weight: number;
     } | null;
   }>;
-}
-
-interface ExerciseSet {
-  exerciseId: number;
-  reps: number;
-  weight: number;
-  setNumber: number;
 }
 
 interface WorkoutExercise {
@@ -92,38 +86,65 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         }
         const data = await response.json();
         setWorkoutInstance(data);
+
+        // Get completed sets for this exercise
+        const completedSetsMap = data.sets?.reduce((acc: Record<number, any[]>, set: any) => {
+          if (!acc[set.exerciseId]) {
+            acc[set.exerciseId] = [];
+          }
+          acc[set.exerciseId].push({
+            reps: set.reps,
+            weight: set.weight,
+            setNumber: set.setNumber
+          });
+          return acc;
+        }, {}) || {};
+        console.log(completedSetsMap);
+        // Get the last completed set for each exercise
         
-        const initialTrackings = data.workout.exercises.map((ex: any) => {
-          // Get completed sets for this exercise
-          const completedSets = data.sets?.filter((set: any) => set.exerciseId === ex.exercise.id) || [];
-          
+        
+        const initialTrackings = data.workout.exercises.map((ex: any) => {   
+          let sets;
+
+          if (data.completedAt) {
+            // Just used the completed sets for a completed workout
+            sets = completedSetsMap[ex.exercise.id];
+          } else {
+            // Generate sets for incomplete workout from last workout
+            sets = Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
+              // Find completed set with matching setNumber
+              const completedSets = completedSetsMap[ex.exercise.id] || [];
+              const completedSet = completedSets.find((set: any) => {
+                if (set.setNumber === index + 1) {
+                  return true;
+                }
+            });
+
+            // Find the set with matching setNumber (index + 1) from last workout
+            const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
+
+            return completedSet ? {
+              reps: completedSet.reps,
+              weight: completedSet.weight,
+              lastSet: matchingLastSet || null,
+              completed: true
+            } : {
+              reps: 0,
+              weight: 0,
+              lastSet: matchingLastSet || null
+            };
+          })
+        }
+
           return {
             exerciseId: ex.exercise.id,
             exerciseName: ex.exercise.name,
-            sets: Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
-              // Find completed set with matching setNumber
-              const completedSet = completedSets.find((set: any) => set.setNumber === index + 1);
-              // Find the set with matching setNumber (index + 1) from last workout
-              const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
-              
-              return completedSet ? {
-                reps: completedSet.reps,
-                weight: completedSet.weight,
-                lastSet: matchingLastSet || null,
-                completed: true
-              } : {
-                reps: 0,
-                weight: 0,
-                lastSet: matchingLastSet || null
-              };
-            }),
-            completedSetIndexes: new Set<number>(
-              completedSets.map((set: any) => set.setNumber - 1)
-            ),
-            isCompleted: false,
+            sets,
+            order: ex.order
           };
         });
-        setExerciseTrackings(initialTrackings);
+
+        setExerciseTrackings(initialTrackings.sort((a: { order: number }, b: { order: number }) => a.order - b.order));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch workout');
       } finally {
@@ -305,6 +326,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         setExerciseTrackings(prev => [...prev, {
           exerciseId: newExercise.exercise.id,
           exerciseName: newExercise.exercise.name,
+          order: newExercise.order,
           sets: Array.from({ length: newExercise.lastSets.length || 3 }, (_, index) => {
             // Find the set with matching setNumber (index + 1) from last workout
             const matchingLastSet = newExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
@@ -312,7 +334,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             return {
               reps: 0,
               weight: 0,
-              lastSet: matchingLastSet || null
+              lastSet: matchingLastSet || null,
+              completed: false
             };
           })
         }]);
@@ -548,7 +571,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 </Grid>
                 
                 {exercise.sets.map((set, setIndex) => {
-                  const isSetCompleted = set.completed;
+                  const isSetCompleted = set.completed || false;
 
                   return (
                     <Grid container spacing={1} key={setIndex} sx={{ mt: 0.5, maxWidth: 'sm', mx: 'auto' }}>
@@ -627,7 +650,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                       </Grid>
                       <Grid item xs={4} sm={3} sx={{ display: 'flex', alignItems: 'center' }}>
                         <Checkbox
-                          checked={isSetCompleted}
+                          checked={isSetCompleted || !!workoutInstance.completedAt}
                           onChange={(e) => handleSetCompletion(exerciseIndex, setIndex, e.target.checked)}
                           disabled={!!workoutInstance.completedAt}
                         />
