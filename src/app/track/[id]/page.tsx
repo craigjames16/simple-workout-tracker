@@ -21,12 +21,10 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import type { WorkoutInstanceWithRelations } from '@/types/prisma';
-import Checkbox from '@mui/material/Checkbox';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import { ExerciseCategory } from '@prisma/client';
-import { AnimatedCheckbox } from '../../components/AnimatedCheckbox';
+import { AnimatedCheckbox } from '@/components/AnimatedCheckbox';
 import { motion } from "framer-motion";
 import confetti from 'canvas-confetti';
 import { createRoot } from 'react-dom/client';
