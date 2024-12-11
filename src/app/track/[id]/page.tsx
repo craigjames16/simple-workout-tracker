@@ -685,7 +685,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 handleAddExercise();
                 handleWorkoutMenuClose();
               }}
-              disabled={!selectedExercise || workoutInstance.completedAt}
+              disabled={!selectedExercise || !!workoutInstance.completedAt}
               fullWidth
             >
               Add Exercise

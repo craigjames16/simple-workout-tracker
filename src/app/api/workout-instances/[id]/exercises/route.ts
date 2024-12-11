@@ -190,6 +190,13 @@ export async function DELETE(
       },
     });
 
+    if (!updatedWorkoutInstance) {
+      return NextResponse.json(
+        { error: 'Workout instance not found' },
+        { status: 404 }
+      );
+    }
+
     const processedWorkoutInstance = {
       ...updatedWorkoutInstance,
       workout: {

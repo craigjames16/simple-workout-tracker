@@ -273,8 +273,6 @@ export default function ExercisesPage() {
               </FormControl>
               <GradientButton
                 component={motion.button}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 variant="contained"
                 fullWidth
                 onClick={handleCreateExercise}
