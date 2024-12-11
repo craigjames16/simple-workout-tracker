@@ -1,45 +1,58 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ExerciseCategory, Exercise } from '@prisma/client';
-import { getServerSession } from "next-auth";
+import { getServerSession } from 'next-auth';
 import { authOptions } from "../auth/[...nextauth]/route";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const exercises = await prisma.exercise.findMany({
-      where: {
-        OR: [
-          { userId: session.user.id },
-          { userId: null }
-        ]
-      },
-      orderBy: [
-        { category: 'asc' },
-        { name: 'asc' }
-      ]
+      include: {
+        sets: {
+          where: {
+            workoutInstance: {
+              userId: session.user.id
+            }
+          },
+          orderBy: {
+            createdAt: 'asc'
+          },
+          select: {
+            id: true,
+            weight: true,
+            reps: true,
+            createdAt: true,
+          }
+        }
+      }
     });
 
     // Group exercises by category
-    const exercisesByCategory = Object.values(ExerciseCategory).reduce((acc, category) => {
-      acc[category] = exercises.filter((exercise: Exercise) => exercise.category === category);
+    const exercisesByCategory = exercises.reduce((acc, exercise) => {
+      const category = exercise.category;
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push({
+        ...exercise,
+        history: exercise.sets.map(set => ({
+          id: set.id,
+          weight: set.weight,
+          reps: set.reps,
+          date: set.createdAt.toISOString()
+        }))
+      });
       return acc;
-    }, {} as Record<ExerciseCategory, typeof exercises>);
+    }, {} as Record<string, any>);
 
     return NextResponse.json(exercisesByCategory);
   } catch (error) {
     console.error('Error fetching exercises:', error);
-    return NextResponse.json(
-      { 
-        error: 'Error fetching exercises', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      },
-      { status: 500 }
-    );
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
