@@ -25,7 +25,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import { ExerciseCategory } from '@prisma/client';
 import { AnimatedCheckbox } from '@/components/AnimatedCheckbox';
-import { motion } from "framer-motion";
+import { motion, animate as animateDOM } from "framer-motion";
 import confetti from 'canvas-confetti';
 import { createRoot } from 'react-dom/client';
 
@@ -347,15 +347,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       if (completed) {
         const element = document.getElementById(`set-${tracking.exerciseId}-${setIndex}`);
         if (element) {
-          motion(element).animate(
-            { 
-              scale: [1, 1.1, 1], 
-              backgroundColor: ['#fff', '#4ade80', '#fff'] 
-            },
-            { 
-              duration: 0.5 
-            }
-          );
+          animateDOM(element, { 
+            scale: [1, 1.1, 1], 
+            backgroundColor: ['#fff', '#4ade80', '#fff']
+          }, { duration: 0.5 });
         }
 
         confetti({
