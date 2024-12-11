@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@mui/material/styles';
 import ThemeRegistry from '@/components/ThemeRegistry';
 import Navbar from '@/components/Navbar';
 import { NextAuthProvider } from './provider';
@@ -44,12 +45,12 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <NextAuthProvider session={session}>
-        <ThemeRegistry>
-            <Navbar />
-            {children}
-          </ThemeRegistry>
-        </NextAuthProvider>
+          <NextAuthProvider session={session}>
+            <ThemeRegistry>
+              <Navbar />
+              {children}
+            </ThemeRegistry>
+          </NextAuthProvider>
       </body>
     </html>
   );

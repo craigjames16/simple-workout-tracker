@@ -33,7 +33,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { motion } from "framer-motion";
-
+import GradientButton from '@/components/GradientButton';
 interface Exercise {
   id: number;
   name: string;
@@ -244,16 +244,16 @@ export default function ExercisesPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.form
+            <Box
+              component={motion.form}
               initial={{ y: 20 }}
               animate={{ y: 0 }}
               transition={{ type: "spring" }}
+              sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}
             >
-              <motion.input
-                whileFocus={{ scale: 1.02 }}
-                className="border rounded p-2 mb-4"
-                type="text"
-                placeholder="Exercise name"
+              <TextField
+                fullWidth
+                label="Exercise name"
                 value={newExercise.name}
                 onChange={(e) => setNewExercise(prev => ({ ...prev, name: e.target.value }))}
               />
@@ -271,16 +271,18 @@ export default function ExercisesPage() {
                   ))}
                 </Select>
               </FormControl>
-              <motion.button
+              <GradientButton
+                component={motion.button}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+                variant="contained"
+                fullWidth
                 onClick={handleCreateExercise}
                 disabled={!newExercise.name || !newExercise.category}
               >
                 Create
-              </motion.button>
-            </motion.form>
+              </GradientButton>
+            </Box>
           </motion.div>
         </DialogContent>
         <DialogActions>

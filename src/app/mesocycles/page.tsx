@@ -25,7 +25,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
-
+import GradientButton from '@/components/GradientButton';
 interface Plan {
   id: number;
   name: string;
@@ -240,12 +240,12 @@ export default function MesocyclesPage() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-            <Button 
+            <GradientButton 
               onClick={handleCreateMesocycle}
               disabled={!newMesocycle.name || !newMesocycle.planId || newMesocycle.iterations < 1}
             >
               Create
-            </Button>
+            </GradientButton>
           </DialogActions>
         </Dialog>
       </ResponsiveContainer>

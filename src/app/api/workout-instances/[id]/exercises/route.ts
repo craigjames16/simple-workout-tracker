@@ -83,7 +83,51 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(updatedWorkoutInstance);
+    const processedWorkoutInstance = {
+      ...updatedWorkoutInstance,
+      workout: {
+        ...updatedWorkoutInstance.workout,
+        exercises: await Promise.all(updatedWorkoutInstance.workout.exercises.map(async ex => {
+          // Find the last completed workout instance for this exercise
+          const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
+            where: {
+              id: { not: updatedWorkoutInstance.id }, // Exclude current workout
+              completedAt: { not: null },
+              workout: {
+                exercises: {
+                  some: {
+                    exerciseId: ex.exerciseId
+                  }
+                }
+              }
+            },
+            include: {
+              sets: {
+                where: {
+                  exerciseId: ex.exerciseId
+                },
+                orderBy: {
+                  setNumber: 'asc'
+                }
+              }
+            },
+            orderBy: {
+              completedAt: 'desc'
+            }
+          });
+
+          return {
+            ...ex,
+            exercise: {
+              ...ex.exercise
+            },
+            lastSets: lastCompletedWorkout?.sets || []
+          };
+        }))
+      }
+    };
+
+    return NextResponse.json(processedWorkoutInstance);
   } catch (error) {
     console.error('Error adding exercise:', error);
     return NextResponse.json(
@@ -146,7 +190,51 @@ export async function DELETE(
       },
     });
 
-    return NextResponse.json(updatedWorkoutInstance);
+    const processedWorkoutInstance = {
+      ...updatedWorkoutInstance,
+      workout: {
+        ...updatedWorkoutInstance.workout,
+        exercises: await Promise.all(updatedWorkoutInstance.workout.exercises.map(async ex => {
+          // Find the last completed workout instance for this exercise
+          const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
+            where: {
+              id: { not: updatedWorkoutInstance.id }, // Exclude current workout
+              completedAt: { not: null },
+              workout: {
+                exercises: {
+                  some: {
+                    exerciseId: ex.exerciseId
+                  }
+                }
+              }
+            },
+            include: {
+              sets: {
+                where: {
+                  exerciseId: ex.exerciseId
+                },
+                orderBy: {
+                  setNumber: 'asc'
+                }
+              }
+            },
+            orderBy: {
+              completedAt: 'desc'
+            }
+          });
+
+          return {
+            ...ex,
+            exercise: {
+              ...ex.exercise
+            },
+            lastSets: lastCompletedWorkout?.sets || []
+          };
+        }))
+      }
+    };
+
+    return NextResponse.json(processedWorkoutInstance);
   } catch (error) {
     console.error('Error removing exercise:', error);
     return NextResponse.json(

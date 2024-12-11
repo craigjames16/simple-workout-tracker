@@ -28,6 +28,10 @@ import { AnimatedCheckbox } from '@/components/AnimatedCheckbox';
 import { motion, animate as animateDOM } from "framer-motion";
 import confetti from 'canvas-confetti';
 import { createRoot } from 'react-dom/client';
+import GradientButton from '@/components/GradientButton';
+import { trackGradient } from '@/components/ThemeRegistry';
+import ArrowUpward from '@mui/icons-material/ArrowUpward';
+import ArrowDownward from '@mui/icons-material/ArrowDownward';
 
 interface ExerciseTracking {
   exerciseId: number;
@@ -136,7 +140,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           });
           return acc;
         }, {}) || {};
-        console.log(completedSetsMap);
         // Get the last completed set for each exercise
         
         
@@ -475,6 +478,12 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
       const data = await response.json();
       setWorkoutInstance(data);
+      
+      // Remove the exercise from exerciseTrackings
+      setExerciseTrackings(prev => 
+        prev.filter(tracking => tracking.exerciseId !== exerciseId)
+      );
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove exercise');
     }
@@ -515,6 +524,51 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     setWorkoutMenuAnchorEl(null);
   };
 
+  const handleReorderExercise = async (exerciseId: number, direction: 'up' | 'down') => {
+    try {
+      // Get the workoutId from the workoutInstance
+      const workoutId = workoutInstance?.workout.id;
+
+      if (!workoutId) {
+        throw new Error('Workout ID not found');
+      }
+      
+      const response = await fetch(`/api/workout-instances/${params.id}/exercises/reorder/${workoutId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          exerciseId,
+          direction,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder exercise');
+      }
+
+      // Update local state to reflect the new order
+      setExerciseTrackings(prev => {
+        const exercises = [...prev];
+        const currentIndex = exercises.findIndex(ex => ex.exerciseId === exerciseId);
+        const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+        if (targetIndex >= 0 && targetIndex < exercises.length) {
+          // Swap the exercises
+          [exercises[currentIndex], exercises[targetIndex]] = [exercises[targetIndex], exercises[currentIndex]];
+          // Update their order properties
+          exercises[currentIndex].order = currentIndex;
+          exercises[targetIndex].order = targetIndex;
+        }
+
+        return exercises;
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reorder exercise');
+    }
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer maxWidth="md" disableGutters sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -533,23 +587,27 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   return (
     <ResponsiveContainer maxWidth="xs" disableGutters>
-      <Paper sx={{ p: { xs: 2, sm: 3 }, position: 'relative' }}>
+      <Paper sx={{ 
+        p: { xs: 0, sm: 0 }, 
+        position: 'relative' 
+      }}>
         <Box sx={{
           position: 'sticky',
+          pl: 2,
           top: {
             xs: 56,  // Mobile height
             sm: 64   // Desktop height
           },
           opacity: 1,
-          backgroundColor: 'background.paper',
+          background: trackGradient,
           zIndex: 1,
-          paddingY: 2,
+          paddingY: 1,
           borderBottom: 1,
           borderColor: 'divider'
         }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <Box>
-          <Typography variant="h5" gutterBottom>
+              <Typography variant="h6" gutterBottom>
                 {workoutInstance.planInstanceDay?.[0] ? (
                   `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDay[0].planDay.dayNumber}`
                 ) : (
@@ -621,17 +679,17 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
               </Select>
             </FormControl>
 
-            <Button
+            <GradientButton
               variant="contained"
               onClick={() => {
                 handleAddExercise();
                 handleWorkoutMenuClose();
               }}
-              disabled={!selectedExercise || !workoutInstance.completedAt}
+              disabled={!selectedExercise || workoutInstance.completedAt}
               fullWidth
             >
               Add Exercise
-            </Button>
+            </GradientButton>
           </Box>
         </Menu>
 
@@ -644,6 +702,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 flexDirection: 'column',
                 alignItems: 'stretch',
                 mb: 2,
+                borderBottom: '5px solid rgba(0, 0, 0, 0.12)',
+                pb: 2,
               }}
             >
               <Box sx={{ width: '100%', mb: 2 }}>
@@ -774,15 +834,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     </Grid>
                   );
                 })}
-
-                <Button
-                  startIcon={<AddIcon />}
-                  onClick={() => handleAddSet(exerciseIndex, workoutInstance.workout)}
-                  sx={{ mt: 1 }}
-                  disabled={!!workoutInstance.completedAt}
-                >
-                  Add Set
-                </Button>
               </Box>
             </ListItem>
           ))}
@@ -810,6 +861,42 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           <MenuItem 
             onClick={() => {
               if (activeExercise !== null) {
+                handleReorderExercise(exerciseTrackings[activeExercise].exerciseId, 'up');
+                handleExerciseMenuClose();
+              }
+            }}
+            disabled={activeExercise === 0 || !!workoutInstance.completedAt}
+          >
+            <ArrowUpward sx={{ mr: 1 }} fontSize="small" />
+            Move Up
+          </MenuItem>
+          <MenuItem 
+            onClick={() => {
+              if (activeExercise !== null) {
+                handleReorderExercise(exerciseTrackings[activeExercise].exerciseId, 'down');
+                handleExerciseMenuClose();
+              }
+            }}
+            disabled={activeExercise === exerciseTrackings.length - 1 || !!workoutInstance.completedAt}
+          >
+            <ArrowDownward sx={{ mr: 1 }} fontSize="small" />
+            Move Down
+          </MenuItem>
+          <MenuItem 
+            onClick={() => {
+              if (activeExercise !== null) {
+                handleAddSet(activeExercise, workoutInstance.workout);
+                handleExerciseMenuClose();
+              }
+            }}
+            disabled={!!workoutInstance.completedAt}
+          >
+            <AddIcon sx={{ mr: 1 }} fontSize="small" />
+            Add Set
+          </MenuItem>
+          <MenuItem 
+            onClick={() => {
+              if (activeExercise !== null) {
                 handleRemoveExercise(exerciseTrackings[activeExercise].exerciseId);
                 handleExerciseMenuClose();
               }
@@ -822,17 +909,19 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         </Menu>
 
         <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
-          <Button
+          <GradientButton
             variant="contained"
-            color="primary"
             fullWidth
+            sx={{ mb: 3, ml: 2, mr: 2 }}
             onClick={handleCompleteWorkout}
-            disabled={!exerciseTrackings.every(tracking => 
-              tracking.sets.every(set => set.completed === true)
-            ) || !!workoutInstance.completedAt}
+            disabled={
+              !exerciseTrackings.every((tracking) =>
+                tracking.sets.every((set) => set.completed === true)
+              ) || !!workoutInstance.completedAt
+            }
           >
             Complete Workout
-          </Button>
+          </GradientButton>
         </Box>
       </Paper>
     </ResponsiveContainer>

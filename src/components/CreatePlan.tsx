@@ -32,7 +32,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { ExerciseCategory } from '@prisma/client';
 import { ResponsiveContainer } from './ResponsiveContainer';
-
+import GradientButton from './GradientButton';
 interface Exercise {
   id: number;
   name: string;
@@ -358,13 +358,13 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           <Typography variant="h5">
             {mode === 'edit' ? 'Edit Workout Plan' : 'Create Workout Plan'}
           </Typography>
-          <Button
+          <GradientButton
             variant="contained"
             startIcon={<AddIcon />}
             onClick={addWorkoutDay}
           >
             Add Day
-          </Button>
+          </GradientButton>
         </Box>
 
         <Box sx={{ mb: 3 }}>
@@ -383,7 +383,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
               .sort((a, b) => a.dayNumber - b.dayNumber)
               .map((day, dayIndex) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
-                <Card>
+                <Card sx={{ bgcolor: '#171717 !important', boxShadow: '5px 5px 5px rgba(0, 0, 0, 0.1)' }}>
                   <CardHeader
                     title={day.name}
                     action={
@@ -523,7 +523,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
         </DragDropContext>
 
         <Box sx={{ mt: 3 }}>
-          <Button
+          <GradientButton
             fullWidth
             variant="contained"
             color="primary"
@@ -531,7 +531,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
             disabled={!planName || workoutDays.length === 0}
           >
             Save Plan
-          </Button>
+          </GradientButton>
         </Box>
       </Paper>
       <Dialog open={openNewExerciseDialog} onClose={handleCloseNewExerciseDialog}>
@@ -563,12 +563,12 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseNewExerciseDialog}>Cancel</Button>
-          <Button 
+          <GradientButton 
             onClick={handleCreateAndAddExercise}
             disabled={!newExercise.name || !newExercise.category}
           >
             Create & Add
-          </Button>
+          </GradientButton>
         </DialogActions>
       </Dialog>
     </ResponsiveContainer>

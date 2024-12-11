@@ -6,6 +6,8 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { ReactNode, useState } from 'react';
 
+export const trackGradient = 'linear-gradient(45deg, #1c5da6 5%, #08274a 90%)';
+
 const theme = createTheme({
   palette: {
     mode: 'dark',
