@@ -699,7 +699,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           size="small"
                           fullWidth
                           type="number"
-                          inputMode="numeric"
                           value={set.weight || ''}
                           placeholder={set.lastSet ? String(set.lastSet.weight) : "0"}
                           onChange={(e) => handleUpdateSet(
@@ -724,6 +723,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                               color: 'rgba(0, 0, 0, 0.87)',
                             }
                           }}
+                          inputProps={{
+                            inputMode: 'decimal',
+                            pattern: '[0-9]*\\.?[0-9]*'
+                          }}
                         />
                       </Grid>
                       <Grid item xs={3} sm={2.5}>
@@ -731,7 +734,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           size="small"
                           fullWidth
                           type="number"
-                          inputMode="numeric"
                           value={set.reps || ''}
                           placeholder={set.lastSet ? String(set.lastSet.reps) : "0"}
                           onChange={(e) => handleUpdateSet(
@@ -755,6 +757,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                               WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
                               color: 'rgba(0, 0, 0, 0.87)',
                             }
+                          }}
+                          inputProps={{
+                            inputMode: 'numeric',
+                            pattern: '[0-9]*'
                           }}
                         />
                       </Grid>
