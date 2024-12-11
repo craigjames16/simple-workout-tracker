@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   ResponsiveContainer,
   Paper,
@@ -26,12 +26,17 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { ExerciseCategory } from '@prisma/client';
+import { AnimatedCheckbox } from '../../components/AnimatedCheckbox';
+import { motion } from "framer-motion";
+import confetti from 'canvas-confetti';
+import { createRoot } from 'react-dom/client';
 
 interface ExerciseTracking {
   exerciseId: number;
   exerciseName: string;
   order: number;
   sets: Array<{
+    id?: number;
     reps: number;
     weight: number;
     completed?: boolean;
@@ -63,6 +68,39 @@ interface ExerciseResponse {
   }>;
 }
 
+const ParticleEffect = () => {
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+      {Array.from({ length: 50 }).map((_, i) => (
+        <motion.div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: '40%',
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            backgroundColor: ['#FFD700', '#4CAF50', '#2196F3'][i % 3],
+          }}
+          initial={{ scale: 0 }}
+          animate={{
+            y: [-20, -150 - Math.random() * 150],
+            x: [0, (Math.random() - 0.5) * 200],
+            scale: [0, 1, 0],
+          }}
+          transition={{
+            duration: 1 + Math.random(),
+            ease: "easeOut",
+            times: [0, 0.2, 1],
+            delay: Math.random() * 0.2,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [workoutInstance, setWorkoutInstance] = useState<WorkoutInstanceWithRelations | null>(null);
   const [exerciseTrackings, setExerciseTrackings] = useState<ExerciseTracking[]>([]);
@@ -93,6 +131,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             acc[set.exerciseId] = [];
           }
           acc[set.exerciseId].push({
+            id: set.id,
             reps: set.reps,
             weight: set.weight,
             setNumber: set.setNumber
@@ -124,6 +163,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
 
             return completedSet ? {
+              id: completedSet.id,
               reps: completedSet.reps,
               weight: completedSet.weight,
               lastSet: matchingLastSet || null,
@@ -229,30 +269,52 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       const tracking = exerciseTrackings[exerciseIndex];
       const set = tracking.sets[setIndex];
       
+      if (!completed) {
+        // Delete the set if it exists
+        const setId = set.id;
+        console.log('Attempting to delete set with ID:', setId);
+        
+        if (setId) {
+          const response = await fetch(`/api/workout-instances/${params.id}/sets`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              setIds: [setId],
+            }),
+          });
+
+          const result = await response.json();
+          console.log('Delete response:', result);
+
+          if (!response.ok) {
+            throw new Error(`Failed to delete set: ${result.error}`);
+          }
+
+          // Update local state to remove completion and ID
+          setExerciseTrackings(prev => {
+            const prevExercises = [...prev];
+            const updatedSet = { 
+              ...prevExercises[exerciseIndex].sets[setIndex],
+              id: undefined,
+              completed: false
+            };
+            prevExercises[exerciseIndex].sets[setIndex] = updatedSet;
+            return prevExercises;
+          });
+        } else {
+          console.log('No set ID found for deletion');
+        }
+      }
+
       // Use lastSet values or current values, falling back to placeholders if neither exists
       const weightToUse = set.weight || (set.lastSet?.weight ?? 0);
       const repsToUse = set.reps || (set.lastSet?.reps ?? 0);
 
-      // Update local state
-      setExerciseTrackings(prev => {
-        const prevExercises = [...prev];
-        const set = prevExercises[exerciseIndex].sets[setIndex]
-        var newSet = { ...set };
-        
-        if (completed) {
-          newSet.completed = true
-        } else {
-          newSet.completed = false
-        }
-
-        prevExercises[exerciseIndex].sets[setIndex] = newSet;
-        
-        return prevExercises;
-      });
-
-      // If the set was completed, save it to the backend
       if (completed) {
-        await fetch(`/api/workout-instances/${params.id}/sets`, {
+        // Create new set
+        const response = await fetch(`/api/workout-instances/${params.id}/sets`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -266,8 +328,46 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             }],
           }),
         });
+
+        const data = await response.json();
+        const newSetId = data[0].id;
+
+        // Update local state with the new set ID
+        setExerciseTrackings(prev => {
+          const prevExercises = [...prev];
+          const updatedSet = { 
+            ...prevExercises[exerciseIndex].sets[setIndex],
+            id: newSetId,
+            completed: true
+          };
+          prevExercises[exerciseIndex].sets[setIndex] = updatedSet;
+          return prevExercises;
+        });
+      }
+
+      // Add success animation and confetti (only for completion)
+      if (completed) {
+        const element = document.getElementById(`set-${tracking.exerciseId}-${setIndex}`);
+        if (element) {
+          motion(element).animate(
+            { 
+              scale: [1, 1.1, 1], 
+              backgroundColor: ['#fff', '#4ade80', '#fff'] 
+            },
+            { 
+              duration: 0.5 
+            }
+          );
+        }
+
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
       }
     } catch (err) {
+      console.error('Error in handleSetCompletion:', err);
       setError(err instanceof Error ? err.message : 'Failed to update set completion');
     }
   };
@@ -282,16 +382,33 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         throw new Error('Failed to complete workout');
       }
 
-      // If this workout is part of a plan instance, redirect there
-      if (workoutInstance?.planInstanceDay?.[0]?.planInstance) {
-        window.location.href = `/plans/instance/${workoutInstance.planInstanceDay[0].planInstance.id}`;
-      } else if (workoutInstance?.planInstanceDay?.[0]?.planInstance?.mesocycle) {
-        // If it's part of a mesocycle, redirect to the mesocycle page
-        window.location.href = `/mesocycles/${workoutInstance.planInstanceDay[0].planInstance.mesocycle.id}`;
-      } else {
-        // Otherwise, redirect to plans page
-        window.location.href = '/plans';
-      }
+      // Add both confetti and our custom animation
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      // Show particle effect
+      const container = document.createElement('div');
+      document.body.appendChild(container);
+      const root = createRoot(container);
+      root.render(<ParticleEffect />);
+
+      // Clean up and redirect after animation
+      setTimeout(() => {
+        root.unmount();
+        container.remove();
+        
+        if (workoutInstance?.planInstanceDay?.[0]?.planInstance) {
+          window.location.href = `/plans/instance/${workoutInstance.planInstanceDay[0].planInstance.id}`;
+        } else if (workoutInstance?.planInstanceDay?.[0]?.planInstance?.mesocycle) {
+          window.location.href = `/mesocycles/${workoutInstance.planInstanceDay[0].planInstance.mesocycle.id}`;
+        } else {
+          window.location.href = '/plans';
+        }
+      }, 2000);
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete workout');
     }
@@ -422,7 +539,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   }
 
   return (
-    <ResponsiveContainer maxWidth="sm" disableGutters>
+    <ResponsiveContainer maxWidth="xs" disableGutters>
       <Paper sx={{ p: { xs: 2, sm: 3 }, position: 'relative' }}>
         <Box sx={{
           position: 'sticky',
@@ -649,9 +766,9 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         />
                       </Grid>
                       <Grid item xs={4} sm={3} sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Checkbox
+                        <AnimatedCheckbox
                           checked={isSetCompleted || !!workoutInstance.completedAt}
-                          onChange={(e) => handleSetCompletion(exerciseIndex, setIndex, e.target.checked)}
+                          onChange={() => handleSetCompletion(exerciseIndex, setIndex, !isSetCompleted)}
                           disabled={!!workoutInstance.completedAt}
                         />
                       </Grid>
