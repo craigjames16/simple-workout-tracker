@@ -96,6 +96,16 @@ export default function Navbar() {
                 <MenuIcon />
               </IconButton>
               <Box sx={{ flexGrow: 1 }} />
+              <Box 
+                component="img"
+                src="/logo.gif"
+                sx={{ 
+                  height: 40,
+                  display: 'block'
+                }}
+                alt="Logo"
+              />
+              <Box sx={{ flexGrow: 1 }} />
             </>
           ) : (
             <>
