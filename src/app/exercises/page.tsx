@@ -26,6 +26,7 @@ import {
   TableHead,
   TableRow,
   IconButton,
+  useMediaQuery,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -52,6 +53,9 @@ type ExercisesByCategory = {
   [key: string]: Exercise[];
 };
 
+type SortColumn = 'name' | 'category' | 'weight' | 'reps';
+type SortDirection = 'asc' | 'desc';
+
 export default function ExercisesPage() {
   const [exercises, setExercises] = useState<ExercisesByCategory>({});
   const [loading, setLoading] = useState(true);
@@ -64,6 +68,10 @@ export default function ExercisesPage() {
   });
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [sortBy, setSortBy] = useState<SortColumn>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const isMobile = useMediaQuery((theme: any) => theme.breakpoints.down('sm'));
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -123,11 +131,22 @@ export default function ExercisesPage() {
     }));
 
     return (
-      <Box sx={{ width: '100%', height: 300 }}>
+      <Box sx={{ width: '100%', height: 250 }}>
         <RechartsContainer>
-          <LineChart data={chartData}>
-            <XAxis dataKey="date" />
-            <YAxis />
+          <LineChart 
+            data={chartData}
+            margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+          >
+            <XAxis 
+              dataKey="date" 
+              axisLine={false} 
+              tickLine={false}
+              tick={{ fill: 'transparent' }}
+            />
+            <YAxis 
+              axisLine={false} 
+              tickLine={false} 
+            />
             <Tooltip />
             <Line 
               type="monotone" 
@@ -141,6 +160,38 @@ export default function ExercisesPage() {
     );
   };
 
+  const handleSort = (column: SortColumn) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedExercises = (exercises: Exercise[]) => {
+    return [...exercises].sort((a, b) => {
+      const direction = sortDirection === 'asc' ? 1 : -1;
+      
+      switch (sortBy) {
+        case 'name':
+          return direction * a.name.localeCompare(b.name);
+        case 'category':
+          return direction * a.category.localeCompare(b.category);
+        case 'weight':
+          const weightA = a.history[a.history.length - 1]?.weight || 0;
+          const weightB = b.history[b.history.length - 1]?.weight || 0;
+          return direction * (weightA - weightB);
+        case 'reps':
+          const repsA = a.history[a.history.length - 1]?.reps || 0;
+          const repsB = b.history[b.history.length - 1]?.reps || 0;
+          return direction * (repsA - repsB);
+        default:
+          return 0;
+      }
+    });
+  };
+
   if (loading) {
     return (
       <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -151,8 +202,8 @@ export default function ExercisesPage() {
 
   const categories = ['ALL', ...Object.keys(exercises)];
   const filteredExercises = selectedCategory === 'ALL' 
-    ? Object.values(exercises).flat()
-    : exercises[selectedCategory] || [];
+    ? getSortedExercises(Object.values(exercises).flat())
+    : getSortedExercises(exercises[selectedCategory] || []);
 
   return (
     <ResponsiveContainer maxWidth="md">
@@ -182,10 +233,44 @@ export default function ExercisesPage() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Last Weight</TableCell>
-                <TableCell>Last Reps</TableCell>
+                <TableCell 
+                  onClick={() => handleSort('name')}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  Name
+                  {sortBy === 'name' && (
+                    <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </TableCell>
+                {!isMobile && (
+                  <TableCell 
+                    onClick={() => handleSort('category')}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    Category
+                    {sortBy === 'category' && (
+                      <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                    )}
+                  </TableCell>
+                )}
+                <TableCell 
+                  onClick={() => handleSort('weight')}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  Last Weight
+                  {sortBy === 'weight' && (
+                    <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </TableCell>
+                <TableCell 
+                  onClick={() => handleSort('reps')}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  Last Reps
+                  {sortBy === 'reps' && (
+                    <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
+                  )}
+                </TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -196,9 +281,11 @@ export default function ExercisesPage() {
                 return (
                   <TableRow key={exercise.id}>
                     <TableCell>{exercise.name}</TableCell>
-                    <TableCell>
-                      {exercise.category.charAt(0) + exercise.category.slice(1).toLowerCase()}
-                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        {exercise.category.charAt(0) + exercise.category.slice(1).toLowerCase()}
+                      </TableCell>
+                    )}
                     <TableCell>{lastSet?.weight || '-'}</TableCell>
                     <TableCell>{lastSet?.reps || '-'}</TableCell>
                     <TableCell align="right">
@@ -219,6 +306,23 @@ export default function ExercisesPage() {
         onClose={() => setShowHistoryDialog(false)}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            width: '95%',
+            m: 0,
+            '& .MuiDialogTitle-root': {
+              py: 1,
+              textAlign: 'center'
+            },
+            '& .MuiDialogContent-root': {
+              py: 1,
+              px: 1,
+            },
+            '& .MuiDialogActions-root': {
+              py: 1,
+            }
+          }
+        }}
       >
         <DialogTitle>
           {selectedExercise?.name} History
