@@ -912,7 +912,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           <GradientButton
             variant="contained"
             fullWidth
-            sx={{ mb: 3, ml: 2, mr: 2 }}
+            sx={{ p: 4, m: 1 }}
             onClick={handleCompleteWorkout}
             disabled={
               !exerciseTrackings.every((tracking) =>
