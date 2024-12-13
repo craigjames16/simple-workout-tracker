@@ -41,6 +41,7 @@ interface Exercise {
   category: string;
   history: ExerciseSet[];
   workoutInstances: { workoutInstanceId: string; volume: number }[];
+  highestWeight: number;
 }
 
 interface ExerciseSet {

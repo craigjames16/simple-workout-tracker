@@ -34,7 +34,7 @@ export async function POST(request: Request) {
               include: {
                 workout: {
                   include: {
-                    exercises: {
+                    workoutExercises: {
                       include: {
                         exercise: true
                       }
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
           include: {
             workout: {
               include: {
-                exercises: {
+                workoutExercises: {
                   include: {
                     exercise: true
                   }
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
               include: {
                 workout: {
                   include: {
-                    exercises: {
+                    workoutExercises: {
                       include: {
                         exercise: true
                       }
@@ -131,7 +131,7 @@ export async function POST(request: Request) {
               include: {
                 workout: {
                   include: {
-                    exercises: {
+                    workoutExercises: {
                       include: {
                         exercise: true
                       }

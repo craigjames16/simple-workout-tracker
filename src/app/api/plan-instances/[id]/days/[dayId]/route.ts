@@ -22,7 +22,7 @@ export async function GET(
           include: {
             workout: {
               include: {
-                exerciseSets: {
+                workoutExercises: {
                   include: {
                     exercise: true
                   }

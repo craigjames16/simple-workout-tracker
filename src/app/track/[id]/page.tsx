@@ -862,7 +862,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     </Typography>
                   </Grid>
                 </Grid>
-                {console.log(exercise)}
+
                 {Array.isArray(exercise.sets) && exercise.sets.map((set, setIndex) => {
                   const isSetCompleted = set.completed || false;
 
