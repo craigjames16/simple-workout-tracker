@@ -20,7 +20,7 @@ SET "workoutInstanceId" = (
 );
 
 -- Alter the column to set it as NOT NULL now that it has values
-ALTER TABLE "WorkoutExercise" ALTER COLUMN "workoutInstanceId" SET NOT NULL;
+-- ALTER TABLE "WorkoutExercise" ALTER COLUMN "workoutInstanceId" SET NOT NULL;
 
 -- CreateIndex
 CREATE UNIQUE INDEX "WorkoutExercise_workoutInstanceId_exerciseId_key" ON "WorkoutExercise"("workoutInstanceId", "exerciseId");
