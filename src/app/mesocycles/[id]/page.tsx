@@ -6,6 +6,7 @@ import {
   Typography,
   Box,
   Button,
+  Card,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -199,6 +200,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
               value={progress} 
               sx={{ 
                 height: 8,
+                mb: 2,
                 borderRadius: 4,
                 backgroundColor: 'grey.300',
                 '& .MuiLinearProgress-bar': {
@@ -223,7 +225,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
               }
 
               return (
-                <Box
+                <Card
                   key={instance.id}
                   component={href ? Link : 'div'}
                   href={href}
@@ -275,7 +277,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                       {isInProgress ? 'Continue Iteration' : 'Start Iteration'} →
                     </Typography>
                   )}
-                </Box>
+                </Card>
               );
             })}
         </Box>

@@ -27,6 +27,12 @@ export async function GET() {
             weight: true,
             reps: true,
             createdAt: true,
+            workoutInstanceId: true,
+            workoutInstance: {
+              select: {
+                completedAt: true
+              }
+            }
           }
         }
       }
@@ -38,14 +44,42 @@ export async function GET() {
       if (!acc[category]) {
         acc[category] = [];
       }
+
+      // Calculate highest weight
+      const highestWeight = exercise.sets.reduce((max, set) => {
+        return Math.max(max, set.weight);
+      }, 0);
+
+      // Create a map to sum volumes by workoutInstanceId
+      const volumeMap: Record<string, number> = {};
+      exercise.sets.forEach(set => {
+        const workoutInstanceId = set.workoutInstanceId;
+        const volume = set.reps * set.weight;
+        if (!volumeMap[workoutInstanceId]) {
+          volumeMap[workoutInstanceId] = 0;
+        }
+        volumeMap[workoutInstanceId] += volume; // Sum the volume
+      });
+
+      // Create a map to organize sets by workoutInstanceId
+      const setsByWorkout: Record<string, any[]> = {};
+      exercise.sets.forEach(set => {
+        const workoutInstanceId = set.workoutInstanceId;
+        if (!setsByWorkout[workoutInstanceId]) {
+          setsByWorkout[workoutInstanceId] = [];
+        }
+        setsByWorkout[workoutInstanceId].push(set);
+      });
+
       acc[category].push({
         ...exercise,
-        history: exercise.sets.map(set => ({
-          id: set.id,
-          weight: set.weight,
-          reps: set.reps,
-          date: set.createdAt.toISOString()
-        }))
+        workoutInstances: Object.entries(volumeMap).map(([workoutInstanceId, totalVolume]) => ({
+          workoutInstanceId,
+          volume: totalVolume,
+          completedAt: setsByWorkout[workoutInstanceId][0]?.workoutInstance.completedAt,
+          sets: setsByWorkout[workoutInstanceId]
+        })),
+        highestWeight
       });
       return acc;
     }, {} as Record<string, any>);

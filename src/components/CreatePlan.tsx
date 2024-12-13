@@ -47,7 +47,7 @@ interface WorkoutDay {
   id: string;
   name: string;
   isRestDay: boolean;
-  exercises: Exercise[];
+  workoutExercises: Exercise[];
   dayNumber: number;
 }
 
@@ -64,7 +64,7 @@ interface Props {
       dayNumber: number;
       isRestDay: boolean;
       workout?: {
-        exercises: Array<{
+        workoutExercises: Array<{
           exercise: Exercise;
         }>;
       };
@@ -81,7 +81,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           id: `day-${day.dayNumber}`,
           name: `Day ${day.dayNumber}`,
           isRestDay: day.isRestDay,
-          exercises: day.workout?.exercises.map(e => e.exercise) || [],
+          workoutExercises: day.workout?.workoutExercises.map(e => e.exercise) || [],
           dayNumber: day.dayNumber,
         }))
         .sort((a, b) => a.dayNumber - b.dayNumber);
@@ -147,7 +147,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
       id: `day-${dayNumber}`,
       name: `Day ${dayNumber}`,
       isRestDay: false,
-      exercises: [],
+      workoutExercises: [],
       dayNumber: dayNumber,
     };
     setWorkoutDays([...workoutDays, newDay]);
@@ -163,19 +163,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
         return {
           ...day,
           isRestDay: !day.isRestDay,
-          exercises: !day.isRestDay ? [] : day.exercises,
-        };
-      }
-      return day;
-    }));
-  };
-
-  const addExerciseToDay = (dayId: string, exercise: Exercise) => {
-    setWorkoutDays(workoutDays.map(day => {
-      if (day.id === dayId && !day.isRestDay) {
-        return {
-          ...day,
-          exercises: [...day.exercises, exercise],
+          workoutExercises: !day.isRestDay ? [] : day.workoutExercises,
         };
       }
       return day;
@@ -187,7 +175,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
       if (day.id === dayId) {
         return {
           ...day,
-          exercises: day.exercises.filter(ex => ex.id !== exerciseId),
+          workoutExercises: day.workoutExercises.filter(ex => ex.id !== exerciseId),
         };
       }
       return day;
@@ -202,21 +190,21 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
 
     if (!sourceDay || !destDay || destDay.isRestDay) return;
 
-    const exercise = sourceDay.exercises[result.source.index];
+    const exercise = sourceDay.workoutExercises[result.source.index];
     
     const newWorkoutDays = workoutDays.map(day => {
       if (day.id === sourceDay.id) {
         return {
           ...day,
-          exercises: day.exercises.filter((_, index) => index !== result.source.index),
+          workoutExercises: day.workoutExercises.filter((_, index) => index !== result.source.index),
         };
       }
       if (day.id === destDay.id) {
-        const newExercises = [...day.exercises];
+        const newExercises = [...day.workoutExercises];
         newExercises.splice(result.destination.index, 0, exercise);
         return {
           ...day,
-          exercises: newExercises,
+          workoutExercises: newExercises,
         };
       }
       return day;
@@ -239,7 +227,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           name: planName,
           days: workoutDays.map(day => ({
             isRestDay: day.isRestDay,
-            exercises: day.exercises.map(ex => ({ id: ex.id }))
+            workoutExercises: day.workoutExercises.map(ex => ({ id: ex.id }))
           }))
         }),
       });
@@ -288,7 +276,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           if (index === creatingExerciseForDayIndex && !day.isRestDay) {
             return {
               ...day,
-              exercises: [...day.exercises, createdExercise]
+              workoutExercises: [...day.workoutExercises, createdExercise]
             };
           }
           return day;
@@ -322,7 +310,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           if (day.id === dayId && !day.isRestDay) {
             return {
               ...day,
-              exercises: [...day.exercises, exercise]
+              workoutExercises: [...day.workoutExercises, exercise]
             };
           }
           return day;
@@ -358,13 +346,13 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           <Typography variant="h5">
             {mode === 'edit' ? 'Edit Workout Plan' : 'Create Workout Plan'}
           </Typography>
-          <GradientButton
+          <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={addWorkoutDay}
           >
             Add Day
-          </GradientButton>
+          </Button>
         </Box>
 
         <Box sx={{ mb: 3 }}>
@@ -477,7 +465,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                             {...provided.droppableProps}
                             sx={{ minHeight: 100 }}
                           >
-                            {day.exercises.map((exercise, index) => (
+                            {day.workoutExercises.map((exercise, index) => (
                               <Draggable
                                 key={exercise.id}
                                 draggableId={`${day.id}-exercise-${exercise.id}`}

@@ -23,6 +23,7 @@ export {
   LinearProgress,
   Divider,
   Chip,
+  DialogActions,
 } from '@mui/material';
 
 export {ResponsiveContainer} from './ResponsiveContainer';

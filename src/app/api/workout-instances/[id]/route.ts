@@ -25,21 +25,14 @@ export async function GET(
         id: parseInt(params.id),
       },
       include: {
-        sets: true,
-        workout: {
+        exerciseSets: true,
+        workoutExercises: {
           include: {
-            exercises: {
-              include: {
-                exercise: {
-                  include: {
-                    sets: true,
-                  },
-                },
-              },
-            },
-          },
+            exercise: true
+          }
         },
-        planInstanceDay: {
+        workout: true,
+        planInstanceDays: {
           include: {
             planDay: true,
             planInstance: {
@@ -61,46 +54,43 @@ export async function GET(
 
     const processedWorkoutInstance = {
       ...workoutInstance,
-      workout: {
-        ...workoutInstance.workout,
-        exercises: await Promise.all(workoutInstance.workout.exercises.map(async ex => {
-          // Find the last completed workout instance for this exercise
-          const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
-            where: {
-              id: { not: workoutInstance.id }, // Exclude current workout
-              completedAt: { not: null },
-              workout: {
-                exercises: {
-                  some: {
-                    exerciseId: ex.exerciseId
-                  }
-                }
-              }
-            },
-            include: {
-              sets: {
-                where: {
+      workoutExercises: await Promise.all(workoutInstance.workoutExercises.map(async ex => {
+        // Find the last completed workout instance for this exercise
+        const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
+          where: {
+            id: { not: workoutInstance.id }, // Exclude current workout
+            completedAt: { not: null },
+            workout: {
+              workoutExercises: {
+                some: {
                   exerciseId: ex.exerciseId
-                },
-                orderBy: {
-                  setNumber: 'asc'
                 }
               }
-            },
-            orderBy: {
-              completedAt: 'desc'
             }
-          });
+          },
+          include: {
+            exerciseSets: {
+              where: {
+                exerciseId: ex.exerciseId
+              },
+              orderBy: {
+                setNumber: 'asc'
+              }
+            }
+          },
+          orderBy: {
+            completedAt: 'desc'
+          }
+        });
 
-          return {
-            ...ex,
-            exercise: {
-              ...ex.exercise
-            },
-            lastSets: lastCompletedWorkout?.sets || []
-          };
-        }))
-      }
+        return {
+          ...ex,
+          exercise: {
+            ...ex.exercise
+          },
+          lastSets: lastCompletedWorkout?.exerciseSets || []
+        };
+      }))
     };
 
     return NextResponse.json(processedWorkoutInstance);

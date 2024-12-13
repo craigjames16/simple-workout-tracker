@@ -6,7 +6,6 @@ import {
   Paper,
   Typography,
   Box,
-  Button,
   List,
   ListItem,
   ListItemText,
@@ -15,6 +14,7 @@ import {
   CircularProgress,
   Chip,
   Divider,
+  Card,
 } from '@/components';
 import Link from 'next/link';
 import AddIcon from '@mui/icons-material/Add';
@@ -91,65 +91,80 @@ export default function PlansPage() {
   }
 
   return (
-    <ResponsiveContainer>
+    <ResponsiveContainer sx={{ mt: 4, pb: 4 }}>
       <Paper>
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h5">Workout Plans</Typography>
+          <Typography variant="h5">
+            Plans
+          </Typography>
         </Box>
 
-        <List sx={{ p: 0 }}>
-          {plans.map((plan, index) => (
-            <Box key={plan.id}>
-              <ListItem
-                onClick={() => handlePlanClick(plan.id)}
-                sx={{
-                  cursor: 'pointer',
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                  },
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
+          {plans.map((plan) => (
+            <Card
+              key={plan.id}
+              component={Link}
+              href={`/plans/${plan.id}`}
+              sx={{ 
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { sm: 'center' },
+                p: 2,
+                textDecoration: 'none',
+                color: 'inherit',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: 3,
+                  backgroundColor: 'action.hover'
+                }
+              }}
+            >
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                flex: 1,
+                gap: 2,
+              }}>
+                <CalendarTodayIcon color="action" />
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 0.5 }}>
+                    {plan.name}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      size="small"
+                      icon={<FitnessCenterIcon />}
+                      label={`${plan.days.length} days`}
+                      color="primary"
+                      variant="outlined"
+                    />
+                    {plan.instances?.some(i => i?.status === 'IN_PROGRESS') && (
+                      <Chip
+                        size="small"
+                        label="In Progress"
+                        color="warning"
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
+                </Box>
+              </Box>
+              <Typography 
+                variant="body2" 
+                color="primary"
+                sx={{ 
+                  mt: { xs: 2, sm: 0 },
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5
                 }}
               >
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CalendarTodayIcon color="action" />
-                      <Typography variant="subtitle1">
-                        {plan.name}
-                      </Typography>
-                    </Box>
-                  }
-                  secondary={
-                    <Box sx={{ mt: 1 }}>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        <Chip
-                          size="small"
-                          icon={<FitnessCenterIcon />}
-                          label={`${plan.days.length} days`}
-                          color="primary"
-                          variant="outlined"
-                        />
-                        {plan.instances?.some(i => i?.status === 'IN_PROGRESS') && (
-                          <Chip
-                            size="small"
-                            label="In Progress"
-                            color="warning"
-                            variant="outlined"
-                          />
-                        )}
-                      </Box>
-                    </Box>
-                  }
-                />
-                <ListItemSecondaryAction>
-                  <IconButton edge="end" onClick={() => handlePlanClick(plan.id)}>
-                    <ArrowForwardIcon />
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </ListItem>
-              {index < plans.length - 1 && <Divider />}
-            </Box>
+                View Details →
+              </Typography>
+            </Card>
           ))}
-        </List>
+        </Box>
       </Paper>
 
       <FloatingActionButton

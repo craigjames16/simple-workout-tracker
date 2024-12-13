@@ -20,7 +20,7 @@ export async function GET() {
           include: {
             workout: {
               include: {
-                exercises: {
+                workoutExercises: {
                   include: {
                     exercise: true
                   }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
               data: {
                 name: `${name} - Day ${index + 1}`,
                 userId, // Use userId from session
-                exercises: {
+                workoutExercises: {
                   create: day.exercises.map((exercise: any, exerciseIndex: number) => ({
                     exercise: {
                       connect: {
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
           include: {
             workout: {
               include: {
-                exercises: {
+                workoutExercises: {
                   include: {
                     exercise: true
                   }

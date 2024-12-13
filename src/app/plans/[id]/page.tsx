@@ -32,7 +32,7 @@ interface Exercise {
 
 interface Workout {
   name: string;
-  exercises: Exercise[];
+  workoutExercises: Exercise[];
 }
 
 interface PlanDay {
@@ -178,10 +178,10 @@ export default function PlanDetailsPage({ params }: { params: { id: string } }) 
                   ) : day.workout ? (
                     <Box>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {day.workout.exercises.length} exercises
+                        {day.workout.workoutExercises.length} exercises
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {day.workout.exercises.map((ex, exIndex) => (
+                        {day.workout.workoutExercises.map((ex, exIndex) => (
                           <Chip
                             key={exIndex}
                             size="small"

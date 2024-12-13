@@ -21,7 +21,7 @@ export async function POST(
         completedAt: new Date()
       },
       include: {
-        planInstanceDay: {
+        planInstanceDays: {
           include: {
             planInstance: {
               include: {
@@ -53,8 +53,8 @@ export async function POST(
     });
 
     // If this workout is part of a mesocycle that hasn't started yet, mark it as started
-    if (workoutInstance.planInstanceDay?.[0]?.planInstance?.mesocycle) {
-      const mesocycle = workoutInstance.planInstanceDay[0].planInstance.mesocycle;
+    if (workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle) {
+      const mesocycle = workoutInstance.planInstanceDays[0].planInstance.mesocycle;
       if (mesocycle.status === 'NOT_STARTED') {
         await prisma.mesocycle.update({
           where: { id: mesocycle.id },
@@ -67,13 +67,13 @@ export async function POST(
     }
 
     // If this workout is part of a plan instance day, mark it as complete
-    if (workoutInstance.planInstanceDay?.[0]) {
+    if (workoutInstance.planInstanceDays?.[0]) {
       await prisma.planInstanceDay.update({
-        where: { id: workoutInstance.planInstanceDay[0].id },
+        where: { id: workoutInstance.planInstanceDays[0].id },
         data: { isComplete: true }
       });
 
-      const planInstance = workoutInstance.planInstanceDay[0].planInstance;
+      const planInstance = workoutInstance.planInstanceDays[0].planInstance;
       if (planInstance) {
         console.log("Updating plan instance");
         // Check if all days in the plan instance are complete
@@ -138,10 +138,10 @@ export async function POST(
         const firstWorkoutDay = sortedDays[0];
 
         console.log("First workout day", firstWorkoutDay);
-        if (firstWorkoutDay && firstWorkoutDay.id === workoutInstance.planInstanceDay[0].id) {
+        if (firstWorkoutDay && firstWorkoutDay.id === workoutInstance.planInstanceDays[0].id) {
           console.log("Updating plan instance to IN_PROGRESS");
           await prisma.planInstance.update({
-            where: { id: workoutInstance.planInstanceDay[0].planInstance.id },
+            where: { id: workoutInstance.planInstanceDays[0].planInstance.id },
             data: {
               status: 'IN_PROGRESS',
               startedAt: new Date()

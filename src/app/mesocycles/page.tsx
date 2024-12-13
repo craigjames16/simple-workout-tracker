@@ -139,7 +139,7 @@ export default function MesocyclesPage() {
             </Typography>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
             {mesocycles.map((mesocycle) => (
               <Card 
                 key={mesocycle.id}

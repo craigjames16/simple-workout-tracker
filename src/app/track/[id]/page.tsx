@@ -17,6 +17,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  DialogActions,
 } from '@/components';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -32,6 +33,13 @@ import GradientButton from '@/components/GradientButton';
 import { trackGradient } from '@/components/ThemeRegistry';
 import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import { format } from 'date-fns';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import Drawer from '@mui/material/Drawer';
 
 interface ExerciseTracking {
   exerciseId: number;
@@ -47,6 +55,16 @@ interface ExerciseTracking {
       weight: number;
     } | null;
   }>;
+  history: Array<{
+    workoutInstanceId: number;
+    volume: number;
+    completedAt: Date;
+    sets: Array<{
+      weight: number;
+      reps: number;
+      setNumber: number;
+    }>;
+  }>;
 }
 
 interface WorkoutExercise {
@@ -60,6 +78,16 @@ interface ExerciseWithCategory {
   id: number;
   name: string;
   category: ExerciseCategory;
+  workoutInstances: Array<{
+    workoutInstanceId: number;
+    volume: number;
+    completedAt: Date;
+    sets: Array<{
+      weight: number;
+      reps: number;
+      setNumber: number;
+    }>;
+  }>;
 }
 
 interface ExerciseResponse {
@@ -67,6 +95,27 @@ interface ExerciseResponse {
     id: number;
     name: string;
     category: ExerciseCategory;
+  }>;
+}
+
+interface ExerciseHistory {
+  workoutInstance: {
+    completedAt: Date;
+    sets: Array<{
+      weight: number;
+      reps: number;
+      setNumber: number;
+    }>;
+  };
+}
+
+interface WorkoutHistoryView {
+  iterationNumber: number;
+  workouts: Array<{
+    dayNumber: number;
+    workoutInstanceId: number;
+    completedAt: Date | null;
+    name: string;
   }>;
 }
 
@@ -116,6 +165,21 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [activeSet, setActiveSet] = useState<{ exerciseIndex: number; setIndex: number } | null>(null);
   const [exerciseMenuAnchorEl, setExerciseMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [activeExercise, setActiveExercise] = useState<number | null>(null);
+  const [historyDialog, setHistoryDialog] = useState<{
+    open: boolean;
+    exercise: ExerciseTracking;
+  }>({
+    open: false,
+    exercise: {
+      exerciseId: 0,
+      exerciseName: '',
+      order: 0,
+      sets: [],
+      history: []
+    }
+  });
+  const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryView[]>([]);
+  const [historyAnchorEl, setHistoryAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     const fetchWorkoutInstance = async () => {
@@ -128,7 +192,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         setWorkoutInstance(data);
 
         // Get completed sets for this exercise
-        const completedSetsMap = data.sets?.reduce((acc: Record<number, any[]>, set: any) => {
+        const completedSetsMap = data.exerciseSets?.reduce((acc: Record<number, any[]>, set: any) => {
           if (!acc[set.exerciseId]) {
             acc[set.exerciseId] = [];
           }
@@ -143,7 +207,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         // Get the last completed set for each exercise
         
         
-        const initialTrackings = data.workout.exercises.map((ex: any) => {   
+        const initialTrackings = data.workoutExercises.map((ex: any) => {   
           let sets;
 
           if (data.completedAt) {
@@ -181,7 +245,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             exerciseId: ex.exercise.id,
             exerciseName: ex.exercise.name,
             sets,
-            order: ex.order
+            order: ex.order,
+            history: availableExercises.find((exercise: any) => exercise.id === ex.exercise.id)?.workoutInstances || []
           };
         });
 
@@ -194,7 +259,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     };
 
     fetchWorkoutInstance();
-  }, [params.id]);
+  }, [params.id, availableExercises || []]);
 
   useEffect(() => {
     const fetchAvailableExercises = async () => {
@@ -204,13 +269,16 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           throw new Error('Failed to fetch exercises');
         }
         const data = await response.json() as ExerciseResponse;
+        
         // Transform the categorized exercises into a flat array with category information
         const exercises = Object.entries(data).flatMap(([category, exerciseList]) =>
           exerciseList.map(exercise => ({
             ...exercise,
-            category: category as ExerciseCategory
+            category: category as ExerciseCategory,
+            workoutInstances: [] // Initialize workoutInstances as an empty array
           }))
         );
+
         setAvailableExercises(exercises);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch exercises');
@@ -219,6 +287,35 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
     fetchAvailableExercises();
   }, []);
+
+  useEffect(() => {
+    const fetchWorkoutHistory = async () => {
+      if (workoutInstance?.planInstanceDay?.[0]?.planInstance?.mesocycle?.id) {
+        try {
+          const response = await fetch(`/api/mesocycles/${workoutInstance.planInstanceDay[0].planInstance.mesocycle.id}`);
+          if (!response.ok) throw new Error('Failed to fetch workout history');
+          const mesocycle = await response.json();
+
+          // Transform the mesocycle data into the WorkoutHistoryView format
+          const historyView: WorkoutHistoryView[] = mesocycle.instances.map((instance: any) => ({
+            iterationNumber: instance.iterationNumber,
+            workouts: instance.days.map((day: any) => ({
+              dayNumber: day.planDay.dayNumber,
+              workoutInstanceId: day.workoutInstance?.id,
+              completedAt: day.workoutInstance?.completedAt,
+              name: day.planDay.name || `Day ${day.planDay.dayNumber}`
+            }))
+          }));
+
+          setWorkoutHistory(historyView);
+        } catch (error) {
+          console.error('Error fetching workout history:', error);
+        }
+      }
+    };
+
+    fetchWorkoutHistory();
+  }, [workoutInstance]);
 
   const handleUpdateSet = (set: any,exerciseIndex: number, setIndex: number, field: 'reps' | 'weight', value: number) => {
     setExerciseTrackings(prev => {
@@ -440,6 +537,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           exerciseId: newExercise.exercise.id,
           exerciseName: newExercise.exercise.name,
           order: newExercise.order,
+          history: availableExercises.find((exercise: any) => exercise.id === newExercise.exercise.id)?.workoutInstances || [],
           sets: Array.from({ length: newExercise.lastSets.length || 3 }, (_, index) => {
             // Find the set with matching setNumber (index + 1) from last workout
             const matchingLastSet = newExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
@@ -569,6 +667,15 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     }
   };
 
+  const handleShowHistory = (exercise: ExerciseTracking) => {
+    if (exercise) {
+      setHistoryDialog({
+        exercise: {...exercise},
+        open: true
+      });
+    } 
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer maxWidth="md" disableGutters sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -595,8 +702,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           position: 'sticky',
           pl: 2,
           top: {
-            xs: 56,  // Mobile height
-            sm: 64   // Desktop height
+            xs: 56,
+            sm: 64
           },
           opacity: 1,
           background: trackGradient,
@@ -627,12 +734,22 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                 </Box>
               )}
             </Box>
-            <IconButton
-              onClick={(event) => setWorkoutMenuAnchorEl(event.currentTarget)}
-              size="large"
-            >
-              <MoreVertIcon />
-            </IconButton>
+            <Box>
+              {workoutInstance.planInstanceDay?.[0]?.planInstance?.mesocycle && (
+                <IconButton
+                  onClick={(event) => setHistoryAnchorEl(event.currentTarget)}
+                  size="large"
+                >
+                  <CalendarMonthIcon />
+                </IconButton>
+              )}
+              <IconButton
+                onClick={(event) => setWorkoutMenuAnchorEl(event.currentTarget)}
+                size="large"
+              >
+                <MoreVertIcon />
+              </IconButton>
+            </Box>
           </Box>
         </Box>
 
@@ -711,6 +828,12 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   <Typography variant="h6">{exercise.exerciseName}</Typography>
                   <Box>
                     <IconButton
+                      onClick={() => handleShowHistory(exercise)}
+                      size="small"
+                    >
+                      <InfoOutlinedIcon />
+                    </IconButton>
+                    <IconButton
                       onClick={(event) => handleExerciseMenuOpen(event, exerciseIndex)}
                       disabled={!!workoutInstance.completedAt}
                     >
@@ -739,8 +862,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     </Typography>
                   </Grid>
                 </Grid>
-                
-                {exercise.sets.map((set, setIndex) => {
+                {console.log(exercise)}
+                {Array.isArray(exercise.sets) && exercise.sets.map((set, setIndex) => {
                   const isSetCompleted = set.completed || false;
 
                   return (
@@ -923,6 +1046,140 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             Complete Workout
           </GradientButton>
         </Box>
+
+        <Dialog 
+          open={historyDialog.open} 
+          onClose={() => setHistoryDialog(prev => ({ ...prev, open: false }))}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>{historyDialog.exercise.exerciseName} History</DialogTitle>
+          <DialogContent>
+            
+            {historyDialog.exercise.history?.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()).map((instance, index) => (
+              <Box key={index} sx={{ mb: 2 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  {format(new Date(instance.completedAt), 'MMM d, yyyy')}
+                </Typography>
+                <Grid container spacing={2} sx={{ pl: 2 }}>
+                  {instance.sets
+                    .sort((a, b) => a.setNumber - b.setNumber)
+                    .map((set, setIndex) => (
+                      <Grid item xs={12} key={setIndex}>
+                        <Typography variant="body2">
+                          Set {set.setNumber}: {set.weight}kg × {set.reps} reps
+                        </Typography>
+                      </Grid>
+                    ))}
+                </Grid>
+              </Box>
+            ))}
+
+            {historyDialog.exercise.history?.length === 0 && (
+              <Typography color="text.secondary">
+                No previous history found for this exercise.
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setHistoryDialog(prev => ({ ...prev, open: false }))}>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Menu
+          anchorEl={historyAnchorEl}
+          open={Boolean(historyAnchorEl)}
+          onClose={() => setHistoryAnchorEl(null)}
+          PaperProps={{
+            sx: {
+              maxHeight: '80vh',
+              width: '100vw',
+              left: '0px !important',
+              right: '0px !important',
+              maxWidth: '100% !important',
+              position: 'fixed'
+            }
+          }}
+          transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
+        >
+          <Box sx={{ p: 2, width: '100%' }}>
+            <Typography variant="h6" gutterBottom>
+              Mesocycle Progress
+            </Typography>
+            <Box sx={{ 
+              display: 'grid',
+              gridTemplateColumns: `repeat(${workoutHistory.length}, 40px)`,
+              gap: 1,
+              justifyContent: 'center'
+            }}>
+              {/* Header row with iteration numbers */}
+              {workoutHistory.map((iteration) => (
+                <Box 
+                  key={`header-${iteration.iterationNumber}`}
+                  sx={{ 
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '0.75rem',
+                    color: iteration.iterationNumber === workoutInstance?.planInstanceDay?.[0]?.planInstance?.iterationNumber
+                      ? 'primary.main'
+                      : 'text.secondary'
+                  }}
+                >
+                  {iteration.iterationNumber}
+                </Box>
+              ))}
+
+              {/* Generate grid cells for each day */}
+              {Array.from({ length: Math.max(...workoutHistory.map(i => 
+                Math.max(...i.workouts.map(w => w.dayNumber))
+              )) }).map((_, dayIndex) => (
+                workoutHistory.map((iteration) => {
+                  const workout = iteration.workouts.find(w => w.dayNumber === dayIndex + 1);
+                  return (
+                    <Box
+                      key={`${iteration.iterationNumber}-${dayIndex + 1}`}
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: 1,
+                        cursor: workout ? 'pointer' : 'default',
+                        backgroundColor: workout?.workoutInstanceId === parseInt(params.id)
+                          ? 'primary.main'
+                          : workout?.completedAt
+                            ? 'success.light'
+                            : workout
+                              ? 'action.hover'
+                              : 'action.disabledBackground',
+                        color: workout?.workoutInstanceId === parseInt(params.id)
+                          ? 'primary.contrastText'
+                          : 'text.primary',
+                        fontSize: '0.875rem',
+                        '&:hover': workout ? {
+                          backgroundColor: workout.workoutInstanceId === parseInt(params.id)
+                            ? 'primary.dark'
+                            : 'action.selected'
+                        } : {}
+                      }}
+                      onClick={() => {
+                        if (workout?.workoutInstanceId && workout.workoutInstanceId !== parseInt(params.id)) {
+                          window.location.href = `/track/${workout.workoutInstanceId}`;
+                        }
+                      }}
+                    >
+                      {workout ? dayIndex + 1 : ''}
+                    </Box>
+                  );
+                })
+              ))}
+            </Box>
+          </Box>
+        </Menu>
       </Paper>
     </ResponsiveContainer>
   );

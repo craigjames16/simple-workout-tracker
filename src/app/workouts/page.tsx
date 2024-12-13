@@ -24,12 +24,17 @@ import { ResponsiveContainer } from '@/components';
 
 interface WorkoutInstance {
   id: number;
+  workoutExercises: Array<{
+    exercise: {
+      name: string;
+    };
+  }>;
   workout: {
     name: string;
   };
   startedAt: string;
   completedAt: string | null;
-  sets: Array<{
+  exerciseSets: Array<{
     exercise: {
       name: string;
     };
@@ -137,10 +142,10 @@ export default function WorkoutsPage() {
                         </Typography>
                       )}
                       <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {workout.sets.length > 0 && (
+                        {workout.exerciseSets.length > 0 && (
                           <Chip
                             size="small"
-                            label={`${workout.sets.length} sets`}
+                            label={`${workout.exerciseSets.length} sets`}
                             color="primary"
                             variant="outlined"
                           />

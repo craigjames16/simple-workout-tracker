@@ -31,31 +31,6 @@ model Exercise {
   user        User?            @relation(fields: [userId], references: [id])
 }
 
-model Workout {
-  id          Int       @id @default(autoincrement())
-  name        String
-  exercises   WorkoutExercise[]
-  instances   WorkoutInstance[]
-  planDays    PlanDay[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  userId      String    // Add user association
-  user        User      @relation(fields: [userId], references: [id])
-}
-
-model WorkoutExercise {
-  id          Int       @id @default(autoincrement())
-  workout     Workout   @relation(fields: [workoutId], references: [id])
-  workoutId   Int
-  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
-  exerciseId  Int
-  order       Int
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@unique([workoutId, exerciseId])
-}
-
 model Plan {
   id          Int           @id @default(autoincrement())
   name        String
@@ -76,7 +51,7 @@ model PlanDay {
   isRestDay   Boolean   @default(false)
   workout     Workout?  @relation(fields: [workoutId], references: [id])
   workoutId   Int?
-  instanceDays PlanInstanceDay[]
+  planInstanceDays PlanInstanceDay[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -108,24 +83,55 @@ model PlanInstanceDay {
   planDay          PlanDay         @relation(fields: [planDayId], references: [id])
   planDayId        Int
   workoutInstance   WorkoutInstance? @relation(fields: [workoutInstanceId], references: [id])
-  workoutInstanceId Int?
+  workoutInstanceId Int?            // Ensure this is optional
   isComplete        Boolean         @default(false)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+}
+
+model Workout {
+  id          Int               @id @default(autoincrement())
+  name        String
+  workoutExercises   WorkoutExercise[]
+  instances   WorkoutInstance[]
+  planDays    PlanDay[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  userId      String            // Add user association
+  user        User              @relation(fields: [userId], references: [id])
+}
+
+model WorkoutExercise {
+  id                Int               @id @default(autoincrement())
+  workoutInstance   WorkoutInstance?  @relation(fields: [workoutInstanceId], references: [id])
+  workoutInstanceId Int?
+  exercise          Exercise          @relation(fields: [exerciseId], references: [id])
+  exerciseId        Int
+  order             Int
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  workout           Workout?           @relation(fields: [workoutId], references: [id])
+  workoutId         Int?
+
+  @@unique([workoutInstanceId, exerciseId])
 }
 
 model WorkoutInstance {
   id              Int               @id @default(autoincrement())
   workout         Workout           @relation(fields: [workoutId], references: [id])
   workoutId       Int
-  planInstanceDay PlanInstanceDay[]
+  workoutExercises       WorkoutExercise[]
+  exerciseSets            ExerciseSet[]
   startedAt       DateTime          @default(now())
   completedAt     DateTime?
-  sets            ExerciseSet[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   userId          String            // Add user association
   user            User              @relation(fields: [userId], references: [id])
+
+  // Add the opposite relation to PlanInstanceDay
+  planInstanceDays    PlanInstanceDay[] // This will allow you to access PlanInstanceDay from WorkoutInstance
 }
 
 model ExerciseSet {

@@ -22,7 +22,7 @@ export async function GET(
           include: {
             workout: {
               include: {
-                exercises: {
+                workoutExercises: {
                   include: {
                     exercise: true,
                   },
@@ -70,20 +70,126 @@ export async function PUT(
         data: { name },
       });
 
-      // Get existing days to handle cleanup
+      // Get existing days
       const existingDays = await tx.planDay.findMany({
         where: { planId: plan.id },
         include: {
           workout: {
             include: {
-              exercises: true,
+              workoutExercises: {
+                include: {
+                  exercise: true
+                }
+              }
             },
           },
         },
       });
 
-      // Delete existing days and their workouts
-      for (const day of existingDays) {
+      // Update or create days as needed
+      await Promise.all(days.map(async (day: any, index: number) => {
+        const dayNumber = index + 1;
+        const existingDay = existingDays.find(d => d.dayNumber === dayNumber);
+
+        if (existingDay) {
+          // Update existing day
+          if (day.isRestDay) {
+            // If changing to rest day, clean up workout if it exists
+            if (existingDay.workout) {
+              await tx.workoutExercise.deleteMany({
+                where: { workoutId: existingDay.workout.id },
+              });
+              await tx.workout.delete({
+                where: { id: existingDay.workout.id },
+              });
+            }
+            return tx.planDay.update({
+              where: { id: existingDay.id },
+              data: { isRestDay: true, workoutId: null },
+            });
+          } else {
+            // Update workout
+            if (existingDay.workout) {
+              // Clear existing exercises
+              await tx.workoutExercise.deleteMany({
+                where: { workoutId: existingDay.workout.id },
+              });
+              // Add new exercises
+              await tx.workout.update({
+                where: { id: existingDay.workout.id },
+                data: {
+                  workoutExercises: {
+                    create: day.workoutExercises.map((exercise: any, exerciseIndex: number) => ({
+                      exercise: {
+                        connect: { id: exercise.id },
+                      },
+                      order: exerciseIndex,
+                    })),
+                  },
+                },
+              });
+            } else {
+              // Create new workout if day didn't have one
+              const workout = await tx.workout.create({
+                data: {
+                  name: `${plan.name} - Day ${dayNumber}`,
+                  userId: session.user.id,
+                  workoutExercises: {
+                    create: day.workoutExercises.map((exercise: any, exerciseIndex: number) => ({
+                      exercise: {
+                        connect: { id: exercise.id },
+                      },
+                      order: exerciseIndex,
+                    })),
+                  },
+                },
+              });
+              await tx.planDay.update({
+                where: { id: existingDay.id },
+                data: { isRestDay: false, workoutId: workout.id },
+              });
+            }
+          }
+        } else {
+          // Create new day if it doesn't exist
+          if (day.isRestDay) {
+            return tx.planDay.create({
+              data: {
+                planId: plan.id,
+                dayNumber,
+                isRestDay: true,
+              },
+            });
+          } else {
+            const workout = await tx.workout.create({
+              data: {
+                name: `${plan.name} - Day ${dayNumber}`,
+                userId: session.user.id,
+                workoutExercises: {
+                  create: day.workoutExercises.map((exercise: any, exerciseIndex: number) => ({
+                    exercise: {
+                      connect: { id: exercise.id },
+                    },
+                    order: exerciseIndex,
+                  })),
+                },
+              },
+            });
+            return tx.planDay.create({
+              data: {
+                planId: plan.id,
+                dayNumber,
+                isRestDay: false,
+                workoutId: workout.id,
+              },
+            });
+          }
+        }
+      }));
+
+      // Clean up any extra days that are no longer needed
+      const extraDays = existingDays.filter(day => day.dayNumber > days.length);
+      for (const day of extraDays) {
         if (day.workout) {
           await tx.workoutExercise.deleteMany({
             where: { workoutId: day.workout.id },
@@ -96,45 +202,6 @@ export async function PUT(
           where: { id: day.id },
         });
       }
-
-      // Create new days and workouts
-      await Promise.all(days.map(async (day: any, index: number) => {
-        if (day.isRestDay) {
-          return tx.planDay.create({
-            data: {
-              planId: plan.id,
-              dayNumber: index + 1,
-              isRestDay: true,
-            },
-          });
-        }
-
-        const workout = await tx.workout.create({
-          data: {
-            name: `${plan.name} - Day ${index + 1}`,
-            userId: session.user.id,
-            exercises: {
-              create: day.exercises.map((exercise: any, exerciseIndex: number) => ({
-                exercise: {
-                  connect: {
-                    id: exercise.id,
-                  },
-                },
-                order: exerciseIndex,
-              })),
-            },
-          },
-        });
-
-        return tx.planDay.create({
-          data: {
-            planId: plan.id,
-            dayNumber: index + 1,
-            isRestDay: false,
-            workoutId: workout.id,
-          },
-        });
-      }));
 
       return plan;
     });

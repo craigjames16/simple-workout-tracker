@@ -8,7 +8,7 @@ export type PlanInstanceDayWithRelations = Prisma.PlanInstanceDayGetPayload<{
       include: {
         workout: {
           include: {
-            exercises: {
+            workoutExercises: {
               include: {
                 exercise: true
               }
@@ -20,7 +20,7 @@ export type PlanInstanceDayWithRelations = Prisma.PlanInstanceDayGetPayload<{
     workoutInstance: {
       include: {
         workout: true
-        sets: {
+        exerciseSets: {
           include: {
             exercise: true
           }
@@ -38,7 +38,7 @@ export type PlanWithRelations = Prisma.PlanGetPayload<{
       include: {
         workout: {
           include: {
-            exercises: {
+            workoutExercises: {
               include: {
                 exercise: true
               }
@@ -54,10 +54,20 @@ export type PlanWithRelations = Prisma.PlanGetPayload<{
 export interface WorkoutInstanceWithRelations {
   id: number;
   completedAt: string | null;
+  workoutExercises: Array<{
+    id: number;
+    name: string;
+    category: ExerciseCategory;
+    sets?: Array<{
+      setNumber: number;
+      weight: number;
+      reps: number;
+    }>;
+  }>;
   workout: {
     id: number;
     name: string;
-    exercises: Array<{
+    workoutExercises: Array<{
       exercise: {
         id: number;
         name: string;
@@ -112,7 +122,7 @@ export type PlanInstanceWithCompletion = Prisma.PlanInstanceGetPayload<{
 // For workout creation/fetching
 export type WorkoutWithExercises = Prisma.WorkoutGetPayload<{
   include: {
-    exercises: {
+    workoutExercises: {
       include: {
         exercise: true
       }
@@ -127,7 +137,7 @@ export type PlanWithDays = Prisma.PlanGetPayload<{
       include: {
         workout: {
           include: {
-            exercises: {
+            workoutExercises: {
               include: {
                 exercise: true
               }

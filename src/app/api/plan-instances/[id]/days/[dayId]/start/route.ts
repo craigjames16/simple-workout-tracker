@@ -22,7 +22,15 @@ export async function POST(
       include: {
         planDay: {
           include: {
-            workout: true
+            workout: {
+              include: {
+                workoutExercises: {
+                  include: {
+                    exercise: true
+                  }
+                }
+              }
+            }
           }
         },
         workoutInstance: true
@@ -51,22 +59,40 @@ export async function POST(
     // Create a new workout instance
     const workoutInstance = await prisma.workoutInstance.create({
       data: {
-        userId: session.user.id,
-        workoutId: planInstanceDay.planDay.workout.id,
-        planInstanceDay: {
+        user: {
+          connect: { id: session.user.id }
+        },
+        workout: {
+          connect: { id: planInstanceDay.planDay.workout.id }
+        },
+        planInstanceDays: {
           connect: {
             id: planInstanceDay.id
           }
+        },
+        workoutExercises: {
+          create: planInstanceDay.planDay.workout.workoutExercises.map(workoutExercise => ({
+            exercise: {
+              connect: { id: workoutExercise.exercise.id }
+            },
+            order: workoutExercise.order
+          }))
         }
       },
       include: {
         workout: {
           include: {
-            exercises: {
+            workoutExercises: {
               include: {
                 exercise: true
               }
             }
+          }
+        },
+        workoutExercises: {
+          include: {
+            exercise: true,
+            workout: true
           }
         }
       }

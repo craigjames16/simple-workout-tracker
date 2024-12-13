@@ -13,12 +13,12 @@ export async function GET() {
     const workoutInstances = await prisma.workoutInstance.findMany({
       include: {
         workout: true,
-        sets: {
+        exerciseSets: {
           include: {
             exercise: true
           }
         },
-        planInstanceDay: {
+        planInstanceDays: {
           include: {
             planInstance: {
               include: {

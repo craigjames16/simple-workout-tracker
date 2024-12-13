@@ -10,6 +10,7 @@ frontend:
         - echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
         - echo "NEXTAUTH_URL=https://tracker.craigchisholm.me" >> .env
         - npx prisma generate
+        - npx prisma migrate deploy
         - npm run generate-icons
     build:
       commands:

@@ -40,6 +40,7 @@ interface Exercise {
   name: string;
   category: string;
   history: ExerciseSet[];
+  workoutInstances: { workoutInstanceId: string; volume: number }[];
 }
 
 interface ExerciseSet {
@@ -53,7 +54,7 @@ type ExercisesByCategory = {
   [key: string]: Exercise[];
 };
 
-type SortColumn = 'name' | 'category' | 'weight' | 'reps';
+type SortColumn = 'name' | 'category' | 'highestWeight';
 type SortDirection = 'asc' | 'desc';
 
 export default function ExercisesPage() {
@@ -124,10 +125,10 @@ export default function ExercisesPage() {
   };
 
   const ExerciseHistoryChart = ({ exerciseId }: { exerciseId: number }) => {
-    const data = selectedExercise?.history || [];
-    const chartData = data.map(set => ({
-      date: new Date(set.date).toLocaleDateString(),
-      weight: set.weight,
+    const data = selectedExercise?.workoutInstances || [];
+    const chartData = data.map(instance => ({
+      date: new Date(instance.workoutInstanceId).toLocaleDateString(),
+      volume: instance.volume,
     }));
 
     return (
@@ -150,7 +151,7 @@ export default function ExercisesPage() {
             <Tooltip />
             <Line 
               type="monotone" 
-              dataKey="weight" 
+              dataKey="volume" 
               stroke="#8884d8" 
               dot={false} 
             />
@@ -178,14 +179,8 @@ export default function ExercisesPage() {
           return direction * a.name.localeCompare(b.name);
         case 'category':
           return direction * a.category.localeCompare(b.category);
-        case 'weight':
-          const weightA = a.history[a.history.length - 1]?.weight || 0;
-          const weightB = b.history[b.history.length - 1]?.weight || 0;
-          return direction * (weightA - weightB);
-        case 'reps':
-          const repsA = a.history[a.history.length - 1]?.reps || 0;
-          const repsB = b.history[b.history.length - 1]?.reps || 0;
-          return direction * (repsA - repsB);
+        case 'highestWeight':
+          return direction * (a.highestWeight - b.highestWeight);
         default:
           return 0;
       }
@@ -254,20 +249,11 @@ export default function ExercisesPage() {
                   </TableCell>
                 )}
                 <TableCell 
-                  onClick={() => handleSort('weight')}
+                  onClick={() => handleSort('highestWeight')}
                   sx={{ cursor: 'pointer' }}
                 >
-                  Last Weight
-                  {sortBy === 'weight' && (
-                    <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
-                  )}
-                </TableCell>
-                <TableCell 
-                  onClick={() => handleSort('reps')}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  Last Reps
-                  {sortBy === 'reps' && (
+                  Highest Weight
+                  {sortBy === 'highestWeight' && (
                     <span>{sortDirection === 'asc' ? ' ↑' : ' ↓'}</span>
                   )}
                 </TableCell>
@@ -276,8 +262,6 @@ export default function ExercisesPage() {
             </TableHead>
             <TableBody>
               {filteredExercises.map((exercise) => {
-                const lastSet = exercise.history?.[exercise.history.length - 1];
-                
                 return (
                   <TableRow key={exercise.id}>
                     <TableCell>{exercise.name}</TableCell>
@@ -286,8 +270,7 @@ export default function ExercisesPage() {
                         {exercise.category.charAt(0) + exercise.category.slice(1).toLowerCase()}
                       </TableCell>
                     )}
-                    <TableCell>{lastSet?.weight || '-'}</TableCell>
-                    <TableCell>{lastSet?.reps || '-'}</TableCell>
+                    <TableCell>{exercise.highestWeight || '-'}</TableCell>
                     <TableCell align="right">
                       <IconButton onClick={() => handleShowHistory(exercise)}>
                         <BarChartIcon />
@@ -375,7 +358,7 @@ export default function ExercisesPage() {
                   ))}
                 </Select>
               </FormControl>
-              <GradientButton
+              <Button
                 component={motion.button}
                 variant="contained"
                 fullWidth
@@ -383,7 +366,7 @@ export default function ExercisesPage() {
                 disabled={!newExercise.name || !newExercise.category}
               >
                 Create
-              </GradientButton>
+              </Button>
             </Box>
           </motion.div>
         </DialogContent>

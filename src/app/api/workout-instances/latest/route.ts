@@ -21,14 +21,14 @@ export async function GET() {
       include: {
         workout: {
           include: {
-            exercises: {
+            workoutExercises: {
               include: {
                 exercise: true
               }
             }
           }
         },
-        sets: {
+        exerciseSets: {
           include: {
             exercise: true
           }

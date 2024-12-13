@@ -5,18 +5,14 @@ import {
   Paper,
   Typography,
   Box,
-  Button,
-  Grid,
   Card,
-  CardContent,
   Alert,
   CircularProgress,
   LinearProgress,
   Divider,
   ResponsiveContainer
 } from '@/components';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { useTheme } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import Link from 'next/link';
@@ -24,13 +20,12 @@ import LaunchIcon from '@mui/icons-material/Launch';
 import type { PlanInstanceWithCompletion } from '@/types/prisma';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 
 export default function PlanInstanceDetail({ params }: { params: { id: string } }) {
   const [planInstance, setPlanInstance] = useState<PlanInstanceWithCompletion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const theme = useTheme();
   useEffect(() => {
     const fetchPlanInstance = async () => {
       try {
