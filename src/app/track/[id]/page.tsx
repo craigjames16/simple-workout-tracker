@@ -98,17 +98,6 @@ interface ExerciseResponse {
   }>;
 }
 
-interface ExerciseHistory {
-  workoutInstance: {
-    completedAt: Date;
-    sets: Array<{
-      weight: number;
-      reps: number;
-      setNumber: number;
-    }>;
-  };
-}
-
 interface WorkoutHistoryView {
   iterationNumber: number;
   workouts: Array<{
@@ -290,9 +279,9 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const fetchWorkoutHistory = async () => {
-      if (workoutInstance?.planInstanceDay?.[0]?.planInstance?.mesocycle?.id) {
+      if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle?.id) {
         try {
-          const response = await fetch(`/api/mesocycles/${workoutInstance.planInstanceDay[0].planInstance.mesocycle.id}`);
+          const response = await fetch(`/api/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`);
           if (!response.ok) throw new Error('Failed to fetch workout history');
           const mesocycle = await response.json();
 
@@ -493,10 +482,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         root.unmount();
         container.remove();
         
-        if (workoutInstance?.planInstanceDay?.[0]?.planInstance) {
-          window.location.href = `/plans/instance/${workoutInstance.planInstanceDay[0].planInstance.id}`;
-        } else if (workoutInstance?.planInstanceDay?.[0]?.planInstance?.mesocycle) {
-          window.location.href = `/mesocycles/${workoutInstance.planInstanceDay[0].planInstance.mesocycle.id}`;
+        if (workoutInstance?.planInstanceDays?.[0]?.planInstance) {
+          window.location.href = `/plans/instance/${workoutInstance.planInstanceDays[0].planInstance.id}`;
+        } else if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle) {
+          window.location.href = `/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`;
         } else {
           window.location.href = '/plans';
         }
@@ -715,27 +704,28 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <Box>
               <Typography variant="h6" gutterBottom>
-                {workoutInstance.planInstanceDay?.[0] ? (
-                  `Iteration ${workoutInstance.planInstanceDay[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDay[0].planDay.dayNumber}`
+                {workoutInstance.planInstanceDays?.[0] ? (
+                  `Iteration ${workoutInstance.planInstanceDays[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDays[0].planDay.dayNumber}`
                 ) : (
                   workoutInstance.workout.name
                 )}
               </Typography>
-              {workoutInstance.planInstanceDay?.[0]?.planInstance?.mesocycle && (
+              {workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle && (
                 <Box sx={{ display: 'flex', alignItems: 'center', mt: -1, gap: 1 }}>
                   <Typography variant="subtitle1" color="text.secondary">
-                    {`${workoutInstance.planInstanceDay[0].planInstance.mesocycle.name} -`}
+                    {`${workoutInstance.planInstanceDays[0].planInstance.mesocycle.name} -`}
                   </Typography>
-                  {workoutInstance.planInstanceDay?.[0]?.planInstance?.rir !== undefined && (
+                  {workoutInstance.planInstanceDays?.[0]?.planInstance?.rir !== undefined && (
                     <Typography color="text.secondary">
-                      RIR: {workoutInstance.planInstanceDay[0].planInstance.rir}
+                      RIR: {workoutInstance.planInstanceDays[0].planInstance.rir}
                     </Typography>
                   )}
                 </Box>
               )}
             </Box>
             <Box>
-              {workoutInstance.planInstanceDay?.[0]?.planInstance?.mesocycle && (
+              {console.log(workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle)}
+              {workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle && (
                 <IconButton
                   onClick={(event) => setHistoryAnchorEl(event.currentTarget)}
                   size="large"
@@ -1123,7 +1113,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     textAlign: 'center',
                     fontWeight: 'bold',
                     fontSize: '0.75rem',
-                    color: iteration.iterationNumber === workoutInstance?.planInstanceDay?.[0]?.planInstance?.iterationNumber
+                    color: iteration.iterationNumber === workoutInstance?.planInstanceDays?.[0]?.planInstance?.iterationNumber
                       ? 'primary.main'
                       : 'text.secondary'
                   }}

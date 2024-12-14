@@ -80,7 +80,7 @@ export interface WorkoutInstanceWithRelations {
       };
     }>;
   };
-  planInstanceDay?: Array<{
+  planInstanceDays?: Array<{
     planDayId: number;
     planDay: {
       dayNumber: number; 
