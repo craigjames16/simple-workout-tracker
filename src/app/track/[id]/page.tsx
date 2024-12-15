@@ -680,7 +680,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       </ResponsiveContainer>
     );
   }
-
+  {console.log("workoutInstance", workoutInstance.planInstanceDays?.[0].planInstance.mesocycle)}
+  {console.log("workoutInstance2", workoutInstance)}
   return (
     <ResponsiveContainer maxWidth="xs" disableGutters>
       <Paper sx={{ 
@@ -724,8 +725,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
               )}
             </Box>
             <Box>
-              {console.log(workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle)}
-              {workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle && (
+              {workoutInstance.planInstanceDays?.[0].planInstance.mesocycle && (
                 <IconButton
                   onClick={(event) => setHistoryAnchorEl(event.currentTarget)}
                   size="large"
