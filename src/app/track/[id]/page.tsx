@@ -96,6 +96,16 @@ interface ExerciseResponse {
     id: number;
     name: string;
     category: ExerciseCategory;
+    workoutInstances: Array<{
+      workoutInstanceId: number;
+      volume: number;
+      completedAt: Date;
+      sets: Array<{
+        weight: number;
+        reps: number;
+        setNumber: number;
+      }>;
+    }>;
   }>;
 }
 
@@ -172,17 +182,36 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [historyAnchorEl, setHistoryAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
-    const fetchWorkoutInstance = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/workout-instances/${params.id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch workout');
-        }
-        const data = await response.json();
-        setWorkoutInstance(data);
+        setLoading(true);
+        
+        // Fetch both resources in parallel
+        const [workoutResponse, exercisesResponse] = await Promise.all([
+          fetch(`/api/workout-instances/${params.id}`),
+          fetch('/api/exercises')
+        ]);
 
-        // Get completed sets for this exercise
-        const completedSetsMap = data.exerciseSets?.reduce((acc: Record<number, any[]>, set: any) => {
+        if (!workoutResponse.ok) throw new Error('Failed to fetch workout');
+        if (!exercisesResponse.ok) throw new Error('Failed to fetch exercises');
+
+        const workoutData = await workoutResponse.json();
+        const exercisesData = await exercisesResponse.json() as ExerciseResponse;
+
+        // Transform exercises data
+        const exercises = Object.entries(exercisesData).flatMap(([category, exerciseList]) =>
+          exerciseList.map(exercise => ({
+            ...exercise,
+            category: category as ExerciseCategory,
+          }))
+        );
+        setAvailableExercises(exercises);
+
+        // Process workout data
+        setWorkoutInstance(workoutData);
+
+        // Get completed sets map
+        const completedSetsMap = workoutData.exerciseSets?.reduce((acc: Record<number, any[]>, set: any) => {
           if (!acc[set.exerciseId]) {
             acc[set.exerciseId] = [];
           }
@@ -194,89 +223,53 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           });
           return acc;
         }, {}) || {};
-        // Get the last completed set for each exercise
-        
-        
-        const initialTrackings = data.workoutExercises.map((ex: any) => {   
+
+        // Initialize exercise trackings
+        const initialTrackings = workoutData.workoutExercises.map((ex: any) => {   
           let sets;
 
-          if (data.completedAt) {
-            // Just used the completed sets for a completed workout
+          if (workoutData.completedAt) {
             sets = completedSetsMap[ex.exercise.id];
           } else {
-            // Generate sets for incomplete workout from last workout
             sets = Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
-              // Find completed set with matching setNumber
               const completedSets = completedSetsMap[ex.exercise.id] || [];
-              const completedSet = completedSets.find((set: any) => {
-                if (set.setNumber === index + 1) {
-                  return true;
-                }
+              const completedSet = completedSets.find((set: any) => set.setNumber === index + 1);
+              const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
+
+              return completedSet ? {
+                id: completedSet.id,
+                reps: completedSet.reps,
+                weight: completedSet.weight,
+                lastSet: matchingLastSet || null,
+                completed: true
+              } : {
+                reps: 0,
+                weight: 0,
+                lastSet: matchingLastSet || null
+              };
             });
-
-            // Find the set with matching setNumber (index + 1) from last workout
-            const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
-
-            return completedSet ? {
-              id: completedSet.id,
-              reps: completedSet.reps,
-              weight: completedSet.weight,
-              lastSet: matchingLastSet || null,
-              completed: true
-            } : {
-              reps: 0,
-              weight: 0,
-              lastSet: matchingLastSet || null
-            };
-          })
-        }
+          }
 
           return {
             exerciseId: ex.exercise.id,
             exerciseName: ex.exercise.name,
             sets,
             order: ex.order,
-            history: availableExercises.find((exercise: any) => exercise.id === ex.exercise.id)?.workoutInstances || []
+            history: exercises.find((exercise: any) => exercise.id === ex.exercise.id)?.workoutInstances || []
           };
         });
 
-        setExerciseTrackings(initialTrackings.sort((a: { order: number }, b: { order: number }) => a.order - b.order));
+        setExerciseTrackings(initialTrackings.sort((a, b) => a.order - b.order));
+
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch workout');
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkoutInstance();
-  }, [params.id, availableExercises || []]);
-
-  useEffect(() => {
-    const fetchAvailableExercises = async () => {
-      try {
-        const response = await fetch('/api/exercises');
-        if (!response.ok) {
-          throw new Error('Failed to fetch exercises');
-        }
-        const data = await response.json() as ExerciseResponse;
-        
-        // Transform the categorized exercises into a flat array with category information
-        const exercises = Object.entries(data).flatMap(([category, exerciseList]) =>
-          exerciseList.map(exercise => ({
-            ...exercise,
-            category: category as ExerciseCategory,
-            workoutInstances: [] // Initialize workoutInstances as an empty array
-          }))
-        );
-
-        setAvailableExercises(exercises);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch exercises');
-      }
-    };
-
-    fetchAvailableExercises();
-  }, []);
+    fetchData();
+  }, [params.id]); // Only depends on params.id now
 
   useEffect(() => {
     const fetchWorkoutHistory = async () => {
@@ -971,7 +964,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           open={Boolean(menuAnchorEl)}
           onClose={handleMenuClose}
         >
-          {/* {console.log("activeSet", activeSet)} */}
           <MenuItem 
             onClick={() => activeSet && handleSkipSet(activeSet.exerciseIndex, activeSet.setIndex)}
           >
@@ -1077,7 +1069,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     .map((set, setIndex) => (
                       <Grid item xs={12} key={setIndex}>
                         <Typography variant="body2">
-                          Set {set.setNumber}: {set.weight}kg × {set.reps} reps
+                          Set {set.setNumber}: {set.weight}lbs × {set.reps} reps
                         </Typography>
                       </Grid>
                     ))}

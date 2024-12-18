@@ -28,6 +28,7 @@ export async function GET() {
             reps: true,
             createdAt: true,
             workoutInstanceId: true,
+            setNumber: true,
             workoutInstance: {
               select: {
                 completedAt: true
@@ -50,17 +51,6 @@ export async function GET() {
         return Math.max(max, set.weight);
       }, 0);
 
-      // Create a map to sum volumes by workoutInstanceId
-      const volumeMap: Record<string, number> = {};
-      exercise.sets.forEach(set => {
-        const workoutInstanceId = set.workoutInstanceId;
-        const volume = set.reps * set.weight;
-        if (!volumeMap[workoutInstanceId]) {
-          volumeMap[workoutInstanceId] = 0;
-        }
-        volumeMap[workoutInstanceId] += volume; // Sum the volume
-      });
-
       // Create a map to organize sets by workoutInstanceId
       const setsByWorkout: Record<string, any[]> = {};
       exercise.sets.forEach(set => {
@@ -68,21 +58,35 @@ export async function GET() {
         if (!setsByWorkout[workoutInstanceId]) {
           setsByWorkout[workoutInstanceId] = [];
         }
-        setsByWorkout[workoutInstanceId].push(set);
+        setsByWorkout[workoutInstanceId].push({
+          ...set,
+          setNumber: set.setNumber
+        });
+      });
+
+      // Calculate volume and create workoutInstances array
+      const workoutInstances = Object.entries(setsByWorkout).map(([workoutInstanceId, sets]) => {
+        const volume = sets.reduce((total, set) => total + (set.reps * set.weight), 0);
+        return {
+          workoutInstanceId: parseInt(workoutInstanceId),
+          volume,
+          completedAt: sets[0]?.workoutInstance.completedAt,
+          sets: sets.sort((a, b) => a.setNumber - b.setNumber).map(set => ({
+            weight: set.weight,
+            reps: set.reps,
+            setNumber: set.setNumber
+          }))
+        };
       });
 
       acc[category].push({
         ...exercise,
-        workoutInstances: Object.entries(volumeMap).map(([workoutInstanceId, totalVolume]) => ({
-          workoutInstanceId,
-          volume: totalVolume,
-          completedAt: setsByWorkout[workoutInstanceId][0]?.workoutInstance.completedAt,
-          sets: setsByWorkout[workoutInstanceId]
-        })),
+        workoutInstances,
         highestWeight
       });
       return acc;
     }, {} as Record<string, any>);
+
 
     return NextResponse.json(exercisesByCategory);
   } catch (error) {
