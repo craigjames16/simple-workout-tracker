@@ -50,6 +50,7 @@ interface ExerciseTracking {
     reps: number;
     weight: number;
     completed?: boolean;
+    skipped?: boolean;
     lastSet: {
       reps: number;
       weight: number;
@@ -665,6 +666,20 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     } 
   };
 
+  const handleSkipSet = (exerciseIndex: number, setIndex: number) => {
+    setExerciseTrackings(prev => {
+      const prevExercises = [...prev];
+      const updatedSet = { 
+        ...prevExercises[exerciseIndex].sets[setIndex],
+        completed: true,
+        skipped: true
+      };
+      prevExercises[exerciseIndex].sets[setIndex] = updatedSet;
+      return prevExercises;
+    });
+    handleMenuClose();
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer maxWidth="md" disableGutters sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -680,8 +695,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       </ResponsiveContainer>
     );
   }
-  {console.log("workoutInstance", workoutInstance.planInstanceDays?.[0].planInstance.mesocycle)}
-  {console.log("workoutInstance2", workoutInstance)}
+
   return (
     <ResponsiveContainer maxWidth="xs" disableGutters>
       <Paper sx={{ 
@@ -957,6 +971,12 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           open={Boolean(menuAnchorEl)}
           onClose={handleMenuClose}
         >
+          {/* {console.log("activeSet", activeSet)} */}
+          <MenuItem 
+            onClick={() => activeSet && handleSkipSet(activeSet.exerciseIndex, activeSet.setIndex)}
+          >
+            <Typography color="text.secondary">Skip Set</Typography>
+          </MenuItem>
           <MenuItem 
             onClick={handleDeleteSet}
             sx={{ color: 'error.main' }}
@@ -1029,7 +1049,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             onClick={handleCompleteWorkout}
             disabled={
               !exerciseTrackings.every((tracking) =>
-                tracking.sets.every((set) => set.completed === true)
+                tracking.sets.every((set) => set.completed === true || set.skipped === true)
               ) || !!workoutInstance.completedAt
             }
           >
