@@ -259,7 +259,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           };
         });
 
-        setExerciseTrackings(initialTrackings.sort((a, b) => a.order - b.order));
+        setExerciseTrackings(initialTrackings.sort((a: ExerciseTracking, b: ExerciseTracking) => a.order - b.order));
 
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
@@ -476,11 +476,16 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         root.unmount();
         container.remove();
         
-        if (workoutInstance?.planInstanceDays?.[0]?.planInstance) {
-          window.location.href = `/plans/instance/${workoutInstance.planInstanceDays[0].planInstance.id}`;
-        } else if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle) {
+        // First check for mesocycle
+        if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle?.id) {
           window.location.href = `/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`;
-        } else {
+        }
+        // If no mesocycle, check for plan instance
+        else if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.id) {
+          window.location.href = `/plans/instance/${workoutInstance.planInstanceDays[0].planInstance.id}`;
+        }
+        // Fallback to plans page
+        else {
           window.location.href = '/plans';
         }
       }, 2000);

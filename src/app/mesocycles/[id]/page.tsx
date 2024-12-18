@@ -33,12 +33,21 @@ interface PlanInstance {
   rir: number;
   completedAt: string | null;
   days: Array<{
+    id: number;
     isComplete: boolean;
     planDay: {
       isRestDay: boolean;
+      dayNumber: number;
     };
     workoutInstance: {
+      id: number;
       completedAt: string | null;
+      workoutExercises: Array<{
+        id: number;
+        exercise: {
+          name: string;
+        };
+      }>;
     } | null;
   }>;
 }
@@ -131,6 +140,50 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
     }
   };
 
+  const handleCompleteRestDay = async (instanceId: number, dayId: number) => {
+    try {
+      const response = await fetch(
+        `/api/plan-instances/${instanceId}/days/${dayId}/complete-rest`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to complete rest day');
+      }
+
+      // Refresh the page data
+      const updatedMesocycle = await fetch(`/api/mesocycles/${params.id}`);
+      const data = await updatedMesocycle.json();
+      setMesocycle(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleStartWorkout = async (instanceId: number, dayId: number) => {
+    try {
+      const response = await fetch(
+        `/api/plan-instances/${instanceId}/days/${dayId}/start`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to start workout');
+      }
+
+      const workoutInstance = await response.json();
+
+      // Redirect to the track page with the new workout instance
+      window.location.href = `/track/${workoutInstance.id}`;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -190,7 +243,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                 Progress: {Math.round(progress)}%
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {mesocycle.instances.filter(i => i.completedAt).length} / {mesocycle.iterations} iterations completed
+                {mesocycle.instances.filter(i => i.completedAt).length} / {mesocycle.iterations} Weeks completed
               </Typography>
             </Box>
           </Box>
@@ -212,71 +265,110 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
           {mesocycle.instances
             .sort((a, b) => a.iterationNumber - b.iterationNumber)
             .map((instance) => {
-              const isComplete = isInstanceComplete(instance);
-              const isInProgress = instance.status === 'IN_PROGRESS';
-              const canStart = !isComplete && !isInProgress && 
-                mesocycle.instances
-                  .filter(i => i.iterationNumber < instance.iterationNumber)
-                  .every(i => isInstanceComplete(i));
-
-              let href = '';
-              if (isInProgress || canStart) {
-                href = `/plans/instance/${instance.id}`;
-              }
-
               return (
                 <Card
                   key={instance.id}
-                  component={href ? Link : 'div'}
-                  href={href}
                   sx={{ 
                     display: 'flex',
-                    flexDirection: { xs: 'column', sm: 'row' },
-                    alignItems: { sm: 'center' },
+                    flexDirection: 'column',
                     p: 2,
-                    textDecoration: 'none',
-                    color: 'inherit',
+                    gap: 2,
                     transition: 'all 0.2s',
-                    ...(href && {
-                      cursor: 'pointer',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: 3,
-                        backgroundColor: 'action.hover'
-                      }
-                    })
                   }}
                 >
                   <Box sx={{ 
                     display: 'flex', 
                     alignItems: 'center', 
-                    flex: 1,
                     gap: 2,
                   }}>
                     {getStatusIcon(instance.status)}
                     <Box>
                       <Typography variant="h6" sx={{ mb: 0.5 }}>
-                        Iteration {instance.iterationNumber}
+                        Week {instance.iterationNumber}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Target RIR: {instance.rir}
                       </Typography>
                     </Box>
                   </Box>
-                  {href && (
-                    <Typography 
-                      variant="body2" 
-                      color="primary"
-                      sx={{ 
-                        mt: { xs: 2, sm: 0 },
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5
-                      }}
-                    >
-                      {isInProgress ? 'Continue Iteration' : 'Start Iteration'} →
-                    </Typography>
-                  )}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {instance.days
+                      .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
+                      .map((day, index) => {
+                        const isRestDay = day.planDay.isRestDay;
+                        const isWorkoutStarted = day.workoutInstance && !day.workoutInstance.completedAt;
+                        const isWorkoutComplete = day.workoutInstance?.completedAt;
+
+                        let onClick = undefined;
+                        if (isRestDay && !day.isComplete) {
+                          onClick = () => handleCompleteRestDay(instance.id, day.id);
+                        } else if (!isRestDay && !day.workoutInstance) {
+                          onClick = () => handleStartWorkout(instance.id, day.id);
+                        } else if (!isRestDay && (isWorkoutStarted || isWorkoutComplete)) {
+                          onClick = () => window.location.href = `/track/${day.workoutInstance?.id}`;
+                        }
+
+                        return (
+                          <Box
+                            key={index}
+                            component="div"
+                            onClick={onClick}
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              p: 1,
+                              borderRadius: 1,
+                              backgroundColor: day.isComplete ? 'success.dark' : 'background.paper',
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              cursor: onClick ? 'pointer' : 'default',
+                              '&:hover': {
+                                backgroundColor: onClick ? 'action.hover' : 'inherit',
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="body2">
+                                {isRestDay ? 'Rest Day' : 'Workout Day'}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {day.isComplete ? (
+                                  <CheckCircleIcon color="success" />
+                                ) : (
+                                  <PlayCircleOutlineIcon color="action" />
+                                )}
+                              </Box>
+                            </Box>
+                            {!isRestDay && day.workoutInstance && (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                                {day.workoutInstance?.workoutExercises?.map((workoutExercise: any) => (
+                                  <Box
+                                    key={workoutExercise.id}
+                                    sx={{
+                                      px: 2,
+                                      py: 0.5,
+                                      borderRadius: 16,
+                                      backgroundColor: 'primary.dark',
+                                      color: 'primary.contrastText',
+                                      fontSize: '0.875rem',
+                                      opacity: 0.9,
+                                      '&:hover': {
+                                        opacity: 1,
+                                        backgroundColor: 'primary.main',
+                                      },
+                                    }}
+                                  >
+                                    {workoutExercise.exercise.name.length > 10 
+                                      ? `${workoutExercise.exercise.name.substring(0, 10)}...` 
+                                      : workoutExercise.exercise.name}
+                                  </Box>
+                                ))}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })}
+                  </Box>
                 </Card>
               );
             })}
