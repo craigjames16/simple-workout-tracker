@@ -25,8 +25,21 @@ export async function GET(
           include: {
             days: {
               include: {
-                planDay: true,
-                workoutInstance: true
+                planDay: {
+                  select: {
+                    isRestDay: true,
+                    dayNumber: true,
+                  }
+                },
+                workoutInstance: {
+                  include: {
+                    workoutExercises: {
+                      include: {
+                        exercise: true
+                      }
+                    }
+                  }
+                }
               }
             },
             plan: true
@@ -37,6 +50,8 @@ export async function GET(
         }
       }
     });
+
+
 
     if (!mesocycle) {
       return NextResponse.json(
