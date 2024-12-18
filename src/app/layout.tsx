@@ -2,7 +2,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import ThemeRegistry from '@/components/ThemeRegistry';
 import Navbar from '@/components/Navbar';
 import { NextAuthProvider } from './provider';
-
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export const metadata = {
   title: 'Workout Tracker',
@@ -41,16 +41,17 @@ export default async function RootLayout({
   children: React.ReactNode,
   session: any
 }) {
-
   return (
     <html lang="en">
       <body>
+        <ErrorBoundary>
           <NextAuthProvider session={session}>
             <ThemeRegistry>
               <Navbar />
               {children}
             </ThemeRegistry>
           </NextAuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
