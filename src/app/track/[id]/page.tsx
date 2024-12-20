@@ -40,6 +40,9 @@ import DialogContent from '@mui/material/DialogContent';
 import { format } from 'date-fns';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import Drawer from '@mui/material/Drawer';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 
 interface ExerciseTracking {
   exerciseId: number;
@@ -152,6 +155,42 @@ const ParticleEffect = () => {
   );
 };
 
+const ExerciseHistoryChart = ({ history }: { history: any[] }) => {
+  const chartData = history.map(instance => ({
+    date: new Date(instance.completedAt).toLocaleDateString(),
+    volume: instance.volume,
+  }));
+
+  return (
+    <Box sx={{ width: '100%', height: 250 }}>
+      <RechartsContainer>
+        <LineChart 
+          data={chartData}
+          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+        >
+          <XAxis 
+            dataKey="date" 
+            axisLine={false} 
+            tickLine={false}
+            tick={{ fill: 'transparent' }}
+          />
+          <YAxis 
+            axisLine={false} 
+            tickLine={false} 
+          />
+          <Tooltip />
+          <Line 
+            type="monotone" 
+            dataKey="volume" 
+            stroke="#8884d8" 
+            dot={false} 
+          />
+        </LineChart>
+      </RechartsContainer>
+    </Box>
+  );
+};
+
 export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [workoutInstance, setWorkoutInstance] = useState<WorkoutInstanceWithRelations | null>(null);
   const [exerciseTrackings, setExerciseTrackings] = useState<ExerciseTracking[]>([]);
@@ -180,6 +219,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   });
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryView[]>([]);
   const [historyAnchorEl, setHistoryAnchorEl] = useState<null | HTMLElement>(null);
+  const [historyTabValue, setHistoryTabValue] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,7 +263,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           });
           return acc;
         }, {}) || {};
-
+        
         // Initialize exercise trackings
         const initialTrackings = workoutData.workoutExercises.map((ex: any) => {   
           let sets;
@@ -718,26 +758,33 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             <Box>
               <Typography variant="h6" gutterBottom>
                 {workoutInstance.planInstanceDays?.[0] ? (
-                  `Iteration ${workoutInstance.planInstanceDays[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDays[0].planDay.dayNumber}`
+                  `Week ${workoutInstance.planInstanceDays[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDays[0].planDay.dayNumber}`
                 ) : (
                   workoutInstance.workout.name
                 )}
               </Typography>
               {workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle && (
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: -1, gap: 1 }}>
-                  <Typography variant="subtitle1" color="text.secondary">
-                    {`${workoutInstance.planInstanceDays[0].planInstance.mesocycle.name} -`}
-                  </Typography>
-                  {workoutInstance.planInstanceDays?.[0]?.planInstance?.rir !== undefined && (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  mt: -1, 
+                  gap: 0.5 
+                }}>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Typography variant="subtitle1" color="text.secondary">
+                      {`${workoutInstance.planInstanceDays[0].planInstance.mesocycle.name} - RIR: ${workoutInstance.planInstanceDays[0].planInstance.rir}`}
+                    </Typography>
+                  </Box>
+                  {workoutInstance.completedAt && (
                     <Typography color="text.secondary">
-                      RIR: {workoutInstance.planInstanceDays[0].planInstance.rir}
+                      Completed: {format(new Date(workoutInstance.completedAt), 'MMM d, yyyy')}
                     </Typography>
                   )}
                 </Box>
               )}
             </Box>
             <Box>
-              {workoutInstance.planInstanceDays?.[0].planInstance.mesocycle && (
+              {workoutInstance.planInstanceDays?.[0]?.planInstance.mesocycle && (
                 <IconButton
                   onClick={(event) => setHistoryAnchorEl(event.currentTarget)}
                   size="large"
@@ -1046,7 +1093,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             onClick={handleCompleteWorkout}
             disabled={
               !exerciseTrackings.every((tracking) =>
-                tracking.sets.every((set) => set.completed === true || set.skipped === true)
+                tracking.sets?.every((set) => set.completed === true || set.skipped === true)
               ) || !!workoutInstance.completedAt
             }
           >
@@ -1062,30 +1109,48 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         >
           <DialogTitle>{historyDialog.exercise.exerciseName} History</DialogTitle>
           <DialogContent>
-            
-            {historyDialog.exercise.history?.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()).map((instance, index) => (
-              <Box key={index} sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  {format(new Date(instance.completedAt), 'MMM d, yyyy')}
-                </Typography>
-                <Grid container spacing={2} sx={{ pl: 2 }}>
-                  {instance.sets
-                    .sort((a, b) => a.setNumber - b.setNumber)
-                    .map((set, setIndex) => (
-                      <Grid item xs={12} key={setIndex}>
-                        <Typography variant="body2">
-                          Set {set.setNumber}: {set.weight}lbs × {set.reps} reps
-                        </Typography>
-                      </Grid>
-                    ))}
-                </Grid>
-              </Box>
-            ))}
+            <Tabs 
+              value={historyTabValue} 
+              onChange={(_, newValue) => setHistoryTabValue(newValue)}
+              sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+            >
+              <Tab label="Sets" />
+              <Tab label="Volume" />
+            </Tabs>
 
-            {historyDialog.exercise.history?.length === 0 && (
-              <Typography color="text.secondary">
-                No previous history found for this exercise.
-              </Typography>
+            {historyTabValue === 0 ? (
+              // Sets History Tab
+              <>
+                {historyDialog.exercise.history?.sort((a, b) => 
+                  new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+                ).map((instance, index) => (
+                  <Box key={index} sx={{ mb: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      {format(new Date(instance.completedAt), 'MMM d, yyyy')}
+                    </Typography>
+                    <Grid container spacing={2} sx={{ pl: 2 }}>
+                      {instance.sets
+                        .sort((a, b) => a.setNumber - b.setNumber)
+                        .map((set, setIndex) => (
+                          <Grid item xs={12} key={setIndex}>
+                            <Typography variant="body2">
+                              Set {set.setNumber}: {set.weight}lbs × {set.reps} reps
+                            </Typography>
+                          </Grid>
+                        ))}
+                    </Grid>
+                  </Box>
+                ))}
+
+                {historyDialog.exercise.history?.length === 0 && (
+                  <Typography color="text.secondary">
+                    No previous history found for this exercise.
+                  </Typography>
+                )}
+              </>
+            ) : (
+              // Volume History Tab
+              <ExerciseHistoryChart history={historyDialog.exercise.history || []} />
             )}
           </DialogContent>
           <DialogActions>
