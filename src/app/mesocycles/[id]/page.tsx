@@ -283,7 +283,19 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                   }}>
                     {getStatusIcon(instance.status)}
                     <Box>
-                      <Typography variant="h6" sx={{ mb: 0.5 }}>
+                      <Typography 
+                        variant="h6" 
+                        component={Link}
+                        href={`/plans/instance/${instance.id}`}
+                        sx={{ 
+                          mb: 0.5,
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          '&:hover': {
+                            textDecoration: 'underline'
+                          }
+                        }}
+                      >
                         Week {instance.iterationNumber}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -328,10 +340,47 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                             }}
                           >
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography variant="body2">
+                              <Typography variant="body2" sx={{ flexShrink: 0 }}>
                                 {isRestDay ? 'Rest Day' : 'Workout Day'}
                               </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              
+                              {!isRestDay && day.workoutInstance && (
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  flexWrap: 'nowrap',
+                                  gap: 1,
+                                  mx: 1,
+                                  flex: 1,
+                                  minWidth: 0, // Important for proper flex behavior
+                                  overflowX: 'hidden',
+                                }}>
+                                  {day.workoutInstance?.workoutExercises?.map((workoutExercise: any) => (
+                                    <Box
+                                      key={workoutExercise.id}
+                                      sx={{
+                                        px: 2,
+                                        py: 0.5,
+                                        borderRadius: 16,
+                                        backgroundColor: 'primary.dark',
+                                        color: 'primary.contrastText',
+                                        fontSize: '0.875rem',
+                                        opacity: 0.9,
+                                        flexShrink: 0,
+                                        '&:hover': {
+                                          opacity: 1,
+                                          backgroundColor: 'primary.main',
+                                        },
+                                      }}
+                                    >
+                                      {workoutExercise.exercise.name.length > 7
+                                        ? `${workoutExercise.exercise.name.substring(0, 7)}...` 
+                                        : workoutExercise.exercise.name}
+                                    </Box>
+                                  ))}
+                                </Box>
+                              )}
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                                 {day.isComplete ? (
                                   <CheckCircleIcon color="success" />
                                 ) : (
@@ -339,43 +388,6 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                                 )}
                               </Box>
                             </Box>
-                            {!isRestDay && day.workoutInstance && (
-                              <Box sx={{ 
-                                display: 'flex', 
-                                flexWrap: 'nowrap',
-                                gap: 1, 
-                                mt: 1,
-                                overflowX: 'auto',
-                                '&::-webkit-scrollbar': { height: 6 },
-                                '&::-webkit-scrollbar-thumb': {
-                                  backgroundColor: 'rgba(0,0,0,.2)',
-                                  borderRadius: 3,
-                                },
-                              }}>
-                                {day.workoutInstance?.workoutExercises?.map((workoutExercise: any) => (
-                                  <Box
-                                    key={workoutExercise.id}
-                                    sx={{
-                                      px: 2,
-                                      py: 0.5,
-                                      borderRadius: 16,
-                                      backgroundColor: 'primary.dark',
-                                      color: 'primary.contrastText',
-                                      fontSize: '0.875rem',
-                                      opacity: 0.9,
-                                      '&:hover': {
-                                        opacity: 1,
-                                        backgroundColor: 'primary.main',
-                                      },
-                                    }}
-                                  >
-                                    {workoutExercise.exercise.name.length > 7
-                                      ? `${workoutExercise.exercise.name.substring(0, 7)}...` 
-                                      : workoutExercise.exercise.name}
-                                  </Box>
-                                ))}
-                              </Box>
-                            )}
                           </Box>
                         );
                       })}

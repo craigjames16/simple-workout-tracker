@@ -777,7 +777,19 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                   gap: 0.5 
                 }}>
                   <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Typography variant="subtitle1" color="text.secondary">
+                    <Typography 
+                      variant="subtitle1" 
+                      color="text.secondary"
+                      component="a"
+                      href={`/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`}
+                      sx={{
+                        textDecoration: 'none',
+                        '&:hover': {
+                          textDecoration: 'underline',
+                          cursor: 'pointer'
+                        }
+                      }}
+                    >
                       {`${workoutInstance.planInstanceDays[0].planInstance.mesocycle.name} - RIR: ${workoutInstance.planInstanceDays[0].planInstance.rir}`}
                     </Typography>
                   </Box>
