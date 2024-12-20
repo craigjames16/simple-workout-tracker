@@ -340,7 +340,18 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                               </Box>
                             </Box>
                             {!isRestDay && day.workoutInstance && (
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+                              <Box sx={{ 
+                                display: 'flex', 
+                                flexWrap: 'nowrap',
+                                gap: 1, 
+                                mt: 1,
+                                overflowX: 'auto',
+                                '&::-webkit-scrollbar': { height: 6 },
+                                '&::-webkit-scrollbar-thumb': {
+                                  backgroundColor: 'rgba(0,0,0,.2)',
+                                  borderRadius: 3,
+                                },
+                              }}>
                                 {day.workoutInstance?.workoutExercises?.map((workoutExercise: any) => (
                                   <Box
                                     key={workoutExercise.id}
@@ -358,8 +369,8 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                                       },
                                     }}
                                   >
-                                    {workoutExercise.exercise.name.length > 10 
-                                      ? `${workoutExercise.exercise.name.substring(0, 10)}...` 
+                                    {workoutExercise.exercise.name.length > 7
+                                      ? `${workoutExercise.exercise.name.substring(0, 7)}...` 
                                       : workoutExercise.exercise.name}
                                   </Box>
                                 ))}
