@@ -116,8 +116,11 @@ interface WorkoutHistoryView {
   iterationNumber: number;
   workouts: Array<{
     dayNumber: number;
+    planInstanceDayId: number;
     workoutInstanceId: number;
     completedAt: Date | null;
+    isRestDay: boolean;
+    isCompleted: boolean;
     name: string;
   }>;
 }
@@ -324,8 +327,11 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             iterationNumber: instance.iterationNumber,
             workouts: instance.days.map((day: any) => ({
               dayNumber: day.planDay.dayNumber,
+              planInstanceDayId: day.id,
               workoutInstanceId: day.workoutInstance?.id,
               completedAt: day.workoutInstance?.completedAt,
+              isRestDay: day.planDay.isRestDay,
+              isCompleted: day.isComplete,
               name: day.planDay.name || `Day ${day.planDay.dayNumber}`
             }))
           }));
@@ -1171,20 +1177,18 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
               left: '0px !important',
               right: '0px !important',
               maxWidth: '100% !important',
-              position: 'fixed'
+              position: 'fixed',
+              top: { xs: '132px !important', sm: '156px !important' }
             }
           }}
           transformOrigin={{ horizontal: 'center', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
         >
           <Box sx={{ p: 2, width: '100%' }}>
-            <Typography variant="h6" gutterBottom>
-              Mesocycle Progress
-            </Typography>
             <Box sx={{ 
               display: 'grid',
-              gridTemplateColumns: `repeat(${workoutHistory.length}, 40px)`,
-              gap: 1,
+              gridTemplateColumns: `repeat(${workoutHistory.length}, 60px)`,
+              gap: 2,
               justifyContent: 'center'
             }}>
               {/* Header row with iteration numbers */}
@@ -1200,7 +1204,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                       : 'text.secondary'
                   }}
                 >
-                  {iteration.iterationNumber}
+                  Week {iteration.iterationNumber} 
                 </Box>
               ))}
 
@@ -1214,7 +1218,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                     <Box
                       key={`${iteration.iterationNumber}-${dayIndex + 1}`}
                       sx={{
-                        width: 40,
+                        width: 60,
                         height: 40,
                         display: 'flex',
                         alignItems: 'center',
@@ -1223,11 +1227,15 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         cursor: workout ? 'pointer' : 'default',
                         backgroundColor: workout?.workoutInstanceId === parseInt(params.id)
                           ? 'primary.main'
-                          : workout?.completedAt
-                            ? 'success.light'
-                            : workout
-                              ? 'action.hover'
-                              : 'action.disabledBackground',
+                          : workout?.isRestDay
+                            ? workout.isCompleted
+                              ? 'success.dark'
+                              : 'warning.dark'
+                            : workout?.completedAt
+                              ? 'success.dark'
+                              : workout
+                                ? 'action.hover'
+                                : 'action.disabledBackground',
                         color: workout?.workoutInstanceId === parseInt(params.id)
                           ? 'primary.contrastText'
                           : 'text.primary',
@@ -1238,13 +1246,46 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                             : 'action.selected'
                         } : {}
                       }}
-                      onClick={() => {
+                      onClick={async () => {
                         if (workout?.workoutInstanceId && workout.workoutInstanceId !== parseInt(params.id)) {
+                          // Navigate to existing workout
                           window.location.href = `/track/${workout.workoutInstanceId}`;
+                        } else if (workout && !workout.workoutInstanceId) {
+                          try {
+                            if (workout.isRestDay) {
+                              // Complete rest day using planInstanceDayId
+                              const response = await fetch(`/api/plan-instances/${workoutInstance?.planInstanceDays?.[0]?.planInstance?.id}/days/${workout.planInstanceDayId}/complete-rest`, {
+                                method: 'POST',
+                              });
+
+                              if (!response.ok) {
+                                throw new Error('Failed to complete rest day');
+                              }
+
+                              // Refresh the page to show updated status
+                              window.location.reload();
+                            } else {
+                              // Start new workout using planInstanceDayId
+                              const response = await fetch(`/api/plan-instances/${workoutInstance?.planInstanceDays?.[0]?.planInstance?.id}/days/${workout.planInstanceDayId}/start`, {
+                                method: 'POST',
+                              });
+
+                              if (!response.ok) {
+                                throw new Error('Failed to start workout');
+                              }
+
+                              const data = await response.json();
+                              // Navigate to new workout
+                              window.location.href = `/track/${data.id}`;
+                            }
+                          } catch (error) {
+                            console.error('Error:', error);
+                            // You might want to show an error message to the user here
+                          }
                         }
                       }}
                     >
-                      {workout ? dayIndex + 1 : ''}
+                      {workout ? (workout.isRestDay ? 'R' : `Day ${dayIndex + 1}`) : ''}
                     </Box>
                   );
                 })
