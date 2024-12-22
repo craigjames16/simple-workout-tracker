@@ -10,6 +10,7 @@ frontend:
         - echo "GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET" >> .env
         - echo "NEXTAUTH_URL=https://tracker.craigchisholm.me" >> .env
         - echo "NEXT_PUBLIC_COMMIT_HASH=$(git rev-parse HEAD)" >> .env
+        - echo "CHAT_SERVICE_URL=$CHAT_SERVICE_URL" >> .env
         - npx prisma generate
         - npx prisma migrate deploy
         - npm run generate-icons
