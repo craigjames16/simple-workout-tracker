@@ -22,6 +22,7 @@ import SportsGymnasticsIcon from '@mui/icons-material/SportsGymnastics';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
+import ChatIcon from '@mui/icons-material/Chat';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -32,6 +33,7 @@ const navItems = [
   { text: 'Workouts', href: '/workouts', icon: <FitnessCenterIcon /> },
   { text: 'Plans', href: '/plans', icon: <ListAltIcon /> },
   { text: 'Mesocycles', href: '/mesocycles', icon: <RepeatIcon /> },
+  { text: 'Chat', href: '/chat', icon: <ChatIcon /> },
 ];
 
 export default function Navbar() {

@@ -25,6 +25,7 @@ model Exercise {
   category    ExerciseCategory  @default(CHEST)
   workouts    WorkoutExercise[]
   sets        ExerciseSet[]
+  adjustments Adjustment[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   userId      String?          @db.Text
@@ -204,4 +205,18 @@ model User {
   planInstances PlanInstance[]    // Add relation
   workoutInstances WorkoutInstance[] // Add relation
   mesocycles    Mesocycle[]      // Add relation
-} 
+  adjustments   Adjustment[]
+}
+
+model Adjustment {
+  id          Int       @id @default(autoincrement())
+  action      String    
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id])
+  exerciseId  Int
+  completed   Boolean   @default(false)
+  value       Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String?   // Make this optional by adding ?
+  user        User?     @relation(fields: [userId], references: [id]) // Make relation optional
+}
