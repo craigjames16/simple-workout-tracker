@@ -9,14 +9,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { message } = await request.json();
+    const { messages } = await request.json();
 
     const response = await fetch(`${process.env.CHAT_SERVICE_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ messages, userId: session.user.id }),
     });
 
     if (!response.ok) {

@@ -36,17 +36,19 @@ export default function ChatPage() {
     if (!input.trim()) return;
 
     const userMessage = input.trim();
+    console.log(userMessage)
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
-
+    console.log("Sending message to chat service")
+    
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMessage }] }),
       });
 
       if (!response.ok) {

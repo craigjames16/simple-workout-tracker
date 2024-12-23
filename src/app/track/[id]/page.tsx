@@ -43,6 +43,7 @@ import Drawer from '@mui/material/Drawer';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import Chip from '@mui/material/Chip';
 
 interface ExerciseTracking {
   exerciseId: number;
@@ -54,6 +55,7 @@ interface ExerciseTracking {
     weight: number;
     completed?: boolean;
     skipped?: boolean;
+    adjustment?: boolean;
     lastSet: {
       reps: number;
       weight: number;
@@ -268,16 +270,16 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         }, {}) || {};
         
         // Initialize exercise trackings
-        const initialTrackings = workoutData.workoutExercises.map((ex: any) => {   
+        const initialTrackings = workoutData.workoutExercises.map((workoutExercise: any) => {   
           let sets;
 
           if (workoutData.completedAt) {
-            sets = completedSetsMap[ex.exercise.id];
+            sets = completedSetsMap[workoutExercise.exercise.id];
           } else {
-            sets = Array.from({ length: ex.lastSets.length || 3 }, (_, index) => {
-              const completedSets = completedSetsMap[ex.exercise.id] || [];
+            sets = Array.from({ length: workoutExercise.lastSets.length || 3 }, (_, index) => {
+              const completedSets = completedSetsMap[workoutExercise.exercise.id] || [];
               const completedSet = completedSets.find((set: any) => set.setNumber === index + 1);
-              const matchingLastSet = ex.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
+              const matchingLastSet = workoutExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
 
               return completedSet ? {
                 id: completedSet.id,
@@ -293,12 +295,26 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             });
           }
 
+          if (workoutExercise.exercise.adjustments) {
+            workoutExercise.exercise.adjustments.forEach((adjustment: any) => {
+              if (adjustment.action === 'addSets') {
+                sets.push({
+                  reps: workoutExercise.lastSets[workoutExercise.lastSets.length - 1].reps,
+                  weight: workoutExercise.lastSets[workoutExercise.lastSets.length - 1].weight,
+                  setNumber: sets.length + 1,
+                  adjustment: true
+                })
+              }
+            });
+          }
+
           return {
-            exerciseId: ex.exercise.id,
-            exerciseName: ex.exercise.name,
+            exerciseId: workoutExercise.exercise.id,
+            exerciseName: workoutExercise.exercise.name,
             sets,
-            order: ex.order,
-            history: exercises.find((exercise: any) => exercise.id === ex.exercise.id)?.workoutInstances || []
+            adjustments: workoutExercise.exercise.adjustments,
+            order: workoutExercise.order,
+            history: exercises.find((exercise: any) => exercise.id === workoutExercise.exercise.id)?.workoutInstances || []
           };
         });
 
@@ -961,6 +977,15 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           disabled={isSetCompleted || !!workoutInstance.completedAt}
                           sx={{
                             maxWidth: '100px',
+                            backgroundColor: set.adjustment ? 'rgba(156, 39, 176, 0.1)' : 'inherit',
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.5)' : 'rgba(255, 255, 255, 0.23)',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.7)' : 'rgba(255, 255, 255, 0.23)',
+                              },
+                            },
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
                               margin: 0,
@@ -996,6 +1021,15 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           disabled={isSetCompleted || !!workoutInstance.completedAt}
                           sx={{
                             maxWidth: '100px',
+                            backgroundColor: set.adjustment ? 'rgba(156, 39, 176, 0.1)' : 'inherit',
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.5)' : 'rgba(255, 255, 255, 0.23)',
+                              },
+                              '&:hover fieldset': {
+                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.7)' : 'rgba(255, 255, 255, 0.23)',
+                              },
+                            },
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
                               '-webkit-appearance': 'none',
                               margin: 0,
@@ -1020,6 +1054,24 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           onChange={() => handleSetCompletion(exerciseIndex, setIndex, !isSetCompleted)}
                           disabled={!!workoutInstance.completedAt}
                         />
+                        {set.adjustment && (
+                          <Chip
+                            label="From PT"
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              height: '20px',
+                              backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                              color: 'rgb(156, 39, 176)',
+                              border: '1px solid rgba(156, 39, 176, 0.3)',
+                              '& .MuiChip-label': {
+                                px: 1,
+                                fontSize: '0.625rem',
+                                fontWeight: 500
+                              }
+                            }}
+                          />
+                        )}
                       </Grid>
                     </Grid>
                   );

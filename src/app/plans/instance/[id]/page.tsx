@@ -47,7 +47,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
 
   const calculateProgress = () => {
     if (!planInstance) return 0;
-    const completedDays = planInstance.days.filter(day => 
+    const completedDays = planInstance.days.filter((day: any) => 
       day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null
     ).length;
     return (completedDays / planInstance.days.length) * 100;
@@ -175,7 +175,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
                 Progress: {Math.round(progress)}%
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {planInstance.days.filter(day => 
+                {planInstance.days.filter((day: any) => 
                   day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null
                 ).length} / {planInstance.days.length} days completed
               </Typography>
@@ -208,8 +208,8 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {planInstance.days
-            .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
-            .map((day) => {
+            .sort((a: any, b: any) => a.planDay.dayNumber - b.planDay.dayNumber)
+            .map((day: any) => {
               const isComplete = day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt;
               const isInProgress = !isComplete && day.workoutInstance && !day.workoutInstance.completedAt;
               

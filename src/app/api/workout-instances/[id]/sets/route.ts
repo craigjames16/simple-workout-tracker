@@ -27,6 +27,15 @@ export async function POST(
     const json = await request.json() as RequestBody;
     const { exerciseId, sets } = json;
 
+    // First, check if there's a pending adjustment for this exercise
+    const pendingAdjustment = await prisma.adjustment.findFirst({
+      where: {
+        exerciseId,
+        userId: session.user.id,
+        completed: false
+      }
+    });
+
     // Create new sets
     const createdSets = await Promise.all(
       sets.map((set, index) => 
@@ -41,6 +50,14 @@ export async function POST(
         })
       )
     );
+
+    // If there was a pending adjustment, mark it as completed
+    if (pendingAdjustment) {
+      await prisma.adjustment.update({
+        where: { id: pendingAdjustment.id },
+        data: { completed: true }
+      });
+    }
 
     return NextResponse.json(createdSets);
   } catch (error) {

@@ -28,7 +28,15 @@ export async function GET(
         exerciseSets: true,
         workoutExercises: {
           include: {
-            exercise: true
+            exercise: {
+              include: {
+                adjustments: {
+                  where: {
+                    completed: false
+                  }
+                }
+              }
+            }
           }
         },
         workout: true,
