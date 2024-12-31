@@ -10,7 +10,6 @@ export async function POST(request: Request) {
 
   try {
     const { messages } = await request.json();
-
     const response = await fetch(`${process.env.CHAT_SERVICE_URL}/chat`, {
       method: 'POST',
       headers: {
@@ -20,10 +19,33 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to get response from chat service');
+      console.error('Error in chat API:', response.json());
+      return NextResponse.json(
+        { error: 'Error processing chat message', details: response.statusText },
+        { status: 500 }
+      );
     }
 
-    return new Response(response.body, {
+    // Transform the response to use the same headers
+    const transformStream = new TransformStream();
+    const writer = transformStream.writable.getWriter();
+    const encoder = new TextEncoder();
+
+    // Pipe the response to our transform stream
+    (async () => {
+      const reader = response.body!.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          await writer.write(value);
+        }
+      } finally {
+        writer.close();
+      }
+    })();
+
+    return new Response(transformStream.readable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',

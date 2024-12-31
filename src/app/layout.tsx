@@ -3,6 +3,7 @@ import ThemeRegistry from '@/components/ThemeRegistry';
 import Navbar from '@/components/Navbar';
 import { NextAuthProvider } from './provider';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { snsBootstrap } from '@/lib/sns-boot';
 
 export const metadata = {
   title: 'Workout Tracker',
@@ -41,6 +42,10 @@ export default async function RootLayout({
   children: React.ReactNode,
   session: any
 }) {
+  if (typeof window === 'undefined') { // Server-side only
+    snsBootstrap.initialize();
+  }
+
   return (
     <html lang="en">
       <body>

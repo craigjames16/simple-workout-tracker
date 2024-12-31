@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
+    "@aws-sdk/client-sns": "^3.716.0",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.16.11",
@@ -24,6 +25,7 @@
     "@types/react": "18.2.20",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "18.2.7",
+    "aws-sdk": "^2.1692.0",
     "canvas-confetti": "^1.9.3",
     "date-fns": "^2.30.0",
     "framer-motion": "^11.13.5",

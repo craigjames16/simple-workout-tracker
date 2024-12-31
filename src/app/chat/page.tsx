@@ -36,11 +36,9 @@ export default function ChatPage() {
     if (!input.trim()) return;
 
     const userMessage = input.trim();
-    console.log(userMessage)
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
-    console.log("Sending message to chat service")
     
     try {
       const response = await fetch('/api/chat', {
@@ -55,23 +53,48 @@ export default function ChatPage() {
         throw new Error('Failed to send message');
       }
 
-      // Set up event source reader
+      // Add an empty assistant message that we'll update
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
       if (reader) {
+        let lastProcessedContent = ''; // Track the last processed content
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const text = decoder.decode(value);
-          const messages = text.split('\n\n');
-          
-          for (const message of messages) {
-            if (message.startsWith('data: ')) {
-              const content = message.replace('data: ', '').trim();
-              if (content) {
-                setMessages(prev => [...prev, { role: 'assistant', content }]);
+          const chunks = text.split('\n\n');
+
+          for (const chunk of chunks) {
+            if (chunk.startsWith('data: ')) {
+              const content = chunk.replace('data: ', '');
+              // Only process if content is new and not empty
+              if (content && content !== lastProcessedContent) {
+                lastProcessedContent = content;
+                setMessages(prev => {
+                  const lastMessage = prev[prev.length - 1];
+                  // If content is already at the end of the message, skip the update
+                  if (lastMessage.content.endsWith(content)) {
+                    return prev;
+                  }
+                  
+                  const needsSpace = lastMessage.content.length > 0 && 
+                                   !lastMessage.content.endsWith(' ') && 
+                                   !content.startsWith(' ');
+                  
+                  return prev.map((msg, index) => {
+                    if (index === prev.length - 1) {
+                      return {
+                        ...msg,
+                        content: msg.content + content
+                      };
+                    }
+                    return msg;
+                  });
+                });
               }
             }
           }
