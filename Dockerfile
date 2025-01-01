@@ -68,6 +68,9 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
+# Add OpenSSL 1.1 installation
+RUN apk add --no-cache openssl1.1-compat
+
 ARG DATABASE_URL
 ARG NEXTAUTH_URL
 
