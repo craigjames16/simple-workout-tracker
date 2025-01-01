@@ -38,7 +38,8 @@ FROM base AS builder
 WORKDIR /app
 
 # Add OpenSSL installation
-RUN apk add --no-cache openssl
+# RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/main openssl1.1
+RUN apk add --no-cache openssl1.1
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -68,8 +69,7 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-# Add OpenSSL 1.1 installation
-RUN apk add --no-cache openssl1.1-compat
+RUN apk add --no-cache openssl1.1
 
 ARG DATABASE_URL
 ARG NEXTAUTH_URL
