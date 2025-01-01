@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
   try {
     const { messages } = await request.json();
-    const response = await fetch(`${process.env.CHAT_SERVICE_URL}/chat`, {
+    const response = await fetch(`${process.env.PERSONAL_TRAINER_AGENT_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
