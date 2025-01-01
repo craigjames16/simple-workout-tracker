@@ -24,12 +24,12 @@ aws ecr describe-repositories --repository-names ${IMAGE_NAME} --region ${AWS_RE
 echo "Building Docker image: ${FULL_IMAGE_NAME}"
 docker build --platform linux/amd64 \
     --build-arg NEXT_PUBLIC_COMMIT_HASH=${VERSION} \
-    --build-arg PRISMA_CLI_BINARY_TARGETS="native,linux-musl-openssl-3.0.x" \
+    --build-arg PRISMA_CLI_BINARY_TARGETS="debian-openssl-3.0.x" \
     --build-arg PRISMA_CLI_QUERY_ENGINE_TYPE=binary \
     --build-arg PRISMA_CLIENT_ENGINE_TYPE=binary \
     --build-arg GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
     --build-arg GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} \
-    --build-arg NEXTAUTH_URL=tracker.flufflylab.cloud \
+    --build-arg NEXTAUTH_URL=tracker.fluffylab.cloud \
     --build-arg NEXTAUTH_SECRET=${NEXTAUTH_SECRET} \
     --build-arg DATABASE_URL=${TRACKER_DATABASE_URL} \
     -t ${FULL_IMAGE_NAME} .
