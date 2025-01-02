@@ -43,7 +43,14 @@ export default async function RootLayout({
   session: any
 }) {
   if (typeof window === 'undefined') { // Server-side only
-    snsBootstrap.initialize();
+    console.log('SNS Initialization');
+    try {
+      snsBootstrap.initialize();
+    } catch (error) {
+      console.error('SNS Initialization Error:', error);
+    }
+  } else {
+    console.log('SNS Initialization skipped on client side');
   }
 
   return (
