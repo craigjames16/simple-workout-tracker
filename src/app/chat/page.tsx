@@ -60,7 +60,7 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
 
       if (reader) {
-        let lastProcessedContent = ''; // Track the last processed content
+        let lastProcessedContent = '';
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -71,30 +71,41 @@ export default function ChatPage() {
           for (const chunk of chunks) {
             if (chunk.startsWith('data: ')) {
               const content = chunk.replace('data: ', '');
-              // Only process if content is new and not empty
-              if (content && content !== lastProcessedContent) {
-                lastProcessedContent = content;
-                setMessages(prev => {
-                  const lastMessage = prev[prev.length - 1];
-                  // If content is already at the end of the message, skip the update
-                  if (lastMessage.content.endsWith(content)) {
-                    return prev;
-                  }
-                  
-                  const needsSpace = lastMessage.content.length > 0 && 
-                                   !lastMessage.content.endsWith(' ') && 
-                                   !content.startsWith(' ');
-                  
-                  return prev.map((msg, index) => {
-                    if (index === prev.length - 1) {
-                      return {
-                        ...msg,
-                        content: msg.content + content
-                      };
+              if (!content) continue;
+
+              try {
+                // Try to parse as JSON first
+                const jsonData = JSON.parse(content);
+                if (jsonData.type === 'plan_data') {
+                  console.log("Plan data:", jsonData.data);
+                  // Add plan data as a new message
+                  setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: JSON.stringify(jsonData.data, null, 2)
+                  }]);
+                  continue;
+                }
+              } catch {
+                // Not JSON, handle as regular streaming text
+                if (content !== lastProcessedContent) {
+                  lastProcessedContent = content;
+                  setMessages(prev => {
+                    const lastMessage = prev[prev.length - 1];
+                    if (lastMessage.content.endsWith(content)) {
+                      return prev;
                     }
-                    return msg;
+                    
+                    return prev.map((msg, index) => {
+                      if (index === prev.length - 1) {
+                        return {
+                          ...msg,
+                          content: msg.content + content
+                        };
+                      }
+                      return msg;
+                    });
                   });
-                });
+                }
               }
             }
           }
@@ -102,7 +113,6 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      // Optionally show error message to user
     } finally {
       setLoading(false);
     }
