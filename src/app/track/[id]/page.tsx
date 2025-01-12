@@ -641,12 +641,26 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       }
 
       const data = await response.json();
-      setWorkoutInstance(data);
+      
+      // Update both states
+      setWorkoutInstance(prevWorkoutInstance => {
+        if (!prevWorkoutInstance) return null;
+        
+        return {
+          ...prevWorkoutInstance,
+          workoutExercises: prevWorkoutInstance.workoutExercises.filter(
+            (ex: any) => ex.exercise.id !== exerciseId
+          )
+        };
+      });
       
       // Remove the exercise from exerciseTrackings
       setExerciseTrackings(prev => 
         prev.filter(tracking => tracking.exerciseId !== exerciseId)
       );
+      
+      // Close the exercise menu
+      handleExerciseMenuClose();
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove exercise');
