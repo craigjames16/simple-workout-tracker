@@ -22,6 +22,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditIcon from '@mui/icons-material/Edit';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import HotelIcon from '@mui/icons-material/Hotel';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation';
 
 interface Exercise {
@@ -88,6 +89,28 @@ export default function PlanDetailsPage({ params }: { params: { id: string } }) 
     handleMenuClose();
   };
 
+  const handleDeletePlan = async () => {
+    if (!confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
+      handleMenuClose();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/plans/${params.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete plan');
+      }
+
+      router.push('/plans');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete plan');
+    }
+    handleMenuClose();
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
@@ -145,6 +168,10 @@ export default function PlanDetailsPage({ params }: { params: { id: string } }) 
           <MenuItem onClick={handleEditPlan}>
             <EditIcon sx={{ mr: 1 }} fontSize="small" />
             Edit Plan
+          </MenuItem>
+          <MenuItem onClick={handleDeletePlan}>
+            <DeleteIcon sx={{ mr: 1 }} fontSize="small" color="error" />
+            <Typography color="error">Delete Plan</Typography>
           </MenuItem>
         </Menu>
 

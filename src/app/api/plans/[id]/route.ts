@@ -217,4 +217,68 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    // Delete the plan and all associated resources in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Get the plan days with their workouts
+      const planDays = await tx.planDay.findMany({
+        where: {
+          planId: parseInt(params.id),
+        },
+        include: {
+          workout: true,
+        },
+      });
+
+      // Delete workout exercises and workouts for each day
+      for (const day of planDays) {
+        if (day.workout) {
+          // Delete workout exercises first
+          await tx.workoutExercise.deleteMany({
+            where: {
+              workoutId: day.workout.id,
+            },
+          });
+
+          // Delete the workout
+          await tx.workout.delete({
+            where: {
+              id: day.workout.id,
+            },
+          });
+        }
+      }
+
+      // Delete plan days
+      await tx.planDay.deleteMany({
+        where: {
+          planId: parseInt(params.id),
+        },
+      });
+
+      // Finally, delete the plan
+      await tx.plan.delete({
+        where: {
+          id: parseInt(params.id),
+          userId: session.user.id,
+        },
+      });
+    });
+
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    return new Response('Internal Server Error', { status: 500 });
+  }
 } 

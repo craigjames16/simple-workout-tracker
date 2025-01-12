@@ -377,19 +377,35 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     });
   };
 
-  const handleAddSet = (exerciseIndex: number, workout: any) => {
+  const handleAddSet = (exerciseIndex: number) => {
     setExerciseTrackings(prev => {
       const newExerciseTracking = [...prev];
-      // get current Exercise Tracker
       const exerciseTracker = newExerciseTracking[exerciseIndex];
-      // Get last sets for current exercise
-      const lastSets = workout.exercises.find((ex: any) => ex.exerciseId === exerciseTracker.exerciseId).lastSets;
-      // Find the set with matching setNumber (index + 1) from last sets
-      const matchingLastSet = lastSets.find((lastSet: any) => lastSet.setNumber === exerciseTracker.sets.length + 1);
+      
+      // Get last sets for current exercise from workoutInstance
+      const workoutExercise = workoutInstance?.workoutExercises?.find(
+        (ex: any) => ex.exercise.id === exerciseTracker.exerciseId
+      ) as { 
+        exercise: { id: number }; 
+        lastSets?: Array<{ 
+          setNumber: number;
+          reps: number;
+          weight: number;
+        }> 
+      } | undefined;
+      
+      // Find the set with matching setNumber from last sets
+      const matchingLastSet = workoutExercise?.lastSets?.find(
+        (lastSet: any) => lastSet.setNumber === exerciseTracker.sets.length + 1
+      );
 
       newExerciseTracking[exerciseIndex] = {
         ...newExerciseTracking[exerciseIndex],
-        sets: [...newExerciseTracking[exerciseIndex].sets, { reps: 0, weight: 0, lastSet: matchingLastSet || null }]
+        sets: [...newExerciseTracking[exerciseIndex].sets, {
+          reps: 0,
+          weight: 0,
+          lastSet: matchingLastSet || null
+        }]
       };
 
       return newExerciseTracking;
@@ -1132,7 +1148,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           <MenuItem 
             onClick={() => {
               if (activeExercise !== null) {
-                handleAddSet(activeExercise, workoutInstance.workout);
+                handleAddSet(activeExercise);
                 handleExerciseMenuClose();
               }
             }}
