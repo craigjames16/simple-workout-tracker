@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Paper,
   Typography,
@@ -50,17 +50,18 @@ interface Plan {
   createdAt: string;
 }
 
-export default function PlanDetailsPage({ params }: { params: { id: string } }) {
+export default function PlanDetailsPage({ params }: any) {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const { id } = React.use(params);
 
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const response = await fetch(`/api/plans/${params.id}`);
+        const response = await fetch(`/api/plans/${id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch plan');
         }
@@ -74,7 +75,7 @@ export default function PlanDetailsPage({ params }: { params: { id: string } }) 
     };
 
     fetchPlan();
-  }, [params.id]);
+  }, [id]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setMenuAnchorEl(event.currentTarget);

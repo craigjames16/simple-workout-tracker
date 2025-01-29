@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, use, useRef } from 'react';
 import {
   ResponsiveContainer,
   Paper,
@@ -196,7 +196,10 @@ const ExerciseHistoryChart = ({ history }: { history: any[] }) => {
   );
 };
 
-export default function TrackWorkout({ params }: { params: { id: string } }) {
+export default function TrackWorkout({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params) as { id: string };
+  const workoutId = unwrappedParams.id;
+
   const [workoutInstance, setWorkoutInstance] = useState<WorkoutInstanceWithRelations | null>(null);
   const [exerciseTrackings, setExerciseTrackings] = useState<ExerciseTracking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,14 +229,17 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
   const [historyAnchorEl, setHistoryAnchorEl] = useState<null | HTMLElement>(null);
   const [historyTabValue, setHistoryTabValue] = useState(0);
 
+  // Create refs for animation targets
+  const setRefs = useRef<{ [key: string]: React.RefObject<HTMLElement> }>({});
+  const particleContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch both resources in parallel
         const [workoutResponse, exercisesResponse] = await Promise.all([
-          fetch(`/api/workout-instances/${params.id}`),
+          fetch(`/api/workout-instances/${workoutId}`),
           fetch('/api/exercises')
         ]);
 
@@ -243,7 +249,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         const workoutData = await workoutResponse.json();
         const exercisesData = await exercisesResponse.json() as ExerciseResponse;
 
-        // Transform exercises data
         const exercises = Object.entries(exercisesData).flatMap(([category, exerciseList]) =>
           exerciseList.map(exercise => ({
             ...exercise,
@@ -252,10 +257,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         );
         setAvailableExercises(exercises);
 
-        // Process workout data
         setWorkoutInstance(workoutData);
 
-        // Get completed sets map
         const completedSetsMap = workoutData.exerciseSets?.reduce((acc: Record<number, any[]>, set: any) => {
           if (!acc[set.exerciseId]) {
             acc[set.exerciseId] = [];
@@ -269,7 +272,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           return acc;
         }, {}) || {};
         
-        // Initialize exercise trackings
         const initialTrackings = workoutData.workoutExercises.map((workoutExercise: any) => {   
           let sets;
 
@@ -328,7 +330,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
     };
 
     fetchData();
-  }, [params.id]); // Only depends on params.id now
+  }, [workoutId]);
 
   useEffect(() => {
     const fetchWorkoutHistory = async () => {
@@ -338,7 +340,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
           if (!response.ok) throw new Error('Failed to fetch workout history');
           const mesocycle = await response.json();
 
-          // Transform the mesocycle data into the WorkoutHistoryView format
           const historyView: WorkoutHistoryView[] = mesocycle.instances.map((instance: any) => ({
             iterationNumber: instance.iterationNumber,
             workouts: instance.days.map((day: any) => ({
@@ -382,7 +383,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       const newExerciseTracking = [...prev];
       const exerciseTracker = newExerciseTracking[exerciseIndex];
       
-      // Get last sets for current exercise from workoutInstance
       const workoutExercise = workoutInstance?.workoutExercises?.find(
         (ex: any) => ex.exercise.id === exerciseTracker.exerciseId
       ) as { 
@@ -394,7 +394,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         }> 
       } | undefined;
       
-      // Find the set with matching setNumber from last sets
       const matchingLastSet = workoutExercise?.lastSets?.find(
         (lastSet: any) => lastSet.setNumber === exerciseTracker.sets.length + 1
       );
@@ -429,12 +428,11 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       const set = tracking.sets[setIndex];
       
       if (!completed) {
-        // Delete the set if it exists
         const setId = set.id;
         console.log('Attempting to delete set with ID:', setId);
         
         if (setId) {
-          const response = await fetch(`/api/workout-instances/${params.id}/sets`, {
+          const response = await fetch(`/api/workout-instances/${workoutId}/sets`, {
             method: 'DELETE',
             headers: {
               'Content-Type': 'application/json',
@@ -451,7 +449,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
             throw new Error(`Failed to delete set: ${result.error}`);
           }
 
-          // Update local state to remove completion and ID
           setExerciseTrackings(prev => {
             const prevExercises = [...prev];
             const updatedSet = { 
@@ -467,13 +464,11 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         }
       }
 
-      // Use lastSet values or current values, falling back to placeholders if neither exists
       const weightToUse = set.weight || (set.lastSet?.weight ?? 0);
       const repsToUse = set.reps || (set.lastSet?.reps ?? 0);
 
       if (completed) {
-        // Create new set
-        const response = await fetch(`/api/workout-instances/${params.id}/sets`, {
+        const response = await fetch(`/api/workout-instances/${workoutId}/sets`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -491,7 +486,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         const data = await response.json();
         const newSetId = data[0].id;
 
-        // Update local state with the new set ID
         setExerciseTrackings(prev => {
           const prevExercises = [...prev];
           const updatedSet = { 
@@ -504,22 +498,19 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         });
       }
 
-      // Add success animation and confetti (only for completion)
-      if (completed) {
-        const element = document.getElementById(`set-${tracking.exerciseId}-${setIndex}`);
-        if (element) {
-          animateDOM(element, { 
-            scale: [1, 1.1, 1], 
-            backgroundColor: ['#fff', '#4ade80', '#fff']
-          }, { duration: 0.5 });
-        }
-
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.7 }
-        });
+      const refKey = `set-${tracking.exerciseId}-${setIndex}`;
+      const elementRef = setRefs.current[refKey];
+      if (elementRef?.current) {
+        animateDOM(elementRef.current, { 
+          scale: [1, 1.1, 1]
+        }, { duration: 0.5 });
       }
+
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 }
+      });
     } catch (err) {
       console.error('Error in handleSetCompletion:', err);
       setError(err instanceof Error ? err.message : 'Failed to update set completion');
@@ -528,7 +519,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   const handleCompleteWorkout = async () => {
     try {
-      const response = await fetch(`/api/workout-instances/${params.id}/complete`, {
+      const response = await fetch(`/api/workout-instances/${workoutId}/complete`, {
         method: 'POST',
       });
 
@@ -536,37 +527,35 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         throw new Error('Failed to complete workout');
       }
 
-      // Add both confetti and our custom animation
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 }
       });
 
-      // Show particle effect
       const container = document.createElement('div');
-      document.body.appendChild(container);
-      const root = createRoot(container);
-      root.render(<ParticleEffect />);
+      if (particleContainerRef.current) {
+        particleContainerRef.current.appendChild(container);
+        const root = createRoot(container);
+        root.render(<ParticleEffect />);
 
-      // Clean up and redirect after animation
-      setTimeout(() => {
-        root.unmount();
-        container.remove();
-        
-        // First check for mesocycle
-        if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle?.id) {
-          window.location.href = `/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`;
-        }
-        // If no mesocycle, check for plan instance
-        else if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.id) {
-          window.location.href = `/plans/instance/${workoutInstance.planInstanceDays[0].planInstance.id}`;
-        }
-        // Fallback to plans page
-        else {
-          window.location.href = '/plans';
-        }
-      }, 2000);
+        setTimeout(() => {
+          root.unmount();
+          if (particleContainerRef.current?.contains(container)) {
+            particleContainerRef.current.removeChild(container);
+          }
+          
+          if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle?.id) {
+            window.location.href = `/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`;
+          }
+          else if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.id) {
+            window.location.href = `/plans/instance/${workoutInstance.planInstanceDays[0].planInstance.id}`;
+          }
+          else {
+            window.location.href = '/plans';
+          }
+        }, 2000);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete workout');
@@ -575,7 +564,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   const handleAddExercise = async () => {
     try {
-      const response = await fetch(`/api/workout-instances/${params.id}/exercises`, {
+      const response = await fetch(`/api/workout-instances/${workoutId}/exercises`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -592,20 +581,17 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
       const data = await response.json();
       setWorkoutInstance(data);
 
-      // Find the newly added exercise from the response
       const newExercise = data.workout.exercises.find(
         (ex: WorkoutExercise) => ex.exercise.id === parseInt(selectedExercise)
       );
 
       if (newExercise) {
-        // Add the new exercise to exerciseTrackings
         setExerciseTrackings(prev => [...prev, {
           exerciseId: newExercise.exercise.id,
           exerciseName: newExercise.exercise.name,
           order: newExercise.order,
           history: availableExercises.find((exercise: any) => exercise.id === newExercise.exercise.id)?.workoutInstances || [],
           sets: Array.from({ length: newExercise.lastSets.length || 3 }, (_, index) => {
-            // Find the set with matching setNumber (index + 1) from last workout
             const matchingLastSet = newExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
             
             return {
@@ -626,7 +612,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   const handleRemoveExercise = async (exerciseId: number) => {
     try {
-      const response = await fetch(`/api/workout-instances/${params.id}/exercises`, {
+      const response = await fetch(`/api/workout-instances/${workoutId}/exercises`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -642,7 +628,6 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
       const data = await response.json();
       
-      // Update both states
       setWorkoutInstance(prevWorkoutInstance => {
         if (!prevWorkoutInstance) return null;
         
@@ -654,12 +639,10 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         };
       });
       
-      // Remove the exercise from exerciseTrackings
       setExerciseTrackings(prev => 
         prev.filter(tracking => tracking.exerciseId !== exerciseId)
       );
       
-      // Close the exercise menu
       handleExerciseMenuClose();
       
     } catch (err) {
@@ -704,14 +687,13 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   const handleReorderExercise = async (exerciseId: number, direction: 'up' | 'down') => {
     try {
-      // Get the workoutId from the workoutInstance
       const workoutId = workoutInstance?.workout.id;
 
       if (!workoutId) {
         throw new Error('Workout ID not found');
       }
       
-      const response = await fetch(`/api/workout-instances/${params.id}/exercises/reorder/${workoutId}`, {
+      const response = await fetch(`/api/workout-instances/${workoutId}/exercises/reorder/${workoutId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -726,16 +708,13 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
         throw new Error('Failed to reorder exercise');
       }
 
-      // Update local state to reflect the new order
       setExerciseTrackings(prev => {
         const exercises = [...prev];
         const currentIndex = exercises.findIndex(ex => ex.exerciseId === exerciseId);
         const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
 
         if (targetIndex >= 0 && targetIndex < exercises.length) {
-          // Swap the exercises
           [exercises[currentIndex], exercises[targetIndex]] = [exercises[targetIndex], exercises[currentIndex]];
-          // Update their order properties
           exercises[currentIndex].order = currentIndex;
           exercises[targetIndex].order = targetIndex;
         }
@@ -788,6 +767,8 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
 
   return (
     <ResponsiveContainer maxWidth="xs" disableGutters>
+      <div ref={particleContainerRef} style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none' }} />
+      
       <Paper sx={{ 
         p: { xs: 0, sm: 0 }, 
         position: 'relative' 
@@ -1017,11 +998,11 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                               },
                             },
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                              '-webkit-appearance': 'none',
+                              WebkitAppearance: 'none',
                               margin: 0,
                             },
                             '& input[type=number]': {
-                              '-moz-appearance': 'textfield',
+                              MozAppearance: 'textfield',
                             },
                             '& .Mui-disabled': {
                               WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
@@ -1061,11 +1042,11 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                               },
                             },
                             '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                              '-webkit-appearance': 'none',
+                              WebkitAppearance: 'none',
                               margin: 0,
                             },
                             '& input[type=number]': {
-                              '-moz-appearance': 'textfield',
+                              MozAppearance: 'textfield',
                             },
                             '& .Mui-disabled': {
                               WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
@@ -1078,7 +1059,15 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                           }}
                         />
                       </Grid>
-                      <Grid item xs={4} sm={3} sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Grid item xs={4} sm={3} sx={{ display: 'flex', alignItems: 'center' }}
+                        ref={(element) => {
+                          const refKey = `set-${exercise.exerciseId}-${setIndex}`;
+                          if (!setRefs.current[refKey]) {
+                            setRefs.current[refKey] = { current: null };
+                          }
+                          setRefs.current[refKey] = { current: element };
+                        }}
+                      >
                         <AnimatedCheckbox
                           checked={isSetCompleted || !!workoutInstance.completedAt}
                           onChange={() => handleSetCompletion(exerciseIndex, setIndex, !isSetCompleted)}
@@ -1319,7 +1308,7 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                         justifyContent: 'center',
                         borderRadius: 1,
                         cursor: workout ? 'pointer' : 'default',
-                        backgroundColor: workout?.workoutInstanceId === parseInt(params.id)
+                        backgroundColor: workout?.workoutInstanceId === parseInt(workoutId)
                           ? 'primary.main'
                           : workout?.isRestDay
                             ? workout.isCompleted
@@ -1330,18 +1319,18 @@ export default function TrackWorkout({ params }: { params: { id: string } }) {
                               : workout
                                 ? 'action.hover'
                                 : 'action.disabledBackground',
-                        color: workout?.workoutInstanceId === parseInt(params.id)
+                        color: workout?.workoutInstanceId === parseInt(workoutId)
                           ? 'primary.contrastText'
                           : 'text.primary',
                         fontSize: '0.875rem',
                         '&:hover': workout ? {
-                          backgroundColor: workout.workoutInstanceId === parseInt(params.id)
+                          backgroundColor: workout.workoutInstanceId === parseInt(workoutId)
                             ? 'primary.dark'
                             : 'action.selected'
                         } : {}
                       }}
                       onClick={async () => {
-                        if (workout?.workoutInstanceId && workout.workoutInstanceId !== parseInt(params.id)) {
+                        if (workout?.workoutInstanceId && workout.workoutInstanceId !== parseInt(workoutId)) {
                           // Navigate to existing workout
                           window.location.href = `/track/${workout.workoutInstanceId}`;
                         } else if (workout && !workout.workoutInstanceId) {

@@ -131,11 +131,11 @@ export default function WorkoutsPage() {
                   }
                   secondary={
                     <Box sx={{ mt: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" component="span">
                         {format(new Date(workout.startedAt), 'MMM d, yyyy h:mm a')}
                       </Typography>
                       {workout.planInstanceDay?.[0]?.planInstance && (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" component="div">
                           Plan: {workout.planInstanceDay[0].planInstance.plan.name}
                           {workout.planInstanceDay[0].planInstance.mesocycle && 
                             ` (${workout.planInstanceDay[0].planInstance.mesocycle.name})`}

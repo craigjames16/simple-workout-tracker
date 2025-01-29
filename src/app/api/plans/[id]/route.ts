@@ -8,6 +8,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -56,6 +57,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -66,13 +68,12 @@ export async function PUT(
     const updatedPlan = await prisma.$transaction(async (tx) => {
       // Update plan name
       const plan = await tx.plan.update({
-        where: { id: parseInt(params.id) },
+        where: { id: parseInt(awaitedParams.id), userId: session.user.id },
         data: { name },
       });
-
       // Get existing days
       const existingDays = await tx.planDay.findMany({
-        where: { planId: plan.id },
+        where: { planId: plan.id, plan: { userId: session.user.id } },
         include: {
           workout: {
             include: {
@@ -85,7 +86,6 @@ export async function PUT(
           },
         },
       });
-
       // Update or create days as needed
       await Promise.all(days.map(async (day: any, index: number) => {
         const dayNumber = index + 1;
@@ -186,7 +186,6 @@ export async function PUT(
           }
         }
       }));
-
       // Clean up any extra days that are no longer needed
       const extraDays = existingDays.filter(day => day.dayNumber > days.length);
       for (const day of extraDays) {

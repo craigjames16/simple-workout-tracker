@@ -6,7 +6,7 @@ interface ExerciseInput {
 
 interface DayInput {
   isRestDay: boolean;
-  exercises?: ExerciseInput[];
+  workoutExercises?: ExerciseInput[];
 }
 
 interface CreatePlanInput {
@@ -37,7 +37,7 @@ export async function createPlan({ name, userId, days }: CreatePlanInput) {
               userId,
               workoutExercises: {
                 createMany: {
-                  data: day.exercises!.map((exercise, exerciseIndex) => ({
+                  data: day.workoutExercises!.map((exercise, exerciseIndex) => ({
                     exerciseId: parseInt(String(exercise.id)),
                     order: exerciseIndex
                   }))

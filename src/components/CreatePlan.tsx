@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -182,35 +182,48 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     }));
   };
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
-
-    const sourceDay = workoutDays.find(day => day.id === result.source.droppableId);
-    const destDay = workoutDays.find(day => day.id === result.destination.droppableId);
-
-    if (!sourceDay || !destDay || destDay.isRestDay) return;
-
-    const exercise = sourceDay.workoutExercises[result.source.index];
+  const handleDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
     
-    const newWorkoutDays = workoutDays.map(day => {
+    // Return if dropped outside or no destination
+    if (!destination) {
+      return;
+    }
+
+    // Return if dropped in same position
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    const sourceDay = workoutDays.find(day => day.id === source.droppableId);
+    const destDay = workoutDays.find(day => day.id === destination.droppableId);
+
+    if (!sourceDay || !destDay || destDay.isRestDay) {
+      return;
+    }
+
+    const newWorkoutDays = [...workoutDays];
+    const sourceExercises = [...sourceDay.workoutExercises];
+    const [movedExercise] = sourceExercises.splice(source.index, 1);
+
+    const destExercises = destDay.id === sourceDay.id 
+      ? sourceExercises 
+      : [...destDay.workoutExercises];
+    
+    destExercises.splice(destination.index, 0, movedExercise);
+
+    setWorkoutDays(newWorkoutDays.map(day => {
       if (day.id === sourceDay.id) {
-        return {
-          ...day,
-          workoutExercises: day.workoutExercises.filter((_, index) => index !== result.source.index),
-        };
+        return { ...day, workoutExercises: sourceExercises };
       }
       if (day.id === destDay.id) {
-        const newExercises = [...day.workoutExercises];
-        newExercises.splice(result.destination.index, 0, exercise);
-        return {
-          ...day,
-          workoutExercises: newExercises,
-        };
+        return { ...day, workoutExercises: destExercises };
       }
       return day;
-    });
-
-    setWorkoutDays(newWorkoutDays);
+    }));
   };
 
   const handleSave = async () => {
@@ -458,20 +471,35 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                         Rest Day - No exercises
                       </Typography>
                     ) : (
-                      <Droppable droppableId={day.id}>
-                        {(provided) => (
+                      <Droppable 
+                        droppableId={day.id} 
+                        isDropDisabled={day.isRestDay}
+                        type="EXERCISE"
+                        isCombineEnabled={false}
+                        ignoreContainerClipping={false}
+                      >
+                        {(provided, snapshot) => (
                           <Box
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            sx={{ minHeight: 100 }}
+                            sx={{ 
+                              minHeight: 100,
+                              backgroundColor: snapshot.isDraggingOver 
+                                ? 'rgba(255, 255, 255, 0.05)' 
+                                : 'transparent',
+                              transition: 'background-color 0.2s ease',
+                              borderRadius: 1,
+                              padding: 1
+                            }}
                           >
                             {day.workoutExercises.map((exercise, index) => (
                               <Draggable
-                                key={exercise.id}
+                                key={`${exercise.id}`}
                                 draggableId={`${day.id}-exercise-${exercise.id}`}
                                 index={index}
+                                isDragDisabled={false}
                               >
-                                {(provided) => (
+                                {(provided, snapshot) => (
                                   <Box
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
@@ -479,7 +507,9 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                                     sx={{
                                       p: 1,
                                       mb: 1,
-                                      bgcolor: 'background.paper',
+                                      bgcolor: snapshot.isDragging 
+                                        ? 'rgba(255, 255, 255, 0.1)'
+                                        : 'background.paper',
                                       borderRadius: 1,
                                       display: 'flex',
                                       justifyContent: 'space-between',
