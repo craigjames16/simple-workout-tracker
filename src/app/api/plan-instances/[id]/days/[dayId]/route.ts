@@ -15,7 +15,10 @@ export async function GET(
   try {
     const planInstanceDay = await prisma.planInstanceDay.findUnique({
       where: {
-        id: parseInt(params.dayId)
+        id: parseInt(params.dayId),
+        planInstance: {
+          userId: session.user.id
+        }
       },
       include: {
         planDay: {

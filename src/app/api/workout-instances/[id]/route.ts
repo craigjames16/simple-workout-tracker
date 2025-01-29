@@ -23,6 +23,7 @@ export async function GET(
     const workoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(params.id),
+        userId: session.user.id
       },
       include: {
         exerciseSets: true,

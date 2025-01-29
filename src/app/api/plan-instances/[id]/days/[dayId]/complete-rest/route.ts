@@ -16,7 +16,10 @@ export async function POST(
     // First, get the plan instance day to verify it's a rest day
     const planInstanceDay = await prisma.planInstanceDay.findUnique({
       where: {
-        id: parseInt(params.dayId)
+        id: parseInt(params.dayId),
+        planInstance: {
+          userId: session.user.id
+        }
       },
       include: {
         planDay: {

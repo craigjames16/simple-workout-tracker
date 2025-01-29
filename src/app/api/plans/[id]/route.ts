@@ -15,7 +15,8 @@ export async function GET(
   try {
     const plan = await prisma.plan.findUnique({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(awaitedParams.id),
+        userId: session.user.id
       },
       include: {
         days: {
@@ -43,7 +44,7 @@ export async function GET(
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.error('Error fetching plan:', error);
+    console.log('Error fetching plan:', JSON.stringify(error));
     return NextResponse.json(
       { error: 'Error fetching plan' },
       { status: 500 }
@@ -211,7 +212,7 @@ export async function PUT(
       redirect: '/plans'
     });
   } catch (error) {
-    console.error('Error updating plan:', error);
+    console.log('Error updating plan:', error instanceof Error ? error.message : JSON.stringify(error));
     return NextResponse.json(
       { error: 'Error updating plan' },
       { status: 500 }
@@ -235,6 +236,9 @@ export async function DELETE(
       const planDays = await tx.planDay.findMany({
         where: {
           planId: parseInt(params.id),
+          plan: {
+            userId: session.user.id
+          }
         },
         include: {
           workout: true,
@@ -264,6 +268,9 @@ export async function DELETE(
       await tx.planDay.deleteMany({
         where: {
           planId: parseInt(params.id),
+          plan: {
+            userId: session.user.id
+          }
         },
       });
 
@@ -278,7 +285,7 @@ export async function DELETE(
 
     return new Response(null, { status: 204 });
   } catch (error) {
-    console.error('Error deleting plan:', error);
+    console.log('Error deleting plan:', error);
     return new Response('Internal Server Error', { status: 500 });
   }
 } 

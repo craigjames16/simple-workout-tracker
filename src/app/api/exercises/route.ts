@@ -12,6 +12,12 @@ export async function GET() {
     }
 
     const exercises = await prisma.exercise.findMany({
+      where: {
+        OR: [
+          { userId: session.user.id },
+          { userId: null }
+        ]
+      },
       include: {
         sets: {
           where: {

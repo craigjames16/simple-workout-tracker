@@ -11,6 +11,9 @@ export async function GET() {
 
   try {
     const workoutInstances = await prisma.workoutInstance.findMany({
+      where: {
+        userId: session.user.id
+      },
       include: {
         workout: true,
         exerciseSets: {

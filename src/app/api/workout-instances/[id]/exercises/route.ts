@@ -16,7 +16,7 @@ export async function POST(
 
     // Get the workout instance
     const workoutInstance = await prisma.workoutInstance.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(params.id), userId: session.user.id },
       include: { workout: true },
     });
 
@@ -31,6 +31,9 @@ export async function POST(
     const highestOrder = await prisma.workoutExercise.findFirst({
       where: {
         workoutInstanceId: workoutInstance.id,
+        workoutInstance: {
+          userId: session.user.id
+        }
       },
       orderBy: {
         order: 'desc',
@@ -54,7 +57,7 @@ export async function POST(
 
     // Fetch the updated workout instance with exercises
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(params.id), userId: session.user.id },
       include: { workout: true, workoutExercises: { include: { exercise: true } } },
     });
 
@@ -82,7 +85,8 @@ export async function POST(
                     exerciseId: ex.exerciseId
                   }
                 }
-              }
+              },
+              userId: session.user.id
             },
             include: {
               exerciseSets: {
@@ -129,11 +133,17 @@ export async function DELETE(
 ) {
   try {
     const { exerciseId } = await request.json();
+    const session = await getServerSession(authOptions);
+  
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // First get the workout instance to get its workout ID
     const workoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(params.id),
+        userId: session.user.id
       },
       select: {
         workoutId: true,
@@ -159,6 +169,7 @@ export async function DELETE(
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(params.id),
+        userId: session.user.id
       },
       include: {
         workoutExercises: {
@@ -198,6 +209,7 @@ export async function DELETE(
             where: {
               id: { not: updatedWorkoutInstance.id }, // Exclude current workout
               completedAt: { not: null },
+              userId: session.user.id,
               workout: {
                 workoutExercises: {
                   some: {

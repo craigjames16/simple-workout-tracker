@@ -343,42 +343,6 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
                               <Typography variant="body2" sx={{ flexShrink: 0 }}>
                                 {isRestDay ? 'Rest Day' : 'Workout Day'}
                               </Typography>
-                              
-                              {!isRestDay && day.workoutInstance && (
-                                <Box sx={{ 
-                                  display: 'flex', 
-                                  flexWrap: 'nowrap',
-                                  gap: 1,
-                                  mx: 1,
-                                  flex: 1,
-                                  minWidth: 0, // Important for proper flex behavior
-                                  overflowX: 'hidden',
-                                }}>
-                                  {day.workoutInstance?.workoutExercises?.map((workoutExercise: any) => (
-                                    <Box
-                                      key={workoutExercise.id}
-                                      sx={{
-                                        px: 2,
-                                        py: 0.5,
-                                        borderRadius: 16,
-                                        backgroundColor: 'primary.dark',
-                                        color: 'primary.contrastText',
-                                        fontSize: '0.875rem',
-                                        opacity: 0.9,
-                                        flexShrink: 0,
-                                        '&:hover': {
-                                          opacity: 1,
-                                          backgroundColor: 'primary.main',
-                                        },
-                                      }}
-                                    >
-                                      {workoutExercise.exercise.name.length > 7
-                                        ? `${workoutExercise.exercise.name.substring(0, 7)}...` 
-                                        : workoutExercise.exercise.name}
-                                    </Box>
-                                  ))}
-                                </Box>
-                              )}
 
                               <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                                 {day.isComplete ? (

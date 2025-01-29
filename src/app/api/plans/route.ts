@@ -14,7 +14,7 @@ export async function GET() {
   try {
     const plans = await prisma.plan.findMany({
       where: {
-        userId: session.user.id // Add user filtering
+        userId: session.user.id
       },
       include: {
         days: {

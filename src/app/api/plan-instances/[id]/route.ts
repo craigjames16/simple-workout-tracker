@@ -15,7 +15,8 @@ export async function GET(
   try {
     const planInstance = await prisma.planInstance.findUnique({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
+        userId: session.user.id
       },
       include: {
         plan: true,

@@ -17,7 +17,10 @@ export async function POST(
     // First, check if a workout instance already exists
     const planInstanceDay = await prisma.planInstanceDay.findUnique({
       where: {
-        id: parseInt(params.dayId)
+        id: parseInt(params.dayId),
+        planInstance: {
+          userId: session.user.id
+        }
       },
       include: {
         planDay: {

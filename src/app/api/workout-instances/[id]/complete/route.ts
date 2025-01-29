@@ -15,7 +15,8 @@ export async function POST(
     // First update the workout instance as complete
     const workoutInstance = await prisma.workoutInstance.update({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
+        userId: session.user.id
       },
       data: {
         completedAt: new Date()

@@ -25,6 +25,7 @@ export async function POST(request: Request) {
     const existingInstance = await prisma.planInstance.findFirst({
       where: {
         planId: planId,
+        userId: session.user.id,
         status: 'IN_PROGRESS'
       },
       include: {

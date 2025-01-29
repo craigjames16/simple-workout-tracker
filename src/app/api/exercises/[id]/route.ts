@@ -17,7 +17,11 @@ export async function GET(
   try {
     const exercise = await prisma.exercise.findUnique({
       where: {
-        id: parseInt(params.id)
+        id: parseInt(params.id),
+        OR: [
+          { userId: session.user.id },
+          { userId: null }
+        ]
       }
     });
 
