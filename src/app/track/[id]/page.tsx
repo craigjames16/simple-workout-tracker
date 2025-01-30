@@ -1211,7 +1211,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
               // Sets History Tab
               <>
                 {historyDialog.exercise.history?.sort((a, b) => 
-                  new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+                  new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
                 ).map((instance, index) => (
                   <Box key={index} sx={{ mb: 2 }}>
                     <Typography variant="subtitle1" gutterBottom>
