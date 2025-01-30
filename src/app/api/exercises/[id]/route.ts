@@ -1,15 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ExerciseCategory } from '@prisma/client';
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"
+
+type Props = {
+  params: {
+    id: string
+  }
+}
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params } : { params: Promise<{ id: string }> }
 ) {
   
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -17,7 +25,7 @@ export async function GET(
   try {
     const exercise = await prisma.exercise.findUnique({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(awaitedParams.id),
         OR: [
           { userId: session.user.id },
           { userId: null }
@@ -47,9 +55,11 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -68,7 +78,7 @@ export async function PUT(
 
     const exercise = await prisma.exercise.update({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(awaitedParams.id),
         userId: session.user.id
       },
       data: {
@@ -92,9 +102,11 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -102,7 +114,7 @@ export async function DELETE(
   try {
     await prisma.exercise.delete({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(awaitedParams.id),
         userId: session.user.id
       }
     });

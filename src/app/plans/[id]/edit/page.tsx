@@ -4,21 +4,22 @@ import { useEffect, useState } from 'react';
 import CreatePlan from '@/components/CreatePlan';
 import { Container, CircularProgress, Typography } from '@mui/material';
 
-interface Props {
-  params: {
-    id: string;
-  };
-}
+type Props = {
+  params: Promise<{ id: string }>;
+};
 
-export default function EditPlanPage({ params }: Props) {
+export default async function EditPlanPage({ params }: Props) {
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const awaitedParams = await params;
+  const planId = awaitedParams.id;
+
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const response = await fetch(`/api/plans/${params.id}`);
+        const response = await fetch(`/api/plans/${planId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch plan');
         }
@@ -32,7 +33,7 @@ export default function EditPlanPage({ params }: Props) {
     };
 
     fetchPlan();
-  }, [params.id]);
+  }, [planId]);
 
   if (loading) {
     return (

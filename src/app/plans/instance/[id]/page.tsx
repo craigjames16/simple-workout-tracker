@@ -21,15 +21,23 @@ import type { PlanInstanceWithCompletion } from '@/types/prisma';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 
-export default function PlanInstanceDetail({ params }: { params: { id: string } }) {
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function PlanInstanceDetail({ params }: Props) {
   const [planInstance, setPlanInstance] = useState<PlanInstanceWithCompletion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
+
+  const awaitedParams = await params;
+  const instanceId = awaitedParams.id;
+
   useEffect(() => {
     const fetchPlanInstance = async () => {
       try {
-        const response = await fetch(`/api/plan-instances/${params.id}`);
+        const response = await fetch(`/api/plan-instances/${instanceId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch plan instance');
         }
@@ -43,7 +51,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
     };
 
     fetchPlanInstance();
-  }, [params.id]);
+  }, [instanceId]);
 
   const calculateProgress = () => {
     if (!planInstance) return 0;
@@ -56,7 +64,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
   const handleCompleteRestDay = async (dayId: number) => {
     try {
       const response = await fetch(
-        `/api/plan-instances/${params.id}/days/${dayId}/complete-rest`,
+        `/api/plan-instances/${instanceId}/days/${dayId}/complete-rest`,
         {
           method: 'POST',
         }
@@ -67,7 +75,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
       }
 
       // Refresh the page data
-      const updatedPlanInstance = await fetch(`/api/plan-instances/${params.id}`);
+      const updatedPlanInstance = await fetch(`/api/plan-instances/${instanceId}`);
       const data = await updatedPlanInstance.json();
       setPlanInstance(data);
     } catch (err) {
@@ -79,7 +87,7 @@ export default function PlanInstanceDetail({ params }: { params: { id: string } 
     try {
       // Create the workout instance
       const response = await fetch(
-        `/api/plan-instances/${params.id}/days/${dayId}/start`,
+        `/api/plan-instances/${instanceId}/days/${dayId}/start`,
         {
           method: 'POST',
         }

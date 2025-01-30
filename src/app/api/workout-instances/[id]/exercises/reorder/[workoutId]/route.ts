@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { NextResponse } from "next/server";
+import { authOptions } from "@/lib/auth"
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
-  req: Request,
-  { params }: { params: { workoutId: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ workoutId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -15,7 +15,9 @@ export async function POST(
     const userId = session.user.id
 
     const { exerciseId, direction } = await req.json();
-    const workoutId = parseInt(params.workoutId);
+    const awaitedParams = await params;
+    
+    const workoutId = parseInt(awaitedParams.workoutId);
 
     // Get current exercise and its order
     const currentExercise = await prisma.workoutExercise.findFirst({

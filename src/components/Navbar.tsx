@@ -51,9 +51,8 @@ export default function Navbar() {
       {navItems.map((item) => (
         <ListItem
           key={item.href}
-          component={Link}
+          component="a"
           href={item.href}
-          selected={pathname === item.href}
           onClick={handleDrawerToggle}
           sx={{
             color: 'inherit',

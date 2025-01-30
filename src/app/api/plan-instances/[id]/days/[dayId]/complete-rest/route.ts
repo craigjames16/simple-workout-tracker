@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string; dayId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; dayId: string }> }
 ) {
+  const awaitedParams = await params;
   const session = await getServerSession(authOptions);
+  
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -16,7 +18,7 @@ export async function POST(
     // First, get the plan instance day to verify it's a rest day
     const planInstanceDay = await prisma.planInstanceDay.findUnique({
       where: {
-        id: parseInt(params.dayId),
+        id: parseInt(awaitedParams.dayId),
         planInstance: {
           userId: session.user.id
         }

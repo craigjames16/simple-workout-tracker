@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Paper,
   Typography,
@@ -66,18 +66,19 @@ interface Mesocycle {
   completedAt: string | null;
 }
 
-export default function MesocycleDetail({ params }: { params: { id: string } }) {
+export default async function MesocycleDetail({ params }: any) {
   const router = useRouter();
   const [mesocycle, setMesocycle] = useState<Mesocycle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const awaitedParams = await params;
 
   useEffect(() => {
     const fetchMesocycle = async () => {
       try {
-        const response = await fetch(`/api/mesocycles/${params.id}`);
+        const response = await fetch(`/api/mesocycles/${awaitedParams.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch mesocycle');
         }
@@ -91,7 +92,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
     };
 
     fetchMesocycle();
-  }, [params.id]);
+  }, [awaitedParams.id]);
 
   const calculateProgress = (instances: PlanInstance[]) => {
     if (!instances.length) return 0;
@@ -113,7 +114,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/mesocycles/${params.id}`, {
+      const response = await fetch(`/api/mesocycles/${awaitedParams.id}`, {
         method: 'DELETE',
       });
 
@@ -154,7 +155,7 @@ export default function MesocycleDetail({ params }: { params: { id: string } }) 
       }
 
       // Refresh the page data
-      const updatedMesocycle = await fetch(`/api/mesocycles/${params.id}`);
+      const updatedMesocycle = await fetch(`/api/mesocycles/${awaitedParams.id}`);
       const data = await updatedMesocycle.json();
       setMesocycle(data);
     } catch (err) {

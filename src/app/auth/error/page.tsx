@@ -1,10 +1,11 @@
 'use client';
 
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Container, Paper, Typography, Button } from '@mui/material';
 import { signIn } from 'next-auth/react';
 
-export default function AuthError() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams?.get('error');
 
@@ -51,5 +52,13 @@ export default function AuthError() {
         </Button>
       </Paper>
     </Container>
+  );
+}
+
+export default function AuthError() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthErrorContent />
+    </Suspense>
   );
 } 

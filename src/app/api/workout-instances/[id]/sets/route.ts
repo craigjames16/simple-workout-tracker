@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"
 
 
 interface SetData {
@@ -16,10 +16,12 @@ interface RequestBody {
 }
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -42,7 +44,7 @@ export async function POST(
         prisma.exerciseSet.create({
           data: {
             exerciseId: exerciseId,
-            workoutInstanceId: parseInt(params.id),
+            workoutInstanceId: parseInt(awaitedParams.id),
             setNumber: set.setNumber,
             weight: set.weight,
             reps: set.reps,
@@ -74,9 +76,11 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+  
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -89,7 +93,7 @@ export async function DELETE(
         id: {
           in: setIds
         },
-        workoutInstanceId: parseInt(params.id)
+        workoutInstanceId: parseInt(awaitedParams.id)
       }
     });
 

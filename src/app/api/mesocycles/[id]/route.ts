@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"
 import { Mesocycle, PlanInstance, PlanInstanceDay } from '@prisma/client';
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -16,7 +18,7 @@ export async function GET(
   try {
     const mesocycle = await prisma.mesocycle.findFirst({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(awaitedParams.id),
         userId: session.user.id
       },
       include: {
@@ -75,9 +77,11 @@ export async function GET(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
+  const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -85,7 +89,7 @@ export async function DELETE(
     // First, get all plan instances associated with this mesocycle
     const mesocycle = await prisma.mesocycle.findFirst({
       where: {
-        id: parseInt(params.id),
+        id: parseInt(awaitedParams.id),
         userId: session.user.id
       },
       include: {
@@ -140,7 +144,7 @@ export async function DELETE(
 
       // Finally, delete the mesocycle
       await tx.mesocycle.delete({
-        where: { id: parseInt(params.id) }
+        where: { id: parseInt(awaitedParams.id) }
       });
     });
 

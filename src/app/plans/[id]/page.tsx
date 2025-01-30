@@ -50,18 +50,18 @@ interface Plan {
   createdAt: string;
 }
 
-export default function PlanDetailsPage({ params }: any) {
+export default async function PlanDetailsPage({ params }: any) {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const { id } = React.use(params);
+  const awaitedParams = await params;
 
   useEffect(() => {
     const fetchPlan = async () => {
       try {
-        const response = await fetch(`/api/plans/${id}`);
+        const response = await fetch(`/api/plans/${awaitedParams.id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch plan');
         }
@@ -75,7 +75,7 @@ export default function PlanDetailsPage({ params }: any) {
     };
 
     fetchPlan();
-  }, [id]);
+  }, [awaitedParams.id]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setMenuAnchorEl(event.currentTarget);
@@ -97,7 +97,7 @@ export default function PlanDetailsPage({ params }: any) {
     }
 
     try {
-      const response = await fetch(`/api/plans/${params.id}`, {
+      const response = await fetch(`/api/plans/${awaitedParams.id}`, {
         method: 'DELETE',
       });
 

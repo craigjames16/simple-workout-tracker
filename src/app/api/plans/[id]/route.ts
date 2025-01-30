@@ -1,14 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth"
+import logger from '@/lib/logger';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const awaitedParams = await params;
+  
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -45,7 +47,7 @@ export async function GET(
 
     return NextResponse.json(plan);
   } catch (error) {
-    console.log('Error fetching plan:', JSON.stringify(error));
+    logger.error('Error fetching plan:', { error: JSON.stringify(error) });
     return NextResponse.json(
       { error: 'Error fetching plan' },
       { status: 500 }
@@ -54,11 +56,12 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   const awaitedParams = await params;
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -187,6 +190,7 @@ export async function PUT(
           }
         }
       }));
+
       // Clean up any extra days that are no longer needed
       const extraDays = existingDays.filter(day => day.dayNumber > days.length);
       for (const day of extraDays) {
@@ -211,7 +215,7 @@ export async function PUT(
       redirect: '/plans'
     });
   } catch (error) {
-    console.log('Error updating plan:', error instanceof Error ? error.message : JSON.stringify(error));
+    logger.error('Error updating plan:', { error: error instanceof Error ? error.message : JSON.stringify(error) });
     return NextResponse.json(
       { error: 'Error updating plan' },
       { status: 500 }
@@ -220,11 +224,13 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
+    const awaitedParams = await params;
+
     if (!session?.user) {
       return new Response('Unauthorized', { status: 401 });
     }
@@ -234,7 +240,7 @@ export async function DELETE(
       // Get the plan days with their workouts
       const planDays = await tx.planDay.findMany({
         where: {
-          planId: parseInt(params.id),
+          planId: parseInt(awaitedParams.id),
           plan: {
             userId: session.user.id
           }
@@ -266,7 +272,7 @@ export async function DELETE(
       // Delete plan days
       await tx.planDay.deleteMany({
         where: {
-          planId: parseInt(params.id),
+          planId: parseInt(awaitedParams.id),
           plan: {
             userId: session.user.id
           }
@@ -276,7 +282,7 @@ export async function DELETE(
       // Finally, delete the plan
       await tx.plan.delete({
         where: {
-          id: parseInt(params.id),
+          id: parseInt(awaitedParams.id),
           userId: session.user.id,
         },
       });
@@ -284,7 +290,7 @@ export async function DELETE(
 
     return new Response(null, { status: 204 });
   } catch (error) {
-    console.log('Error deleting plan:', error);
+    logger.error('Error deleting plan', { error: error instanceof Error ? error.message : JSON.stringify(error) });
     return new Response('Internal Server Error', { status: 500 });
   }
 } 
