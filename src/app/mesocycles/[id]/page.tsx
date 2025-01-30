@@ -66,19 +66,19 @@ interface Mesocycle {
   completedAt: string | null;
 }
 
-export default async function MesocycleDetail({ params }: any) {
+export default function MesocycleDetail({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [mesocycle, setMesocycle] = useState<Mesocycle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const awaitedParams = await params;
+  const { id } = React.use(params);
 
   useEffect(() => {
     const fetchMesocycle = async () => {
       try {
-        const response = await fetch(`/api/mesocycles/${awaitedParams.id}`);
+        const response = await fetch(`/api/mesocycles/${id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch mesocycle');
         }
@@ -92,7 +92,7 @@ export default async function MesocycleDetail({ params }: any) {
     };
 
     fetchMesocycle();
-  }, [awaitedParams.id]);
+  }, [id]);
 
   const calculateProgress = (instances: PlanInstance[]) => {
     if (!instances.length) return 0;
@@ -114,7 +114,7 @@ export default async function MesocycleDetail({ params }: any) {
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/mesocycles/${awaitedParams.id}`, {
+      const response = await fetch(`/api/mesocycles/${id}`, {
         method: 'DELETE',
       });
 
@@ -155,7 +155,7 @@ export default async function MesocycleDetail({ params }: any) {
       }
 
       // Refresh the page data
-      const updatedMesocycle = await fetch(`/api/mesocycles/${awaitedParams.id}`);
+      const updatedMesocycle = await fetch(`/api/mesocycles/${id}`);
       const data = await updatedMesocycle.json();
       setMesocycle(data);
     } catch (err) {

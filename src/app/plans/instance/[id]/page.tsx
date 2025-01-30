@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Paper,
   Typography,
@@ -25,14 +25,14 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-export default async function PlanInstanceDetail({ params }: Props) {
+export default function PlanInstanceDetail({ params }: Props) {
   const [planInstance, setPlanInstance] = useState<PlanInstanceWithCompletion | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
 
-  const awaitedParams = await params;
-  const instanceId = awaitedParams.id;
+  const { id } = React.use(params);
+  const instanceId = id;
 
   useEffect(() => {
     const fetchPlanInstance = async () => {

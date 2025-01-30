@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CreatePlan from '@/components/CreatePlan';
 import { Container, CircularProgress, Typography } from '@mui/material';
 
@@ -8,13 +8,13 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-export default async function EditPlanPage({ params }: Props) {
+export default function EditPlanPage({ params }: Props) {
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const awaitedParams = await params;
-  const planId = awaitedParams.id;
+  const { id } = React.use(params);
+  const planId = id;
 
   useEffect(() => {
     const fetchPlan = async () => {

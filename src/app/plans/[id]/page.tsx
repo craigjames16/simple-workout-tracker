@@ -50,13 +50,13 @@ interface Plan {
   createdAt: string;
 }
 
-export default async function PlanDetailsPage({ params }: any) {
+export default function PlanDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const awaitedParams = await params;
+  const awaitedParams = React.use(params);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -86,7 +86,7 @@ export default async function PlanDetailsPage({ params }: any) {
   };
 
   const handleEditPlan = () => {
-    router.push(`/plans/${params.id}/edit`);
+    router.push(`/plans/${awaitedParams.id}/edit`);
     handleMenuClose();
   };
 
