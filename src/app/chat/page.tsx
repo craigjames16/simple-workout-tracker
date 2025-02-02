@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -148,9 +149,16 @@ export default function ChatPage() {
                 color: message.role === 'user' ? 'white' : 'primary.contrastText',
                 borderRadius: 2,
                 p: 2,
+                '& p': {
+                  m: 0,
+                },
+                '& ul, & ol': {
+                  m: 0,
+                  pl: 2,
+                },
               }}
             >
-              <Typography>{message.content}</Typography>
+              <ReactMarkdown>{message.content}</ReactMarkdown>
             </Box>
           ))}
           {loading && (

@@ -278,7 +278,8 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           if (workoutData.completedAt) {
             sets = completedSetsMap[workoutExercise.exercise.id];
           } else {
-            sets = Array.from({ length: workoutExercise.lastSets.length || 3 }, (_, index) => {
+            const numSets = workoutExercise.lastSets?.length || 3;
+            sets = Array.from({ length: numSets }, (_, index) => {
               const completedSets = completedSetsMap[workoutExercise.exercise.id] || [];
               const completedSet = completedSets.find((set: any) => set.setNumber === index + 1);
               const matchingLastSet = workoutExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
@@ -300,12 +301,13 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           if (workoutExercise.exercise.adjustments) {
             workoutExercise.exercise.adjustments.forEach((adjustment: any) => {
               if (adjustment.action === 'addSets') {
+                const lastSet = workoutExercise.lastSets?.[workoutExercise.lastSets.length - 1] || { reps: 0, weight: 0 };
                 sets.push({
-                  reps: workoutExercise.lastSets[workoutExercise.lastSets.length - 1].reps,
-                  weight: workoutExercise.lastSets[workoutExercise.lastSets.length - 1].weight,
+                  reps: lastSet.reps,
+                  weight: lastSet.weight,
                   setNumber: sets.length + 1,
                   adjustment: true
-                })
+                });
               }
             });
           }
