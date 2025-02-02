@@ -42,7 +42,7 @@ interface Exercise {
   name: string;
   category: string;
   history: ExerciseSet[];
-  workoutInstances: { workoutInstanceId: string; volume: number }[];
+  workoutInstances: { workoutInstanceId: string; volume: number, completedAt: string, sets: ExerciseSet[] }[];
   highestWeight: number;
 }
 
@@ -51,6 +51,7 @@ interface ExerciseSet {
   weight: number;
   reps: number;
   date: string;
+  setNumber: number;
 }
 
 type ExercisesByCategory = {

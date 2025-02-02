@@ -1192,7 +1192,6 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
             Complete Workout
           </GradientButton>
         </Box>
-
         <ExerciseHistoryModal
           open={historyDialog.open}
           onClose={() => setHistoryDialog(prev => ({ ...prev, open: false }))}
