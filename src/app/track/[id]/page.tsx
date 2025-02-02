@@ -44,6 +44,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Chip from '@mui/material/Chip';
+import ExerciseHistoryModal from '@/components/ExerciseHistoryModal';
 
 interface ExerciseTracking {
   exerciseId: number;
@@ -731,10 +732,10 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
   const handleShowHistory = (exercise: ExerciseTracking) => {
     if (exercise) {
       setHistoryDialog({
-        exercise: {...exercise},
+        exercise: { ...exercise },
         open: true
       });
-    } 
+    }
   };
 
   const handleSkipSet = (exerciseIndex: number, setIndex: number) => {
@@ -1192,64 +1193,12 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           </GradientButton>
         </Box>
 
-        <Dialog 
-          open={historyDialog.open} 
+        <ExerciseHistoryModal
+          open={historyDialog.open}
           onClose={() => setHistoryDialog(prev => ({ ...prev, open: false }))}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>{historyDialog.exercise.exerciseName} History</DialogTitle>
-          <DialogContent>
-            <Tabs 
-              value={historyTabValue} 
-              onChange={(_, newValue) => setHistoryTabValue(newValue)}
-              sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
-            >
-              <Tab label="Sets" />
-              <Tab label="Volume" />
-            </Tabs>
-
-            {historyTabValue === 0 ? (
-              // Sets History Tab
-              <>
-                {historyDialog.exercise.history?.sort((a, b) => 
-                  new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
-                ).map((instance, index) => (
-                  <Box key={index} sx={{ mb: 2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      {format(new Date(instance.completedAt), 'MMM d, yyyy')}
-                    </Typography>
-                    <Grid container spacing={2} sx={{ pl: 2 }}>
-                      {instance.sets
-                        .sort((a, b) => a.setNumber - b.setNumber)
-                        .map((set, setIndex) => (
-                          <Grid item xs={12} key={setIndex}>
-                            <Typography variant="body2">
-                              Set {set.setNumber}: {set.weight}lbs × {set.reps} reps
-                            </Typography>
-                          </Grid>
-                        ))}
-                    </Grid>
-                  </Box>
-                ))}
-
-                {historyDialog.exercise.history?.length === 0 && (
-                  <Typography color="text.secondary">
-                    No previous history found for this exercise.
-                  </Typography>
-                )}
-              </>
-            ) : (
-              // Volume History Tab
-              <ExerciseHistoryChart history={historyDialog.exercise.history || []} />
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setHistoryDialog(prev => ({ ...prev, open: false }))}>
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
+          exerciseName={historyDialog.exercise.exerciseName}
+          history={historyDialog.exercise.history || []}
+        />
 
         <Menu
           anchorEl={historyAnchorEl}

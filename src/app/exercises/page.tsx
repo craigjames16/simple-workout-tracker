@@ -35,6 +35,8 @@ import FloatingActionButton from '@/components/FloatingActionButton';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { motion } from "framer-motion";
 import GradientButton from '@/components/GradientButton';
+import ExerciseHistoryModal from '@/components/ExerciseHistoryModal';
+
 interface Exercise {
   id: number;
   name: string;
@@ -123,43 +125,6 @@ export default function ExercisesPage() {
   const handleShowHistory = (exercise: Exercise) => {
     setSelectedExercise(exercise);
     setShowHistoryDialog(true);
-  };
-
-  const ExerciseHistoryChart = ({ exerciseId }: { exerciseId: number }) => {
-    const data = selectedExercise?.workoutInstances || [];
-    const chartData = data.map(instance => ({
-      date: new Date(instance.workoutInstanceId).toLocaleDateString(),
-      volume: instance.volume,
-    }));
-
-    return (
-      <Box sx={{ width: '100%', height: 250 }}>
-        <RechartsContainer>
-          <LineChart 
-            data={chartData}
-            margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-          >
-            <XAxis 
-              dataKey="date" 
-              axisLine={false} 
-              tickLine={false}
-              tick={{ fill: 'transparent' }}
-            />
-            <YAxis 
-              axisLine={false} 
-              tickLine={false} 
-            />
-            <Tooltip />
-            <Line 
-              type="monotone" 
-              dataKey="volume" 
-              stroke="#8884d8" 
-              dot={false} 
-            />
-          </LineChart>
-        </RechartsContainer>
-      </Box>
-    );
   };
 
   const handleSort = (column: SortColumn) => {
@@ -285,39 +250,12 @@ export default function ExercisesPage() {
         </TableContainer>
       </Paper>
 
-      <Dialog
+      <ExerciseHistoryModal
         open={showHistoryDialog}
         onClose={() => setShowHistoryDialog(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            width: '95%',
-            m: 0,
-            '& .MuiDialogTitle-root': {
-              py: 1,
-              textAlign: 'center'
-            },
-            '& .MuiDialogContent-root': {
-              py: 1,
-              px: 1,
-            },
-            '& .MuiDialogActions-root': {
-              py: 1,
-            }
-          }
-        }}
-      >
-        <DialogTitle>
-          {selectedExercise?.name} History
-        </DialogTitle>
-        <DialogContent>
-          {selectedExercise && <ExerciseHistoryChart exerciseId={selectedExercise.id} />}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowHistoryDialog(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+        exerciseName={selectedExercise?.name || ''}
+        history={selectedExercise?.workoutInstances || []}
+      />
 
       <FloatingActionButton
         icon={<AddIcon />}
