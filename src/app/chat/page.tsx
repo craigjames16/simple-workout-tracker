@@ -75,10 +75,14 @@ export default function ChatPage() {
               if (!content) continue;
 
               try {
-                // Try to parse as JSON first
-                const jsonData = JSON.parse(content);
+                // Check if content is a number
+                const parsedContent = Number(content);
+                if (Number.isInteger(parsedContent)) {
+                  throw new Error("Not JSON");
+                }
+                  // Try to parse as JSON first
+                  const jsonData = JSON.parse(content);
                 if (jsonData.type === 'plan_data') {
-                  console.log("Plan data:", jsonData.data);
                   // Add plan data as a new message
                   setMessages(prev => [...prev, {
                     role: 'assistant',
@@ -88,19 +92,21 @@ export default function ChatPage() {
                 }
               } catch {
                 // Not JSON, handle as regular streaming text
-                if (content !== lastProcessedContent) {
-                  lastProcessedContent = content;
+                const processedContent = String(content); // Ensure content is a string
+                if (processedContent !== lastProcessedContent) {
+                  lastProcessedContent = processedContent;
                   setMessages(prev => {
                     const lastMessage = prev[prev.length - 1];
-                    if (lastMessage.content.endsWith(content)) {
+                    if (lastMessage.content.endsWith(processedContent)) {
                       return prev;
                     }
                     
                     return prev.map((msg, index) => {
                       if (index === prev.length - 1) {
+                        const newContent = msg.content + processedContent; // Use processedContent
                         return {
                           ...msg,
-                          content: msg.content + content
+                          content: newContent
                         };
                       }
                       return msg;
