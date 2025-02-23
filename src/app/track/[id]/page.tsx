@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, use, useRef } from 'react';
+import React, { useEffect, useState, useRef, use } from 'react';
 import {
   ResponsiveContainer,
   Paper,
   Typography,
   TextField,
-  Button,
   List,
   ListItem,
   Box,
@@ -17,7 +16,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  DialogActions,
 } from '@/components';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -34,17 +32,12 @@ import { trackGradient } from '@/components/ThemeRegistry';
 import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
 import { format } from 'date-fns';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import Drawer from '@mui/material/Drawer';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
 import Chip from '@mui/material/Chip';
 import ExerciseHistoryModal from '@/components/ExerciseHistoryModal';
+
 
 interface ExerciseTracking {
   exerciseId: number;
@@ -72,6 +65,17 @@ interface ExerciseTracking {
       setNumber: number;
     }>;
   }>;
+  mesocycleHistory: Array<{
+    completedAt: Date;
+    mesocycleId: number;
+    sets: Array<{
+      weight: number;
+      reps: number;
+      setNumber: number;
+    }>;
+    volume: number;
+    workoutInstanceId: number;
+  }>;
 }
 
 interface WorkoutExercise {
@@ -87,6 +91,7 @@ interface ExerciseWithCategory {
   category: ExerciseCategory;
   workoutInstances: Array<{
     workoutInstanceId: number;
+    mesocycleId: number;
     volume: number;
     completedAt: Date;
     sets: Array<{
@@ -104,6 +109,7 @@ interface ExerciseResponse {
     category: ExerciseCategory;
     workoutInstances: Array<{
       workoutInstanceId: number;
+      mesocycleId: number;
       volume: number;
       completedAt: Date;
       sets: Array<{
@@ -127,75 +133,6 @@ interface WorkoutHistoryView {
     name: string;
   }>;
 }
-
-const ParticleEffect = () => {
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-      {Array.from({ length: 50 }).map((_, i) => (
-        <motion.div
-          key={i}
-          style={{
-            position: 'absolute',
-            left: '50%',
-            bottom: '40%',
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            backgroundColor: ['#FFD700', '#4CAF50', '#2196F3'][i % 3],
-          }}
-          initial={{ scale: 0 }}
-          animate={{
-            y: [-20, -150 - Math.random() * 150],
-            x: [0, (Math.random() - 0.5) * 200],
-            scale: [0, 1, 0],
-          }}
-          transition={{
-            duration: 1 + Math.random(),
-            ease: "easeOut",
-            times: [0, 0.2, 1],
-            delay: Math.random() * 0.2,
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-const ExerciseHistoryChart = ({ history }: { history: any[] }) => {
-  const chartData = history.map(instance => ({
-    date: new Date(instance.completedAt).toLocaleDateString(),
-    volume: instance.volume,
-  }));
-
-  return (
-    <Box sx={{ width: '100%', height: 250 }}>
-      <RechartsContainer>
-        <LineChart 
-          data={chartData}
-          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-        >
-          <XAxis 
-            dataKey="date" 
-            axisLine={false} 
-            tickLine={false}
-            tick={{ fill: 'transparent' }}
-          />
-          <YAxis 
-            axisLine={false} 
-            tickLine={false} 
-          />
-          <Tooltip />
-          <Line 
-            type="monotone" 
-            dataKey="volume" 
-            stroke="#8884d8" 
-            dot={false} 
-          />
-        </LineChart>
-      </RechartsContainer>
-    </Box>
-  );
-};
 
 export default function TrackWorkout({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params) as { id: string };
@@ -223,12 +160,12 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       exerciseName: '',
       order: 0,
       sets: [],
-      history: []
+      history: [],
+      mesocycleHistory: []
     }
   });
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryView[]>([]);
   const [historyAnchorEl, setHistoryAnchorEl] = useState<null | HTMLElement>(null);
-  const [historyTabValue, setHistoryTabValue] = useState(0);
 
   // Create refs for animation targets
   const setRefs = useRef<{ [key: string]: React.RefObject<HTMLElement> }>({});
@@ -313,16 +250,20 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
             });
           }
 
+          const currentExercise = exercises.find((exercise: any) => exercise.id === workoutExercise.exercise.id);
+          const currentMesocycleWorkoutInstances = currentExercise?.workoutInstances.filter((instance: any) => instance.mesocycleId === workoutData?.mesocycleId && instance.workoutInstanceId != workoutData?.id)
+
           return {
             exerciseId: workoutExercise.exercise.id,
             exerciseName: workoutExercise.exercise.name,
             sets,
             adjustments: workoutExercise.exercise.adjustments,
             order: workoutExercise.order,
-            history: exercises.find((exercise: any) => exercise.id === workoutExercise.exercise.id)?.workoutInstances || []
+            history: exercises.find((exercise: any) => exercise.id === workoutExercise.exercise.id)?.workoutInstances || [],
+            mesocycleHistory: currentMesocycleWorkoutInstances?.sort((a: any, b: any) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()) || []
           };
         });
-
+        console.log(initialTrackings);
         setExerciseTrackings(initialTrackings.sort((a: ExerciseTracking, b: ExerciseTracking) => a.order - b.order));
 
       } catch (err) {
@@ -432,7 +373,6 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       
       if (!completed) {
         const setId = set.id;
-        console.log('Attempting to delete set with ID:', setId);
         
         if (setId) {
           const response = await fetch(`/api/workout-instances/${workoutId}/sets`, {
@@ -446,7 +386,6 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           });
 
           const result = await response.json();
-          console.log('Delete response:', result);
 
           if (!response.ok) {
             throw new Error(`Failed to delete set: ${result.error}`);
@@ -494,7 +433,9 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           const updatedSet = { 
             ...prevExercises[exerciseIndex].sets[setIndex],
             id: newSetId,
-            completed: true
+            completed: true,
+            weight: weightToUse,
+            reps: repsToUse
           };
           prevExercises[exerciseIndex].sets[setIndex] = updatedSet;
           return prevExercises;
@@ -530,35 +471,28 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
         throw new Error('Failed to complete workout');
       }
 
+      const workoutData = await response.json();
+      
+      // Only update the completedAt property
+      setWorkoutInstance(prev => prev ? {
+        ...prev,
+        completedAt: workoutData.completedAt
+      } : null);
+
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 }
       });
 
-      const container = document.createElement('div');
-      if (particleContainerRef.current) {
-        particleContainerRef.current.appendChild(container);
-        const root = createRoot(container);
-        root.render(<ParticleEffect />);
-
-        setTimeout(() => {
-          root.unmount();
-          if (particleContainerRef.current?.contains(container)) {
-            particleContainerRef.current.removeChild(container);
-          }
-          
-          if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.mesocycle?.id) {
-            window.location.href = `/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`;
-          }
-          else if (workoutInstance?.planInstanceDays?.[0]?.planInstance?.id) {
-            window.location.href = `/plans/instance/${workoutInstance.planInstanceDays[0].planInstance.id}`;
-          }
-          else {
-            window.location.href = '/plans';
-          }
-        }, 2000);
-      }
+      // Scroll to the top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      const volumeDifferences = document.querySelectorAll('.volume-difference');
+      volumeDifferences.forEach((difference: any) => {
+        difference.style.opacity = '1';
+        difference.style.visibility = 'visible';
+      });
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete workout');
@@ -589,14 +523,30 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       );
 
       if (newExercise) {
+        const currentExercise = availableExercises.find((exercise: any) => exercise.id === newExercise.exercise.id);
+        const currentMesocycleWorkoutInstances = currentExercise?.workoutInstances.filter((instance: any) => instance.mesocycleId === data?.mesocycleId && instance.workoutInstanceId != data?.id);
+
+        // Map the currentMesocycleWorkoutInstances to match the expected structure
+        const mesocycleHistory = currentMesocycleWorkoutInstances?.map(instance => ({
+          completedAt: instance.completedAt,
+          mesocycleId: instance.mesocycleId,
+          sets: instance.sets.map(set => ({
+            weight: set.weight,
+            reps: set.reps,
+            setNumber: set.setNumber
+          })) || [],
+          volume: instance.volume,
+          workoutInstanceId: instance.workoutInstanceId
+        })) || [];
+
         setExerciseTrackings(prev => [...prev, {
           exerciseId: newExercise.exercise.id,
           exerciseName: newExercise.exercise.name,
           order: newExercise.order,
-          history: availableExercises.find((exercise: any) => exercise.id === newExercise.exercise.id)?.workoutInstances || [],
+          mesocycleHistory: mesocycleHistory,
+          history: currentExercise?.workoutInstances.sort((a: any, b: any) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()) || [],
           sets: Array.from({ length: newExercise.lastSets.length || 3 }, (_, index) => {
             const matchingLastSet = newExercise.lastSets?.find((lastSet: any) => lastSet.setNumber === index + 1);
-            
             return {
               reps: 0,
               weight: 0,
@@ -750,6 +700,22 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       return prevExercises;
     });
     handleMenuClose();
+  };
+
+  const calculateVolumeDifference = (exercise: ExerciseTracking) => {
+    console.log('calculateVolumeDifference', exercise);
+    const currentVolume = exercise.sets?.reduce((acc, set) => acc + set.weight * set.reps, 0);
+    const previousVolume = exercise.mesocycleHistory[0].volume;
+    const percentage = ((currentVolume - previousVolume) / previousVolume) * 100;
+    if (percentage > 0) {
+      return <Typography className="volume-difference" variant="subtitle2" color="success">+{percentage.toFixed(0)}%</Typography>;
+    }
+    else if (percentage < 0) {
+      return <Typography className="volume-difference" variant="subtitle2" color="error">{percentage.toFixed(0)}%</Typography>;
+    }
+    else {
+      return <Typography className="volume-difference" variant="subtitle2" color="text.secondary">0%</Typography>;
+    }
   };
 
   if (loading) {
@@ -922,7 +888,12 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
             >
               <Box sx={{ width: '100%', mb: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Typography variant="h6">{exercise.exerciseName}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6">{exercise.exerciseName}</Typography>
+                    {workoutInstance.completedAt && exercise.mesocycleHistory.length > 0 && (
+                      calculateVolumeDifference(exercise)
+                    )}
+                  </Box>
                   <Box>
                     <IconButton
                       onClick={() => handleShowHistory(exercise)}

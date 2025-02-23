@@ -95,6 +95,7 @@ export interface WorkoutInstanceWithRelations {
       };
     };
   }>;
+  mesocycleId: number;
 }
 
 // Update the PlanInstanceWithCompletion type to include the plan relation

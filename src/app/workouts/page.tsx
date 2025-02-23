@@ -141,32 +141,34 @@ export default function WorkoutsPage() {
                             ` (${workout.planInstanceDay[0].planInstance.mesocycle.name})`}
                         </Typography>
                       )}
-                      <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {workout.exerciseSets.length > 0 && (
-                          <Chip
-                            size="small"
-                            label={`${workout.exerciseSets.length} sets`}
-                            color="primary"
-                            variant="outlined"
-                          />
-                        )}
-                        {workout.completedAt ? (
-                          <Chip
-                            size="small"
-                            icon={<CheckCircleIcon />}
-                            label="Completed"
-                            color="success"
-                            variant="outlined"
-                          />
-                        ) : (
-                          <Chip
-                            size="small"
-                            label="In Progress"
-                            color="warning"
-                            variant="outlined"
-                          />
-                        )}
-                      </Box>
+                      <Typography component="div" variant="body2" color="text.secondary">
+                        <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {workout.exerciseSets.length > 0 && (
+                            <Chip
+                              size="small"
+                              label={`${workout.exerciseSets.length} sets`}
+                              color="primary"
+                              variant="outlined"
+                            />
+                          )}
+                          {workout.completedAt ? (
+                            <Chip
+                              size="small"
+                              icon={<CheckCircleIcon />}
+                              label="Completed"
+                              color="success"
+                              variant="outlined"
+                            />
+                          ) : (
+                            <Chip
+                              size="small"
+                              label="In Progress"
+                              color="warning"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                      </Typography>
                     </Box>
                   }
                 />

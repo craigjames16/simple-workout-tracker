@@ -131,6 +131,10 @@ model WorkoutInstance {
   userId          String            // Add user association
   user            User              @relation(fields: [userId], references: [id])
 
+  // Add the new mesocycleId field and relation
+  mesocycleId     Int?              // Make it optional if not every WorkoutInstance has a Mesocycle
+  mesocycle       Mesocycle?        @relation(fields: [mesocycleId], references: [id])
+
   // Add the opposite relation to PlanInstanceDay
   planInstanceDays    PlanInstanceDay[] // This will allow you to access PlanInstanceDay from WorkoutInstance
 }
@@ -162,6 +166,9 @@ model Mesocycle {
   updatedAt   DateTime         @updatedAt
   userId      String           // Add user association
   user        User             @relation(fields: [userId], references: [id])
+
+  // Add the opposite relation to WorkoutInstance
+  workoutInstances WorkoutInstance[] // This will allow you to access WorkoutInstance from Mesocycle
 }
 
 model Account {

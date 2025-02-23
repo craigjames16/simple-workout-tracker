@@ -37,7 +37,8 @@ export async function POST(
             }
           }
         },
-        workoutInstance: true
+        workoutInstance: true,
+        planInstance: true
       }
     });
 
@@ -65,6 +66,9 @@ export async function POST(
       data: {
         user: {
           connect: { id: session.user.id }
+        },
+        mesocycle: {
+          connect: { id: planInstanceDay.planInstance.mesocycleId! }
         },
         workout: {
           connect: { id: planInstanceDay.planDay.workout.id }

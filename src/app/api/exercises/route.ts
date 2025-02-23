@@ -37,7 +37,8 @@ export async function GET() {
             setNumber: true,
             workoutInstance: {
               select: {
-                completedAt: true
+                completedAt: true,
+                mesocycleId: true
               }
             }
           }
@@ -77,6 +78,7 @@ export async function GET() {
           workoutInstanceId: parseInt(workoutInstanceId),
           volume,
           completedAt: sets[0]?.workoutInstance.completedAt,
+          mesocycleId: sets[0]?.workoutInstance.mesocycleId,
           sets: sets.sort((a, b) => a.setNumber - b.setNumber).map(set => ({
             weight: set.weight,
             reps: set.reps,
@@ -96,7 +98,7 @@ export async function GET() {
 
     return NextResponse.json(exercisesByCategory);
   } catch (error) {
-    console.error('Error fetching exercises:', error);
+    console.log('Error fetching exercises:', JSON.stringify(error, null, 2));
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

@@ -39,7 +39,7 @@ export async function GET() {
 
     return NextResponse.json(workoutInstances);
   } catch (error) {
-    console.error('Error fetching workout instances:', error);
+    console.log('Error fetching workout instances:', JSON.stringify(error));
     return NextResponse.json(
       { 
         error: 'Error fetching workout instances', 
