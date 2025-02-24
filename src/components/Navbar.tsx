@@ -28,7 +28,7 @@ import { usePathname } from 'next/navigation';
 
 const navItems = [
   { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
-  { text: 'Home', href: '/', icon: <HomeIcon /> },
+  { text: 'Dashboard', href: '/dashboard', icon: <HomeIcon /> },
   { text: 'Exercises', href: '/exercises', icon: <SportsGymnasticsIcon /> },
   { text: 'Workouts', href: '/workouts', icon: <FitnessCenterIcon /> },
   { text: 'Plans', href: '/plans', icon: <ListAltIcon /> },
