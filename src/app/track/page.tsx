@@ -33,16 +33,19 @@ export default function TrackPage() {
         if (data.id) {
           // Incomplete workout exists
           router.push(`/track/${data.id}`);
-        } else if (data.nextDay) {
-          if (data.nextDay.planDay.isRestDay) {
-            // Handle rest day
+        } else if (data.dayId || data.dayNumber) {
+          // Next day info (could be rest or workout)
+          if (data.isRestDay) {
             setError('Today is a rest day!');
+          } else if (data.needsNewIteration) {
+            // Start a new iteration (plan instance)
+            // You may need to call an endpoint to create a new plan instance here
+            setError('A new iteration needs to be started. Please implement iteration creation logic.');
+          } else if (data.iterationId && data.dayId) {
+            // Start a new workout instance for this day
+            await startWorkoutInstance(data.iterationId, data.dayId);
           } else {
-            // No incomplete workout, start a new one
-            await startWorkoutInstance(
-              data.nextDay.planInstanceId,
-              data.nextDay.id
-            );
+            setError('Unexpected response from server.');
           }
         } else {
           // Unexpected response format
@@ -106,20 +109,31 @@ export default function TrackPage() {
   }
 
   if (error) {
+    // Friendly user-facing messages
+    let friendlyMessage = '';
+    if (error.includes('rest day')) {
+      friendlyMessage = 'Today is a rest day! Check your dashboard for more info.';
+    } else if (error.includes('No upcoming workouts')) {
+      friendlyMessage = 'No upcoming workouts found. Check your dashboard to review your plan.';
+    } else if (error.includes('new iteration')) {
+      friendlyMessage = 'You have completed all workouts in this cycle! Start a new week from your dashboard.';
+    } else {
+      friendlyMessage = 'Something went wrong. Please check your dashboard for more information.';
+    }
     return (
       <Container maxWidth="sm">
         <Paper sx={{ p: 3, mt: 3 }}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            {error}
+            {friendlyMessage}
           </Alert>
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <Button
               variant="contained"
               color="primary"
               component={Link}
-              href="/plans"
+              href="/dashboard"
             >
-              View Plans
+              Go to Dashboard
             </Button>
           </Box>
         </Paper>

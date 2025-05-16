@@ -31,16 +31,14 @@ export const metadata = {
 };
 
 export default async function RootLayout({
-  children,
-  session
+  children
 }: {
-  children: React.ReactNode,
-  session: any
+  children: React.ReactNode
 }) {
   if (typeof window === 'undefined') { // Server-side only
     console.log('SNS Initialization');
     try {
-      snsBootstrap.initialize();
+      // snsBootstrap.initialize();
     } catch (error) {
       console.error('SNS Initialization Error:', error);
     }
@@ -52,7 +50,7 @@ export default async function RootLayout({
     <html lang="en">
       <body>
         <ErrorBoundary>
-          <NextAuthProvider session={session}>
+          <NextAuthProvider>
             <ThemeRegistry>
               <Navbar />
               {children}

@@ -40,6 +40,7 @@ export async function GET() {
       return NextResponse.json(latestWorkout);
     }
 
+    // First try to find a mesocycle in progress
     const currentMesocycle = await prisma.mesocycle.findFirst({
       where: {
         userId: session.user.id,
@@ -71,23 +72,66 @@ export async function GET() {
             },
           },
         },
+        plan: {
+          include: {
+            days: {
+              orderBy: {
+                dayNumber: 'asc',
+              },
+              include: {
+                workout: true,
+              },
+            },
+          },
+        },
       },
     });
 
+    if (!currentMesocycle) {
+      return NextResponse.json(
+        { error: 'No in-progress mesocycle found' },
+        { status: 404 }
+      );
+    }
+
+    // Case 1: We have an in-progress iteration with incomplete days
     if (
-      currentMesocycle &&
       currentMesocycle.instances.length > 0 &&
       currentMesocycle.instances[0].days.length > 0
     ) {
       const nextInstance = currentMesocycle.instances[0];
       const nextDay = nextInstance.days[0];
+      const planDay = nextDay.planDay;
 
       return NextResponse.json({
-        message: 'Next workout or rest day',
-        nextDay: {
-          ...nextDay,
-          planInstanceId: nextInstance.id,
-        },
+        dayId: nextDay.id,
+        dayNumber: planDay.dayNumber,
+        iterationId: nextInstance.id,
+        iterationNumber: nextInstance.iterationNumber || 1,
+        isRestDay: planDay.isRestDay,
+        workoutId: planDay.workout?.id,
+        workoutName: planDay.workout?.name,
+      });
+    } 
+    // Case 2: We have an in-progress iteration but all days are complete
+    // OR we have no in-progress iterations at all
+    // We need to create a new iteration starting with day 1
+    else if (currentMesocycle.plan?.days?.length > 0) {
+      // Calculate the next iteration number
+      const lastIterationNumber = currentMesocycle.instances.length > 0 
+        ? (currentMesocycle.instances[0].iterationNumber || 1) 
+        : 0;
+      
+      // Get the first day from the plan
+      const firstPlanDay = currentMesocycle.plan.days[0];
+      
+      return NextResponse.json({
+        dayNumber: firstPlanDay.dayNumber,
+        iterationNumber: lastIterationNumber + 1,
+        isRestDay: firstPlanDay.isRestDay,
+        workoutId: firstPlanDay.workout?.id,
+        workoutName: firstPlanDay.workout?.name,
+        needsNewIteration: true, // Flag to indicate client should create a new iteration
       });
     } else {
       return NextResponse.json(

@@ -10,7 +10,9 @@
     "clean": "rm -rf .next",
     "seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
     "test-db": "ts-node src/lib/db-test.ts",
-    "generate-icons": "ts-node scripts/generate-icons.ts"
+    "generate-icons": "ts-node scripts/generate-icons.ts",
+    "mcp": "npx @playwright/mcp@latest --port 8931",
+    "mcp-vision": "npx @playwright/mcp@latest --vision --port 8931"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

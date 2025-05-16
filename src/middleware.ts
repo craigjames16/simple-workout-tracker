@@ -23,6 +23,8 @@ export const config = {
       "/api/workout-instances/:path*",
       "/api/plan-instances/:path*",
       "/api/mesocycles/:path*",
+      "/dashboard",
+      "/api/dashboard",
       // "/((?!auth|api/auth|$).*)",
     ],
   } 

@@ -2,12 +2,20 @@
 
 import { Container, ContainerProps } from '@mui/material';
 
-export const ResponsiveContainer = ({ sx, ...props }: ContainerProps) => {
+interface ResponsiveContainerProps extends ContainerProps {
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
+}
+
+export const ResponsiveContainer = ({ 
+  sx, 
+  maxWidth = 'sm',  // Changed from 'sm' to 'lg' as default
+  ...props 
+}: ResponsiveContainerProps) => {
 
   return (
     <Container
       disableGutters
-      maxWidth="sm"
+      maxWidth={maxWidth}
       sx={{
         ...sx,
         mt: { xs: 0, sm: 2, md: 4 },
