@@ -180,6 +180,7 @@ export async function GET(request: NextRequest) {
                   id: we.exercise.id,
                   name: we.exercise.name,
                   category: we.exercise.category,
+                  order: we.order,
                   volume,
                   volumeChange: previousVolume ? ((volume - previousVolume) / previousVolume) * 100 : 0,
                   sets: sets.map(set => ({

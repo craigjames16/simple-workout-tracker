@@ -65,6 +65,7 @@ interface Exercise {
     reps: number;
     setNumber: number;
   }>;
+  order?: number;
 }
 
 interface WorkoutIteration {
@@ -555,7 +556,9 @@ export default function DashboardPage() {
                 <NextWorkout currentMesocycle={currentMesocycle} />
         
                 <Grid container spacing={3}>
-                  {currentMesocycle.planDays.map((day) => (
+                  {[...currentMesocycle.planDays]
+                    .sort((a, b) => a.dayNumber - b.dayNumber)
+                    .map((day) => (
                     <Grid item xs={12} key={day.dayNumber}>
                       <Card 
                         elevation={2}
@@ -697,7 +700,9 @@ export default function DashboardPage() {
                                       spacing={2} 
                                       sx={{ mb: 1 }}
                                     >
-                                      {iteration.exercises.map((exercise) => (
+                                      {[...iteration.exercises]
+                                        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                                        .map((exercise) => (
                                         <Grid 
                                           item 
                                           xs={12} 
