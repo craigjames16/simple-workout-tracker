@@ -39,7 +39,7 @@ export async function verifySNSMessage(message: any, rawBody: string) {
     verifier.update(stringToSign, 'utf8');
     
     const signature = Buffer.from(message.Signature, 'base64');
-    return verifier.verify(cert, signature);
+    return verifier.verify(cert, message.Signature, 'base64');
   } catch (error) {
       console.error('Error verifying SNS message:', error);
       return false;

@@ -19,6 +19,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -203,7 +204,15 @@ const ExerciseCard = ({ exercise }: { exercise: Exercise }) => {
 };
 
 // Next Workout Component
-const NextWorkout = ({ currentMesocycle }: { currentMesocycle: CurrentMesocycle | null }) => {
+const NextWorkout = ({ 
+  currentMesocycle,
+  onStartWorkout,
+  isStartingWorkout
+}: { 
+  currentMesocycle: CurrentMesocycle | null;
+  onStartWorkout: (iterationId: number, dayId: number) => Promise<void>;
+  isStartingWorkout: boolean;
+}) => {
   const [nextWorkout, setNextWorkout] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -234,6 +243,44 @@ const NextWorkout = ({ currentMesocycle }: { currentMesocycle: CurrentMesocycle 
     
     fetchNextWorkout();
   }, [currentMesocycle]);
+
+  const handleStartWorkout = async () => {
+    if (!nextWorkout) return;
+
+    if (nextWorkout.needsNewIteration) {
+      // Create a new iteration first
+      try {
+        const response = await fetch(`/api/plan-instances`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            planId: currentMesocycle?.plan.id
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create new iteration');
+        }
+
+        const newIteration = await response.json();
+        // Now start the workout with the new iteration's first day
+        const firstDay = newIteration.days[0];
+        onStartWorkout(newIteration.id, firstDay.id);
+      } catch (err) {
+        console.error('Error creating new iteration:', err);
+        setError(err instanceof Error ? err.message : 'Failed to create new iteration');
+      }
+    } else {
+      // Start workout with existing iteration
+      if (!nextWorkout.iterationId || !nextWorkout.dayId) {
+        setError('Missing required workout information. Please try refreshing the page.');
+        return;
+      }
+      onStartWorkout(nextWorkout.iterationId, nextWorkout.dayId);
+    }
+  };
   
   if (loading) {
     return (
@@ -354,10 +401,10 @@ const NextWorkout = ({ currentMesocycle }: { currentMesocycle: CurrentMesocycle 
           variant="contained"
           size="small"
           startIcon={<PlayArrowIcon />}
-          component={Link}
-          href={`/workout/start?workoutId=${nextWorkout.workoutId}&dayId=${nextWorkout.dayId}&iterationId=${nextWorkout.iterationId}`}
+          onClick={handleStartWorkout}
+          disabled={isStartingWorkout}
         >
-          Start Workout
+          {isStartingWorkout ? 'Starting...' : (nextWorkout.inProgress ? 'Continue Workout' : 'Start Workout')}
         </Button>
       )}
     </Box>
@@ -375,9 +422,40 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
   const [expandedIterations, setExpandedIterations] = useState<Record<string, boolean>>({});
+  const [isStartingWorkout, setIsStartingWorkout] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const router = useRouter();
+
+  const startWorkoutInstance = async (iterationId: number, dayId: number) => {
+    try {
+      setIsStartingWorkout(true);
+      const response = await fetch(
+        `/api/plan-instances/${iterationId}/days/${dayId}/start`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to start new workout instance');
+      }
+
+      const newWorkoutInstance = await response.json();
+      router.push(`/track/${newWorkoutInstance.id}`);
+    } catch (error) {
+      console.error('Error starting workout instance:', error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to start new workout instance'
+      );
+    } finally {
+      setIsStartingWorkout(false);
+    }
+  };
 
   // Toggle expanded state for a day
   const toggleDayExpanded = (dayNumber: number) => {
@@ -537,7 +615,6 @@ export default function DashboardPage() {
           <Box sx={{ height: '100%', overflow: 'auto' }}>
             {currentMesocycle ? (
               <>
-                
                 <Box sx={{ 
                   mb: 3, 
                   p: 2, 
@@ -553,177 +630,185 @@ export default function DashboardPage() {
                   </Typography>
                 </Box>
 
-                <NextWorkout currentMesocycle={currentMesocycle} />
+                <NextWorkout 
+                  currentMesocycle={currentMesocycle} 
+                  onStartWorkout={startWorkoutInstance}
+                  isStartingWorkout={isStartingWorkout}
+                />
         
                 <Grid container spacing={3}>
                   {[...currentMesocycle.planDays]
                     .sort((a, b) => a.dayNumber - b.dayNumber)
                     .map((day) => (
-                    <Grid item xs={12} key={day.dayNumber}>
-                      <Card 
-                        elevation={2}
-                        sx={{ 
-                          overflow: 'hidden',
-                          mb: 2
-                        }}
-                      >
-                        <Box sx={{ 
-                          px: 3, 
-                          py: 2, 
-                          bgcolor: 'background.default',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => toggleDayExpanded(day.dayNumber)}
+                      <Grid item xs={12} key={day.dayNumber}>
+                        <Card 
+                          elevation={2}
+                          sx={{ 
+                            overflow: 'hidden',
+                            mb: 2
+                          }}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar 
-                              sx={{ 
-                                bgcolor: day.isRestDay ? 'info.main' : 'secondary.main',
-                                mr: 2
-                              }}
-                            >
-                              {day.isRestDay ? day.dayNumber : <FitnessCenterIcon />}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="h6">
-                                Day {day.dayNumber}: {day.isRestDay ? 'Rest Day' : day.workout?.name ?? 'No Workout'}
-                              </Typography>
-                              {day.isRestDay && (
-                                <Chip 
-                                  label="Rest Day" 
-                                  color="info" 
-                                  size="small" 
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                          <IconButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleDayExpanded(day.dayNumber);
-                            }}
-                            size="small"
+                          <Box sx={{ 
+                            px: 3, 
+                            py: 2, 
+                            bgcolor: 'background.default',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => toggleDayExpanded(day.dayNumber)}
                           >
-                            {isDayExpanded(day.dayNumber) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                          </IconButton>
-                        </Box>
-                        
-                        <Collapse in={isDayExpanded(day.dayNumber)}>
-                          {!day.isRestDay && (
-                            <CardContent sx={{ p: 0 }}>
-                              {day.iterations.map((iteration, iterIndex) => (
-                                <Box 
-                                  key={iteration.iterationNumber} 
-                                  sx={{ 
-                                    p: 2,
-                                    borderTop: iterIndex > 0 ? 1 : 0,
-                                    borderColor: 'divider',
-                                    bgcolor: iterIndex % 2 === 1 ? 'action.hover' : 'transparent'
-                                  }}
-                                >
-                                  <Box 
-                                    sx={{ 
-                                      display: 'flex', 
-                                      alignItems: 'center',
-                                      mb: 2,
-                                      justifyContent: 'space-between',
-                                      cursor: 'pointer'
-                                    }}
-                                    onClick={() => toggleIterationExpanded(day.dayNumber, iteration.iterationNumber)}
-                                  >
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                      <CalendarTodayIcon 
-                                        fontSize="small" 
-                                        sx={{ mr: 1, color: 'text.secondary' }} 
-                                      />
-                                      <Typography 
-                                        variant="subtitle1" 
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Avatar 
+                                sx={{ 
+                                  bgcolor: day.isRestDay ? 'info.main' : 'secondary.main',
+                                  mr: 2
+                                }}
+                              >
+                                {day.isRestDay ? day.dayNumber : <FitnessCenterIcon />}
+                              </Avatar>
+                              <Box>
+                                <Typography variant="h6">
+                                  Day {day.dayNumber}: {day.isRestDay ? 'Rest Day' : day.workout?.name ?? 'No Workout'}
+                                </Typography>
+                                {day.isRestDay && (
+                                  <Chip 
+                                    label="Rest Day" 
+                                    color="info" 
+                                    size="small" 
+                                  />
+                                )}
+                              </Box>
+                            </Box>
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleDayExpanded(day.dayNumber);
+                              }}
+                              size="small"
+                            >
+                              {isDayExpanded(day.dayNumber) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                            </IconButton>
+                          </Box>
+                          
+                          <Collapse in={isDayExpanded(day.dayNumber)}>
+                            {!day.isRestDay && (
+                              <CardContent sx={{ p: 0 }}>
+                                {[
+                                  ...day.iterations.filter(iteration => !!iteration.completedAt)
+                                ]
+                                  .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                  .map((iteration, iterIndex) => (
+                                    <Box 
+                                      key={iteration.iterationNumber} 
+                                      sx={{ 
+                                        p: 2,
+                                        borderTop: iterIndex > 0 ? 1 : 0,
+                                        borderColor: 'divider',
+                                        bgcolor: iterIndex % 2 === 1 ? 'action.hover' : 'transparent'
+                                      }}
+                                    >
+                                      <Box 
                                         sx={{ 
-                                          fontWeight: 'medium',
-                                          display: 'flex',
-                                          alignItems: 'center'
+                                          display: 'flex', 
+                                          alignItems: 'center',
+                                          mb: 2,
+                                          justifyContent: 'space-between',
+                                          cursor: 'pointer'
                                         }}
+                                        onClick={() => toggleIterationExpanded(day.dayNumber, iteration.iterationNumber)}
                                       >
-                                        Week {iteration.iterationNumber}
-                                        {iteration.completedAt && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                          <CalendarTodayIcon 
+                                            fontSize="small" 
+                                            sx={{ mr: 1, color: 'text.secondary' }} 
+                                          />
                                           <Typography 
-                                            component="span" 
-                                            color="text.secondary" 
-                                            sx={{ ml: 1, fontSize: '0.875rem' }}
+                                            variant="subtitle1" 
+                                            sx={{ 
+                                              fontWeight: 'medium',
+                                              display: 'flex',
+                                              alignItems: 'center'
+                                            }}
                                           >
-                                            ({new Date(iteration.completedAt).toLocaleDateString()})
+                                            Week {iteration.iterationNumber}
+                                            {iteration.completedAt && (
+                                              <Typography 
+                                                component="span" 
+                                                color="text.secondary" 
+                                                sx={{ ml: 1, fontSize: '0.875rem' }}
+                                              >
+                                                ({new Date(iteration.completedAt).toLocaleDateString()})
+                                              </Typography>
+                                            )}
                                           </Typography>
-                                        )}
-                                      </Typography>
-                                    </Box>
-                                    
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      {iteration.volumeSummary && iteration.iterationNumber > 1 && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
-                                          {iteration.volumeSummary.increased > 0 && (
-                                            <Tooltip title={`${iteration.volumeSummary.increased} exercise${iteration.volumeSummary.increased !== 1 ? 's' : ''} with increased volume`}>
-                                              <Badge badgeContent={iteration.volumeSummary.increased} color="success" sx={{ mr: 1 }}>
-                                                <ArrowUpwardIcon color="success" fontSize="small" />
-                                              </Badge>
-                                            </Tooltip>
+                                        </Box>
+                                        
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                          {iteration.volumeSummary && iteration.iterationNumber > 1 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
+                                              {iteration.volumeSummary.increased > 0 && (
+                                                <Tooltip title={`${iteration.volumeSummary.increased} exercise${iteration.volumeSummary.increased !== 1 ? 's' : ''} with increased volume`}>
+                                                  <Badge badgeContent={iteration.volumeSummary.increased} color="success" sx={{ mr: 1 }}>
+                                                    <ArrowUpwardIcon color="success" fontSize="small" />
+                                                  </Badge>
+                                                </Tooltip>
+                                              )}
+                                              
+                                              {iteration.volumeSummary.decreased > 0 && (
+                                                <Tooltip title={`${iteration.volumeSummary.decreased} exercise${iteration.volumeSummary.decreased !== 1 ? 's' : ''} with decreased volume`}>
+                                                  <Badge badgeContent={iteration.volumeSummary.decreased} color="error">
+                                                    <ArrowDownwardIcon color="error" fontSize="small" />
+                                                  </Badge>
+                                                </Tooltip>
+                                              )}
+                                            </Box>
                                           )}
                                           
-                                          {iteration.volumeSummary.decreased > 0 && (
-                                            <Tooltip title={`${iteration.volumeSummary.decreased} exercise${iteration.volumeSummary.decreased !== 1 ? 's' : ''} with decreased volume`}>
-                                              <Badge badgeContent={iteration.volumeSummary.decreased} color="error">
-                                                <ArrowDownwardIcon color="error" fontSize="small" />
-                                              </Badge>
-                                            </Tooltip>
-                                          )}
+                                          <IconButton
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleIterationExpanded(day.dayNumber, iteration.iterationNumber);
+                                            }}
+                                            size="small"
+                                          >
+                                            {isIterationExpanded(day.dayNumber, iteration.iterationNumber) ? 
+                                              <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                          </IconButton>
                                         </Box>
-                                      )}
-                                      
-                                      <IconButton
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          toggleIterationExpanded(day.dayNumber, iteration.iterationNumber);
-                                        }}
-                                        size="small"
-                                      >
-                                        {isIterationExpanded(day.dayNumber, iteration.iterationNumber) ? 
-                                          <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                      </IconButton>
-                                    </Box>
-                                  </Box>
+                                      </Box>
 
-                                  <Collapse in={isIterationExpanded(day.dayNumber, iteration.iterationNumber)}>
-                                    <Grid 
-                                      container 
-                                      spacing={2} 
-                                      sx={{ mb: 1 }}
-                                    >
-                                      {[...iteration.exercises]
-                                        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                                        .map((exercise) => (
+                                      <Collapse in={isIterationExpanded(day.dayNumber, iteration.iterationNumber)}>
                                         <Grid 
-                                          item 
-                                          xs={12} 
-                                          sm={isTablet ? 6 : 4} 
-                                          md={4} 
-                                          lg={3} 
-                                          key={exercise.id}
+                                          container 
+                                          spacing={2} 
+                                          sx={{ mb: 1 }}
                                         >
-                                          <ExerciseCard exercise={exercise} />
+                                          {[...iteration.exercises]
+                                            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                                            .map((exercise) => (
+                                              <Grid 
+                                                item 
+                                                xs={12} 
+                                                sm={isTablet ? 6 : 4} 
+                                                md={4} 
+                                                lg={3} 
+                                                key={exercise.id}
+                                              >
+                                                <ExerciseCard exercise={exercise} />
+                                              </Grid>
+                                            ))}
                                         </Grid>
-                                      ))}
-                                    </Grid>
-                                  </Collapse>
-                                </Box>
-                              ))}
-                            </CardContent>
-                          )}
-                        </Collapse>
-                      </Card>
-                    </Grid>
-                  ))}
+                                      </Collapse>
+                                    </Box>
+                                  ))}
+                              </CardContent>
+                            )}
+                          </Collapse>
+                        </Card>
+                      </Grid>
+                    ))}
                 </Grid>
               </>
             ) : (
@@ -744,4 +829,4 @@ export default function DashboardPage() {
       </Paper>
     </ResponsiveContainer>
   );
-} 
+}

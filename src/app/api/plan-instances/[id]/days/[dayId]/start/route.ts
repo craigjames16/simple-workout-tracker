@@ -16,7 +16,7 @@ export async function POST(
     }
 
     // First, check if a workout instance already exists
-    const planInstanceDay = await prisma.planInstanceDay.findUnique({
+    const planInstanceDay = await prisma.planInstanceDay.findFirst({
       where: {
         id: parseInt(awaitedParams.dayId),
         planInstance: {
@@ -38,7 +38,11 @@ export async function POST(
           }
         },
         workoutInstance: true,
-        planInstance: true
+        planInstance: {
+          include: {
+            mesocycle: true
+          }
+        }
       }
     });
 
@@ -61,6 +65,13 @@ export async function POST(
       );
     }
 
+    if (!planInstanceDay.planInstance.mesocycleId) {
+      return NextResponse.json(
+        { error: 'No mesocycle found for this plan instance' },
+        { status: 400 }
+      );
+    }
+
     // Create a new workout instance
     const workoutInstance = await prisma.workoutInstance.create({
       data: {
@@ -68,7 +79,7 @@ export async function POST(
           connect: { id: session.user.id }
         },
         mesocycle: {
-          connect: { id: planInstanceDay.planInstance.mesocycleId! }
+          connect: { id: planInstanceDay.planInstance.mesocycleId }
         },
         workout: {
           connect: { id: planInstanceDay.planDay.workout.id }
@@ -108,7 +119,7 @@ export async function POST(
 
     return NextResponse.json(workoutInstance);
   } catch (error) {
-    console.error('Error starting workout:', error);
+    console.log('Error starting workout:', JSON.stringify(error));
     return NextResponse.json(
       { 
         error: 'Error starting workout', 

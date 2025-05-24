@@ -34,7 +34,7 @@ import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { format } from 'date-fns';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import Chip from '@mui/material/Chip';
 import ExerciseHistoryModal from '@/components/ExerciseHistoryModal';
 
@@ -488,12 +488,6 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       // Scroll to the top of the page
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-      const volumeDifferences = document.querySelectorAll('.volume-difference');
-      volumeDifferences.forEach((difference: any) => {
-        difference.style.opacity = '1';
-        difference.style.visibility = 'visible';
-      });
-
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete workout');
     }
@@ -640,13 +634,13 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
 
   const handleReorderExercise = async (exerciseId: number, direction: 'up' | 'down') => {
     try {
-      const workoutId = workoutInstance?.workout.id;
+      const workoutInstanceId = workoutId; // This is actually the workout instance ID from the URL params
 
-      if (!workoutId) {
-        throw new Error('Workout ID not found');
+      if (!workoutInstanceId) {
+        throw new Error('Workout instance ID not found');
       }
       
-      const response = await fetch(`/api/workout-instances/${workoutId}/exercises/reorder/${workoutId}`, {
+      const response = await fetch(`/api/workout-instances/${workoutInstanceId}/exercises/reorder/${workoutInstanceId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -702,602 +696,781 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
     handleMenuClose();
   };
 
-  const calculateVolumeDifference = (exercise: ExerciseTracking) => {
-    console.log('calculateVolumeDifference', exercise);
-    const currentVolume = exercise.sets?.reduce((acc, set) => acc + set.weight * set.reps, 0);
-    const previousVolume = exercise.mesocycleHistory[0].volume;
-    const percentage = ((currentVolume - previousVolume) / previousVolume) * 100;
-    if (percentage > 0) {
-      return <Typography className="volume-difference" variant="subtitle2" color="success">+{percentage.toFixed(0)}%</Typography>;
-    }
-    else if (percentage < 0) {
-      return <Typography className="volume-difference" variant="subtitle2" color="error">{percentage.toFixed(0)}%</Typography>;
-    }
-    else {
-      return <Typography className="volume-difference" variant="subtitle2" color="text.secondary">0%</Typography>;
-    }
-  };
-
   if (loading) {
     return (
-      <ResponsiveContainer maxWidth="md" disableGutters sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </ResponsiveContainer>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '50vh',
+        px: 2
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress size={60} />
+          <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>
+            Loading your workout...
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
   if (error || !workoutInstance) {
     return (
-      <ResponsiveContainer maxWidth="md" disableGutters sx={{ mt: 4 }}>
-        <Typography color="error">{error || 'Workout not found'}</Typography>
-      </ResponsiveContainer>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '50vh',
+        px: 2
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" color="error" gutterBottom>
+            Oops! Something went wrong
+          </Typography>
+          <Typography color="text.secondary">
+            {error || 'Workout not found'}
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
+  const completedSets = exerciseTrackings.reduce((total, exercise) => 
+    total + exercise.sets.filter(set => set.completed).length, 0
+  );
+  const totalSets = exerciseTrackings.reduce((total, exercise) => 
+    total + exercise.sets.length, 0
+  );
+
   return (
-    <ResponsiveContainer maxWidth="xs" disableGutters>
+    <ResponsiveContainer 
+      maxWidth="sm" 
+      disableGutters
+      sx={{ 
+        minHeight: '100vh', 
+        pb: 10,
+        overflow: 'visible' // Prevent container from creating its own scroll context
+      }}
+    >
       <div ref={particleContainerRef} style={{ position: 'fixed', top: 0, left: 0, pointerEvents: 'none' }} />
       
-      <Paper sx={{ 
-        p: { xs: 0, sm: 0 }, 
-        position: 'relative' 
+      {/* Sticky Header */}
+      <Box sx={{
+        position: 'sticky',
+        top: { xs: 56, sm: 64 },
+        background: trackGradient,
+        zIndex: 1000,
+        borderBottom: 1,
+        borderColor: 'divider',
+        px: 2,
+        py: 2
       }}>
-        <Box sx={{
-          position: 'sticky',
-          pl: 2,
-          top: {
-            xs: 56,
-            sm: 64
-          },
-          opacity: 1,
-          background: trackGradient,
-          zIndex: 1,
-          paddingY: 1,
-          borderBottom: 1,
-          borderColor: 'divider'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography variant="h6" gutterBottom>
-                {workoutInstance.planInstanceDays?.[0] ? (
-                  `Week ${workoutInstance.planInstanceDays[0].planInstance.iterationNumber}` + ` Day ${workoutInstance.planInstanceDays[0].planDay.dayNumber}`
-                ) : (
-                  workoutInstance.workout.name
-                )}
-              </Typography>
-              {workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle && (
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  mt: -1, 
-                  gap: 0.5 
-                }}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Typography 
-                      variant="subtitle1" 
-                      color="text.secondary"
-                      component="a"
-                      href={`/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`}
-                      sx={{
-                        textDecoration: 'none',
-                        '&:hover': {
-                          textDecoration: 'underline',
-                          cursor: 'pointer'
-                        }
-                      }}
-                    >
-                      {`${workoutInstance.planInstanceDays[0].planInstance.mesocycle.name} - RIR: ${workoutInstance.planInstanceDays[0].planInstance.rir}`}
-                    </Typography>
-                  </Box>
-                  {workoutInstance.completedAt && (
-                    <Typography color="text.secondary">
-                      Completed: {format(new Date(workoutInstance.completedAt), 'MMM d, yyyy')}
-                    </Typography>
-                  )}
-                </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+              {workoutInstance.planInstanceDays?.[0] ? (
+                `Week ${workoutInstance.planInstanceDays[0].planInstance.iterationNumber} • Day ${workoutInstance.planInstanceDays[0].planDay.dayNumber}`
+              ) : (
+                workoutInstance.workout.name
               )}
-            </Box>
-            <Box>
-              {workoutInstance.planInstanceDays?.[0]?.planInstance.mesocycle && (
-                <IconButton
-                  onClick={(event) => setHistoryAnchorEl(event.currentTarget)}
-                  size="large"
-                >
-                  <CalendarMonthIcon />
-                </IconButton>
-              )}
-              <IconButton
-                onClick={(event) => setWorkoutMenuAnchorEl(event.currentTarget)}
-                size="large"
-              >
-                <MoreVertIcon />
-              </IconButton>
-            </Box>
-          </Box>
-        </Box>
-
-        <Menu
-          anchorEl={workoutMenuAnchorEl}
-          open={Boolean(workoutMenuAnchorEl)}
-          onClose={handleWorkoutMenuClose}
-        >
-          <Box sx={{ p: 2, minWidth: 300 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Add Exercise
             </Typography>
             
-            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={selectedCategory}
-                label="Category"
-                onChange={(e) => setSelectedCategory(e.target.value as ExerciseCategory | 'ALL')}
+            {workoutInstance.planInstanceDays?.[0]?.planInstance?.mesocycle && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  component="a"
+                  href={`/mesocycles/${workoutInstance.planInstanceDays[0].planInstance.mesocycle.id}`}
+                  sx={{
+                    textDecoration: 'none',
+                    '&:hover': { textDecoration: 'underline' }
+                  }}
+                >
+                  {workoutInstance.planInstanceDays[0].planInstance.mesocycle.name} • RIR: {workoutInstance.planInstanceDays[0].planInstance.rir}
+                </Typography>
+                
+                {/* Progress bar */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                  <Box sx={{ 
+                    flex: 1, 
+                    height: 6, 
+                    bgcolor: 'rgba(255,255,255,0.2)', 
+                    borderRadius: 3,
+                    overflow: 'hidden'
+                  }}>
+                    <Box sx={{ 
+                      height: '100%', 
+                      width: `${totalSets > 0 ? (completedSets / totalSets) * 100 : 0}%`,
+                      bgcolor: 'success.main',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ minWidth: 'fit-content' }}>
+                    {completedSets}/{totalSets} sets
+                  </Typography>
+                </Box>
+                
+                {workoutInstance.completedAt && (
+                  <Typography variant="caption" color="success.main" sx={{ fontWeight: 500 }}>
+                    ✓ Completed: {format(new Date(workoutInstance.completedAt), 'MMM d, yyyy')}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {workoutInstance.planInstanceDays?.[0]?.planInstance.mesocycle && (
+              <IconButton
+                onClick={(event) => setHistoryAnchorEl(event.currentTarget)}
+                size="large"
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+                }}
               >
-                <MenuItem value="ALL">All Categories</MenuItem>
-                {Object.values(ExerciseCategory).map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category.charAt(0) + category.slice(1).toLowerCase()}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                <CalendarMonthIcon />
+              </IconButton>
+            )}
+            <IconButton
+              onClick={(event) => setWorkoutMenuAnchorEl(event.currentTarget)}
+              size="large"
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.1)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+              }}
+            >
+              <MoreVertIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      </Box>
 
-            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-              <InputLabel>Exercise</InputLabel>
-              <Select
-                value={selectedExercise}
-                label="Exercise"
-                onChange={(e) => setSelectedExercise(e.target.value)}
-              >
-                {availableExercises
-                  .filter(exercise => selectedCategory === 'ALL' || exercise.category === selectedCategory)
-                  .map((exercise) => (
-                    <MenuItem key={exercise.id} value={exercise.id}>
-                      {exercise.name}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-
+      {/* Exercise List */}
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 2 }}>
+        {exerciseTrackings.length === 0 ? (
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 8,
+            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)',
+            borderRadius: 2,
+            border: '1px dashed rgba(255,255,255,0.2)'
+          }}>
+            <Typography variant="h6" gutterBottom>
+              Ready to get started? 💪
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>
+              Add your first exercise to begin tracking your workout
+            </Typography>
             <GradientButton
               variant="contained"
-              onClick={() => {
-                handleAddExercise();
-                handleWorkoutMenuClose();
-              }}
-              disabled={!selectedExercise || !!workoutInstance.completedAt}
-              fullWidth
+              onClick={(event) => setWorkoutMenuAnchorEl(event.currentTarget)}
+              startIcon={<AddIcon />}
+              size="large"
             >
               Add Exercise
             </GradientButton>
           </Box>
-        </Menu>
-
-        <List>
-          {exerciseTrackings.map((exercise, exerciseIndex) => (
-            <ListItem
+        ) : (
+          exerciseTrackings.map((exercise, exerciseIndex) => (
+            <motion.div
               key={exercise.exerciseId}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'stretch',
-                mb: 2,
-                borderBottom: '5px solid rgba(0, 0, 0, 0.12)',
-                pb: 2,
-              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: exerciseIndex * 0.1 }}
             >
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6">{exercise.exerciseName}</Typography>
-                    {workoutInstance.completedAt && exercise.mesocycleHistory.length > 0 && (
-                      calculateVolumeDifference(exercise)
-                    )}
-                  </Box>
-                  <Box>
-                    <IconButton
-                      onClick={() => handleShowHistory(exercise)}
-                      size="small"
-                    >
-                      <InfoOutlinedIcon />
-                    </IconButton>
-                    <IconButton
-                      onClick={(event) => handleExerciseMenuOpen(event, exerciseIndex)}
-                      disabled={!!workoutInstance.completedAt}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
+              <Paper 
+                elevation={2}
+                sx={{
+                  mb: 3,
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                  border: '1px solid rgba(255,255,255,0.1)'
+                }}
+              >
+                {/* Exercise Header */}
+                <Box sx={{ 
+                  p: { xs: 1.5, sm: 2 }, 
+                  borderBottom: '1px solid rgba(255,255,255,0.1)',
+                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)'
+                }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                        {exercise.exerciseName}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                        {exercise.sets.filter(set => set.completed).length} of {exercise.sets.length} sets completed
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <IconButton
+                        onClick={() => handleShowHistory(exercise)}
+                        size="small"
+                        sx={{ 
+                          bgcolor: 'rgba(255,255,255,0.1)',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+                        }}
+                      >
+                        <InfoOutlinedIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={(event) => handleExerciseMenuOpen(event, exerciseIndex)}
+                        disabled={!!workoutInstance.completedAt}
+                        size="small"
+                        sx={{ 
+                          bgcolor: 'rgba(255,255,255,0.1)',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+                        }}
+                      >
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Box>
                   </Box>
                 </Box>
 
-                <Grid container spacing={1} sx={{ mb: 1, maxWidth: 'sm', mx: 'auto' }}>
-                  <Grid item xs={1} sm={1.5}>
-                    {/* Empty space for menu icon*/ }
-                  </Grid>
-                  <Grid item xs={3} sm={2.5}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Weight
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3} sm={2.5}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Reps
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={4} sm={3}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Complete
-                    </Typography>
-                  </Grid>
-                </Grid>
+                {/* Sets */}
+                <Box sx={{ p: { xs: 1, sm: 2 } }}>
+                  <Box sx={{ display: 'grid', gap: { xs: 1.5, sm: 2 } }}>
+                    {Array.isArray(exercise.sets) && exercise.sets.map((set, setIndex) => {
+                      const isSetCompleted = set.completed || false;
+                      const hasLastSet = set.lastSet && (set.lastSet.weight > 0 || set.lastSet.reps > 0);
 
-                {Array.isArray(exercise.sets) && exercise.sets.map((set, setIndex) => {
-                  const isSetCompleted = set.completed || false;
-
-                  return (
-                    <Grid container spacing={1} key={setIndex} sx={{ mt: 0.5, maxWidth: 'sm', mx: 'auto' }}>
-                      <Grid item xs={1} sm={1.5} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, exerciseIndex, setIndex)}
-                          disabled={isSetCompleted || !!workoutInstance.completedAt}
+                      return (
+                        <motion.div
+                          key={setIndex}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: setIndex * 0.05 }}
                         >
-                          <MoreVertIcon />
-                        </IconButton>
-                      </Grid>
-                      <Grid item xs={3} sm={2.5}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="number"
-                          value={set.weight || ''}
-                          placeholder={set.lastSet ? String(set.lastSet.weight) : "0"}
-                          onChange={(e) => handleUpdateSet(
-                            set,
-                            exerciseIndex,
-                            setIndex,
-                            'weight',
-                            parseFloat(e.target.value)
-                          )}
-                          disabled={isSetCompleted || !!workoutInstance.completedAt}
-                          sx={{
-                            maxWidth: '100px',
-                            backgroundColor: set.adjustment ? 'rgba(156, 39, 176, 0.1)' : 'inherit',
-                            '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.5)' : 'rgba(255, 255, 255, 0.23)',
-                              },
-                              '&:hover fieldset': {
-                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.7)' : 'rgba(255, 255, 255, 0.23)',
-                              },
-                            },
-                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                              WebkitAppearance: 'none',
-                              margin: 0,
-                            },
-                            '& input[type=number]': {
-                              MozAppearance: 'textfield',
-                            },
-                            '& .Mui-disabled': {
-                              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                              color: 'rgba(0, 0, 0, 0.87)',
-                            }
-                          }}
-                          inputProps={{
-                            inputMode: 'decimal',
-                            pattern: '[0-9]*\\.?[0-9]*'
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={3} sm={2.5}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="number"
-                          value={set.reps || ''}
-                          placeholder={set.lastSet ? String(set.lastSet.reps) : "0"}
-                          onChange={(e) => handleUpdateSet(
-                            set,
-                            exerciseIndex,
-                            setIndex,
-                            'reps',
-                            parseInt(e.target.value)
-                          )}
-                          disabled={isSetCompleted || !!workoutInstance.completedAt}
-                          sx={{
-                            maxWidth: '100px',
-                            backgroundColor: set.adjustment ? 'rgba(156, 39, 176, 0.1)' : 'inherit',
-                            '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.5)' : 'rgba(255, 255, 255, 0.23)',
-                              },
-                              '&:hover fieldset': {
-                                borderColor: set.adjustment ? 'rgba(156, 39, 176, 0.7)' : 'rgba(255, 255, 255, 0.23)',
-                              },
-                            },
-                            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-                              WebkitAppearance: 'none',
-                              margin: 0,
-                            },
-                            '& input[type=number]': {
-                              MozAppearance: 'textfield',
-                            },
-                            '& .Mui-disabled': {
-                              WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
-                              color: 'rgba(0, 0, 0, 0.87)',
-                            }
-                          }}
-                          inputProps={{
-                            inputMode: 'numeric',
-                            pattern: '[0-9]*'
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={4} sm={3} sx={{ display: 'flex', alignItems: 'center' }}
-                        ref={(element) => {
-                          const refKey = `set-${exercise.exerciseId}-${setIndex}`;
-                          if (!setRefs.current[refKey]) {
-                            setRefs.current[refKey] = { current: null };
-                          }
-                          setRefs.current[refKey] = { current: element };
-                        }}
-                      >
-                        <AnimatedCheckbox
-                          checked={isSetCompleted || !!workoutInstance.completedAt}
-                          onChange={() => handleSetCompletion(exerciseIndex, setIndex, !isSetCompleted)}
-                          disabled={!!workoutInstance.completedAt}
-                        />
-                        {set.adjustment && (
-                          <Chip
-                            label="From PT"
-                            size="small"
+                          <Box
                             sx={{
-                              ml: 1,
-                              height: '20px',
-                              backgroundColor: 'rgba(156, 39, 176, 0.1)',
-                              color: 'rgb(156, 39, 176)',
-                              border: '1px solid rgba(156, 39, 176, 0.3)',
-                              '& .MuiChip-label': {
-                                px: 1,
-                                fontSize: '0.625rem',
-                                fontWeight: 500
+                              display: 'grid',
+                              gridTemplateColumns: { xs: '32px 1fr 1fr 40px 60px', sm: '40px 1fr 1fr 48px 80px' },
+                              gap: { xs: 1, sm: 2 },
+                              alignItems: 'center',
+                              p: { xs: 1.5, sm: 2 },
+                              borderRadius: 2,
+                              bgcolor: isSetCompleted ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255,255,255,0.05)',
+                              border: `1px solid ${isSetCompleted ? 'rgba(76, 175, 80, 0.3)' : 'rgba(255,255,255,0.1)'}`,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                bgcolor: isSetCompleted ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255,255,255,0.1)'
                               }
                             }}
-                          />
-                        )}
-                      </Grid>
-                    </Grid>
-                  );
-                })}
-              </Box>
-            </ListItem>
-          ))}
-        </List>
+                            ref={(element) => {
+                              const refKey = `set-${exercise.exerciseId}-${setIndex}`;
+                              if (!setRefs.current[refKey]) {
+                                setRefs.current[refKey] = { current: null };
+                              }
+                              setRefs.current[refKey] = { current: element as HTMLElement };
+                            }}
+                          >
+                            {/* Set Number */}
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              width: { xs: 28, sm: 32 },
+                              height: { xs: 28, sm: 32 },
+                              borderRadius: '50%',
+                              bgcolor: isSetCompleted ? 'success.main' : 'rgba(255,255,255,0.1)',
+                              color: isSetCompleted ? 'white' : 'text.secondary',
+                              fontWeight: 600,
+                              fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                            }}>
+                              {setIndex + 1}
+                            </Box>
 
-        <Menu
-          anchorEl={menuAnchorEl}
-          open={Boolean(menuAnchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem 
-            onClick={() => activeSet && handleSkipSet(activeSet.exerciseIndex, activeSet.setIndex)}
-          >
-            <Typography color="text.secondary">Skip Set</Typography>
-          </MenuItem>
-          <MenuItem 
-            onClick={handleDeleteSet}
-            sx={{ color: 'error.main' }}
-          >
-            <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-            Delete Set
-          </MenuItem>
-        </Menu>
+                            {/* Weight Input */}
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" sx={{ 
+                                mb: 0.5, 
+                                display: 'block',
+                                fontSize: { xs: '0.6rem', sm: '0.75rem' }
+                              }}>
+                                {window.innerWidth < 450 ? 'Weight' : 'Weight (lbs)'}
+                              </Typography>
+                              <TextField
+                                size="small"
+                                fullWidth
+                                type="number"
+                                value={set.weight || ''}
+                                placeholder={set.lastSet ? String(set.lastSet.weight) : "0"}
+                                onChange={(e) => handleUpdateSet(
+                                  set,
+                                  exerciseIndex,
+                                  setIndex,
+                                  'weight',
+                                  parseFloat(e.target.value)
+                                )}
+                                disabled={isSetCompleted || !!workoutInstance.completedAt}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    height: { xs: 40, sm: 48 },
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                                    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                                  },
+                                  '& input': {
+                                    textAlign: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    fontWeight: 500
+                                  },
+                                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                    WebkitAppearance: 'none',
+                                    margin: 0,
+                                  },
+                                  '& input[type=number]': {
+                                    MozAppearance: 'textfield',
+                                  }
+                                }}
+                                inputProps={{
+                                  inputMode: 'decimal',
+                                  pattern: '[0-9]*\\.?[0-9]*'
+                                }}
+                              />
+                              {set.lastSet && (
+                                <Typography variant="caption" color="text.secondary" sx={{ 
+                                  mt: 0.5, 
+                                  display: 'block',
+                                  fontSize: { xs: '0.6rem', sm: '0.75rem' }
+                                }}>
+                                  Last: {set.lastSet.weight}
+                                </Typography>
+                              )}
+                            </Box>
 
-        <Menu
-          anchorEl={exerciseMenuAnchorEl}
-          open={Boolean(exerciseMenuAnchorEl)}
-          onClose={handleExerciseMenuClose}
-        >
-          <MenuItem 
-            onClick={() => {
-              if (activeExercise !== null) {
-                handleReorderExercise(exerciseTrackings[activeExercise].exerciseId, 'up');
-                handleExerciseMenuClose();
-              }
-            }}
-            disabled={activeExercise === 0 || !!workoutInstance.completedAt}
-          >
-            <ArrowUpward sx={{ mr: 1 }} fontSize="small" />
-            Move Up
-          </MenuItem>
-          <MenuItem 
-            onClick={() => {
-              if (activeExercise !== null) {
-                handleReorderExercise(exerciseTrackings[activeExercise].exerciseId, 'down');
-                handleExerciseMenuClose();
-              }
-            }}
-            disabled={activeExercise === exerciseTrackings.length - 1 || !!workoutInstance.completedAt}
-          >
-            <ArrowDownward sx={{ mr: 1 }} fontSize="small" />
-            Move Down
-          </MenuItem>
-          <MenuItem 
-            onClick={() => {
-              if (activeExercise !== null) {
-                handleAddSet(activeExercise);
-                handleExerciseMenuClose();
-              }
-            }}
-            disabled={!!workoutInstance.completedAt}
-          >
-            <AddIcon sx={{ mr: 1 }} fontSize="small" />
-            Add Set
-          </MenuItem>
-          <MenuItem 
-            onClick={() => {
-              if (activeExercise !== null) {
-                handleRemoveExercise(exerciseTrackings[activeExercise].exerciseId);
-                handleExerciseMenuClose();
-              }
-            }}
-            sx={{ color: 'error.main' }}
-          >
-            <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-            Delete Exercise
-          </MenuItem>
-        </Menu>
+                            {/* Reps Input */}
+                            <Box>
+                              <Typography variant="caption" color="text.secondary" sx={{ 
+                                mb: 0.5, 
+                                display: 'block',
+                                fontSize: { xs: '0.6rem', sm: '0.75rem' }
+                              }}>
+                                Reps
+                              </Typography>
+                              <TextField
+                                size="small"
+                                fullWidth
+                                type="number"
+                                value={set.reps || ''}
+                                placeholder={set.lastSet ? String(set.lastSet.reps) : "0"}
+                                onChange={(e) => handleUpdateSet(
+                                  set,
+                                  exerciseIndex,
+                                  setIndex,
+                                  'reps',
+                                  parseInt(e.target.value)
+                                )}
+                                disabled={isSetCompleted || !!workoutInstance.completedAt}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    height: { xs: 40, sm: 48 },
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+                                    '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.3)' },
+                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                                  },
+                                  '& input': {
+                                    textAlign: 'center',
+                                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                                    fontWeight: 500
+                                  },
+                                  '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                                    WebkitAppearance: 'none',
+                                    margin: 0,
+                                  },
+                                  '& input[type=number]': {
+                                    MozAppearance: 'textfield',
+                                  }
+                                }}
+                                inputProps={{
+                                  inputMode: 'numeric',
+                                  pattern: '[0-9]*'
+                                }}
+                              />
+                              {set.lastSet && (
+                                <Typography variant="caption" color="text.secondary" sx={{ 
+                                  mt: 0.5, 
+                                  display: 'block',
+                                  fontSize: { xs: '0.6rem', sm: '0.75rem' }
+                                }}>
+                                  Last: {set.lastSet.reps}
+                                </Typography>
+                              )}
+                            </Box>
 
-        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+                            {/* Set Menu */}
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, exerciseIndex, setIndex)}
+                                disabled={isSetCompleted || !!workoutInstance.completedAt}
+                                sx={{ 
+                                  width: { xs: 32, sm: 40 },
+                                  height: { xs: 32, sm: 40 },
+                                  bgcolor: 'rgba(255,255,255,0.1)',
+                                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
+                                }}
+                              >
+                                <MoreVertIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                              </IconButton>
+                            </Box>
+
+                            {/* Complete Set Button */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <AnimatedCheckbox
+                                checked={isSetCompleted || !!workoutInstance.completedAt}
+                                onChange={() => handleSetCompletion(exerciseIndex, setIndex, !isSetCompleted)}
+                                disabled={!!workoutInstance.completedAt}
+                                size={window.innerWidth < 450 ? "medium" : "large"}
+                              />
+                              {set.adjustment && (
+                                <Chip
+                                  label="PT"
+                                  size="small"
+                                  sx={{
+                                    ml: 1,
+                                    height: '20px',
+                                    backgroundColor: 'rgba(156, 39, 176, 0.2)',
+                                    color: 'rgb(156, 39, 176)',
+                                    border: '1px solid rgba(156, 39, 176, 0.3)',
+                                    '& .MuiChip-label': {
+                                      px: 1,
+                                      fontSize: '0.625rem',
+                                      fontWeight: 600
+                                    }
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          </Box>
+                        </motion.div>
+                      );
+                    })}
+                  </Box>
+                </Box>
+              </Paper>
+            </motion.div>
+          ))
+        )}
+      </Box>
+
+      {/* Complete Workout Button */}
+      {exerciseTrackings.length > 0 && (
+        <Box sx={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          p: 2, 
+          bgcolor: 'background.paper',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          zIndex: 1000
+        }}>
           <GradientButton
             variant="contained"
             fullWidth
-            sx={{ p: 4, m: 1 }}
+            size="large"
             onClick={handleCompleteWorkout}
             disabled={
               !exerciseTrackings.every((tracking) =>
                 tracking.sets?.every((set) => set.completed === true || set.skipped === true)
               ) || !!workoutInstance.completedAt
             }
+            sx={{ 
+              py: 2,
+              fontSize: { xs: '1rem', sm: '1.1rem' },
+              fontWeight: 600,
+              borderRadius: 2
+            }}
           >
-            Complete Workout
+            {workoutInstance.completedAt ? (
+              <>✓ Completed</>
+            ) : (
+              <>
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  🎉 Complete Workout ({completedSets}/{totalSets} sets)
+                </Box>
+                <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                  🎉 Complete ({completedSets}/{totalSets})
+                </Box>
+              </>
+            )}
           </GradientButton>
         </Box>
-        <ExerciseHistoryModal
-          open={historyDialog.open}
-          onClose={() => setHistoryDialog(prev => ({ ...prev, open: false }))}
-          exerciseName={historyDialog.exercise.exerciseName}
-          history={historyDialog.exercise.history || []}
-        />
+      )}
 
-        <Menu
-          anchorEl={historyAnchorEl}
-          open={Boolean(historyAnchorEl)}
-          onClose={() => setHistoryAnchorEl(null)}
-          PaperProps={{
-            sx: {
-              maxHeight: '80vh',
-              width: '100vw',
-              left: '0px !important',
-              right: '0px !important',
-              maxWidth: '100% !important',
-              position: 'fixed',
-              top: { xs: '132px !important', sm: '156px !important' }
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem 
+          onClick={() => activeSet && handleSkipSet(activeSet.exerciseIndex, activeSet.setIndex)}
+        >
+          <Typography color="text.secondary">Skip Set</Typography>
+        </MenuItem>
+        <MenuItem 
+          onClick={handleDeleteSet}
+          sx={{ color: 'error.main' }}
+        >
+          <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+          Delete Set
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        anchorEl={exerciseMenuAnchorEl}
+        open={Boolean(exerciseMenuAnchorEl)}
+        onClose={handleExerciseMenuClose}
+      >
+        <MenuItem 
+          onClick={() => {
+            if (activeExercise !== null) {
+              handleReorderExercise(exerciseTrackings[activeExercise].exerciseId, 'up');
+              handleExerciseMenuClose();
             }
           }}
-          transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-          anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
+          disabled={activeExercise === 0 || !!workoutInstance.completedAt}
         >
-          <Box sx={{ p: 2, width: '100%' }}>
-            <Box sx={{ 
-              display: 'grid',
-              gridTemplateColumns: `repeat(${workoutHistory.length}, 60px)`,
-              gap: 2,
-              justifyContent: 'center'
-            }}>
-              {/* Header row with iteration numbers */}
-              {workoutHistory.map((iteration) => (
-                <Box 
-                  key={`header-${iteration.iterationNumber}`}
-                  sx={{ 
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '0.75rem',
-                    color: iteration.iterationNumber === workoutInstance?.planInstanceDays?.[0]?.planInstance?.iterationNumber
-                      ? 'primary.main'
-                      : 'text.secondary'
-                  }}
-                >
-                  Week {iteration.iterationNumber} 
-                </Box>
+          <ArrowUpward sx={{ mr: 1 }} fontSize="small" />
+          Move Up
+        </MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (activeExercise !== null) {
+              handleReorderExercise(exerciseTrackings[activeExercise].exerciseId, 'down');
+              handleExerciseMenuClose();
+            }
+          }}
+          disabled={activeExercise === exerciseTrackings.length - 1 || !!workoutInstance.completedAt}
+        >
+          <ArrowDownward sx={{ mr: 1 }} fontSize="small" />
+          Move Down
+        </MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (activeExercise !== null) {
+              handleAddSet(activeExercise);
+              handleExerciseMenuClose();
+            }
+          }}
+          disabled={!!workoutInstance.completedAt}
+        >
+          <AddIcon sx={{ mr: 1 }} fontSize="small" />
+          Add Set
+        </MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (activeExercise !== null) {
+              handleRemoveExercise(exerciseTrackings[activeExercise].exerciseId);
+              handleExerciseMenuClose();
+            }
+          }}
+          sx={{ color: 'error.main' }}
+        >
+          <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+          Delete Exercise
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        anchorEl={workoutMenuAnchorEl}
+        open={Boolean(workoutMenuAnchorEl)}
+        onClose={handleWorkoutMenuClose}
+      >
+        <Box sx={{ p: 2, minWidth: 300 }}>
+          <Typography variant="subtitle1" gutterBottom>
+            Add Exercise
+          </Typography>
+          
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Category</InputLabel>
+            <Select
+              value={selectedCategory}
+              label="Category"
+              onChange={(e) => setSelectedCategory(e.target.value as ExerciseCategory | 'ALL')}
+            >
+              <MenuItem value="ALL">All Categories</MenuItem>
+              {Object.values(ExerciseCategory).map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category.charAt(0) + category.slice(1).toLowerCase()}
+                </MenuItem>
               ))}
+            </Select>
+          </FormControl>
 
-              {/* Generate grid cells for each day */}
-              {Array.from({ length: Math.max(...workoutHistory.map(i => 
-                Math.max(...i.workouts.map(w => w.dayNumber))
-              )) }).map((_, dayIndex) => (
-                workoutHistory.map((iteration) => {
-                  const workout = iteration.workouts.find(w => w.dayNumber === dayIndex + 1);
-                  return (
-                    <Box
-                      key={`${iteration.iterationNumber}-${dayIndex + 1}`}
-                      sx={{
-                        width: 60,
-                        height: 40,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: 1,
-                        cursor: workout ? 'pointer' : 'default',
-                        backgroundColor: workout?.workoutInstanceId === parseInt(workoutId)
-                          ? 'primary.main'
-                          : workout?.isRestDay
-                            ? workout.isCompleted
-                              ? 'success.dark'
-                              : 'warning.dark'
-                            : workout?.completedAt
-                              ? 'success.dark'
-                              : workout
-                                ? 'action.hover'
-                                : 'action.disabledBackground',
-                        color: workout?.workoutInstanceId === parseInt(workoutId)
-                          ? 'primary.contrastText'
-                          : 'text.primary',
-                        fontSize: '0.875rem',
-                        '&:hover': workout ? {
-                          backgroundColor: workout.workoutInstanceId === parseInt(workoutId)
-                            ? 'primary.dark'
-                            : 'action.selected'
-                        } : {}
-                      }}
-                      onClick={async () => {
-                        if (workout?.workoutInstanceId && workout.workoutInstanceId !== parseInt(workoutId)) {
-                          // Navigate to existing workout
-                          window.location.href = `/track/${workout.workoutInstanceId}`;
-                        } else if (workout && !workout.workoutInstanceId) {
-                          try {
-                            if (workout.isRestDay) {
-                              // Complete rest day using planInstanceDayId
-                              const response = await fetch(`/api/plan-instances/${workoutInstance?.planInstanceDays?.[0]?.planInstance?.id}/days/${workout.planInstanceDayId}/complete-rest`, {
-                                method: 'POST',
-                              });
+          <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+            <InputLabel>Exercise</InputLabel>
+            <Select
+              value={selectedExercise}
+              label="Exercise"
+              onChange={(e) => setSelectedExercise(e.target.value)}
+            >
+              {availableExercises
+                .filter(exercise => selectedCategory === 'ALL' || exercise.category === selectedCategory)
+                .map((exercise) => (
+                  <MenuItem key={exercise.id} value={exercise.id}>
+                    {exercise.name}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
 
-                              if (!response.ok) {
-                                throw new Error('Failed to complete rest day');
-                              }
+          <GradientButton
+            variant="contained"
+            onClick={() => {
+              handleAddExercise();
+              handleWorkoutMenuClose();
+            }}
+            disabled={!selectedExercise || !!workoutInstance.completedAt}
+            fullWidth
+          >
+            Add Exercise
+          </GradientButton>
+        </Box>
+      </Menu>
 
-                              // Refresh the page to show updated status
-                              window.location.reload();
-                            } else {
-                              // Start new workout using planInstanceDayId
-                              const response = await fetch(`/api/plan-instances/${workoutInstance?.planInstanceDays?.[0]?.planInstance?.id}/days/${workout.planInstanceDayId}/start`, {
-                                method: 'POST',
-                              });
+      <ExerciseHistoryModal
+        open={historyDialog.open}
+        onClose={() => setHistoryDialog(prev => ({ ...prev, open: false }))}
+        exerciseName={historyDialog.exercise.exerciseName}
+        history={historyDialog.exercise.history || []}
+      />
 
-                              if (!response.ok) {
-                                throw new Error('Failed to start workout');
-                              }
+      <Menu
+        anchorEl={historyAnchorEl}
+        open={Boolean(historyAnchorEl)}
+        onClose={() => setHistoryAnchorEl(null)}
+        PaperProps={{
+          sx: {
+            maxHeight: '80vh',
+            width: '100vw',
+            left: '0px !important',
+            right: '0px !important',
+            maxWidth: '100% !important',
+            position: 'fixed',
+            top: { xs: '132px !important', sm: '156px !important' }
+          }
+        }}
+        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
+      >
+        <Box sx={{ p: 2, width: '100%' }}>
+          <Box sx={{ 
+            display: 'grid',
+            gridTemplateColumns: `repeat(${workoutHistory.length}, 60px)`,
+            gap: 2,
+            justifyContent: 'center'
+          }}>
+            {/* Header row with iteration numbers */}
+            {workoutHistory.map((iteration) => (
+              <Box 
+                key={`header-${iteration.iterationNumber}`}
+                sx={{ 
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  fontSize: '0.75rem',
+                  color: iteration.iterationNumber === workoutInstance?.planInstanceDays?.[0]?.planInstance?.iterationNumber
+                    ? 'primary.main'
+                    : 'text.secondary'
+                }}
+              >
+                Week {iteration.iterationNumber} 
+              </Box>
+            ))}
 
-                              const data = await response.json();
-                              // Navigate to new workout
-                              window.location.href = `/track/${data.id}`;
+            {/* Generate grid cells for each day */}
+            {Array.from({ length: Math.max(...workoutHistory.map(i => 
+              Math.max(...i.workouts.map(w => w.dayNumber))
+            )) }).map((_, dayIndex) => (
+              workoutHistory.map((iteration) => {
+                const workout = iteration.workouts.find(w => w.dayNumber === dayIndex + 1);
+                return (
+                  <Box
+                    key={`${iteration.iterationNumber}-${dayIndex + 1}`}
+                    sx={{
+                      width: 60,
+                      height: 40,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 1,
+                      cursor: workout ? 'pointer' : 'default',
+                      backgroundColor: workout?.workoutInstanceId === parseInt(workoutId)
+                        ? 'primary.main'
+                        : workout?.isRestDay
+                          ? workout.isCompleted
+                            ? 'success.dark'
+                            : 'warning.dark'
+                          : workout?.completedAt
+                            ? 'success.dark'
+                            : workout
+                              ? 'action.hover'
+                              : 'action.disabledBackground',
+                      color: workout?.workoutInstanceId === parseInt(workoutId)
+                        ? 'primary.contrastText'
+                        : 'text.primary',
+                      fontSize: '0.875rem',
+                      '&:hover': workout ? {
+                        backgroundColor: workout.workoutInstanceId === parseInt(workoutId)
+                          ? 'primary.dark'
+                          : 'action.selected'
+                      } : {}
+                    }}
+                    onClick={async () => {
+                      if (workout?.workoutInstanceId && workout.workoutInstanceId !== parseInt(workoutId)) {
+                        // Navigate to existing workout
+                        window.location.href = `/track/${workout.workoutInstanceId}`;
+                      } else if (workout && !workout.workoutInstanceId) {
+                        try {
+                          if (workout.isRestDay) {
+                            // Complete rest day using planInstanceDayId
+                            const response = await fetch(`/api/plan-instances/${workoutInstance?.planInstanceDays?.[0]?.planInstance?.id}/days/${workout.planInstanceDayId}/complete-rest`, {
+                              method: 'POST',
+                            });
+
+                            if (!response.ok) {
+                              throw new Error('Failed to complete rest day');
                             }
-                          } catch (error) {
-                            console.error('Error:', error);
-                            // You might want to show an error message to the user here
+
+                            // Refresh the page to show updated status
+                            window.location.reload();
+                          } else {
+                            // Start new workout using planInstanceDayId
+                            const response = await fetch(`/api/plan-instances/${workoutInstance?.planInstanceDays?.[0]?.planInstance?.id}/days/${workout.planInstanceDayId}/start`, {
+                              method: 'POST',
+                            });
+
+                            if (!response.ok) {
+                              throw new Error('Failed to start workout');
+                            }
+
+                            const data = await response.json();
+                            // Navigate to new workout
+                            window.location.href = `/track/${data.id}`;
                           }
+                        } catch (error) {
+                          console.error('Error:', error);
+                          // You might want to show an error message to the user here
                         }
-                      }}
-                    >
-                      {workout ? (workout.isRestDay ? 'R' : `Day ${dayIndex + 1}`) : ''}
-                    </Box>
-                  );
-                })
-              ))}
-            </Box>
+                      }
+                    }}
+                  >
+                    {workout ? (workout.isRestDay ? 'R' : `Day ${dayIndex + 1}`) : ''}
+                  </Box>
+                );
+              })
+            ))}
           </Box>
-        </Menu>
-      </Paper>
+        </Box>
+      </Menu>
     </ResponsiveContainer>
   );
 } 

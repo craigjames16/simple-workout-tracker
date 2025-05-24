@@ -32,12 +32,31 @@ export async function GET() {
           include: {
             exercise: true
           }
+        },
+        planInstanceDays: {
+          include: {
+            planDay: true,
+            planInstance: true,
+          }
         }
       },
     });
 
     if (latestWorkout) {
-      return NextResponse.json(latestWorkout);
+      // Try to extract planInstanceDay and related info if available
+      const planInstanceDay = latestWorkout.planInstanceDays?.[0];
+      const planDay = planInstanceDay?.planDay;
+      const planInstance = planInstanceDay?.planInstance;
+      return NextResponse.json({
+        dayId: planInstanceDay?.id ?? null,
+        dayNumber: planDay?.dayNumber ?? null,
+        iterationId: planInstance?.id ?? null,
+        iterationNumber: planInstance?.iterationNumber ?? null,
+        isRestDay: planDay?.isRestDay ?? false,
+        workoutId: latestWorkout.workout?.id ?? null,
+        workoutName: latestWorkout.workout?.name ?? null,
+        inProgress: true,
+      });
     }
 
     // First try to find a mesocycle in progress
@@ -111,6 +130,7 @@ export async function GET() {
         isRestDay: planDay.isRestDay,
         workoutId: planDay.workout?.id,
         workoutName: planDay.workout?.name,
+        inProgress: false,
       });
     } 
     // Case 2: We have an in-progress iteration but all days are complete
@@ -132,6 +152,7 @@ export async function GET() {
         workoutId: firstPlanDay.workout?.id,
         workoutName: firstPlanDay.workout?.name,
         needsNewIteration: true, // Flag to indicate client should create a new iteration
+        inProgress: false,
       });
     } else {
       return NextResponse.json(

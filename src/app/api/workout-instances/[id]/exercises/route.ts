@@ -52,7 +52,7 @@ export async function POST(
       data: {
         workoutInstance: { connect: { id: workoutInstance.id } },
         exercise: { connect: { id: exerciseId } },
-        workout: { connect: { id: workoutInstance.workoutId } },
+        // workout: { connect: { id: workoutInstance.workoutId } },
         order: nextOrder,
       },
     });
@@ -150,6 +150,7 @@ export async function DELETE(
       },
       select: {
         workoutId: true,
+        id: true,
       },
     });
 
@@ -163,7 +164,7 @@ export async function DELETE(
     // Delete the exercise from the workout
     await prisma.workoutExercise.deleteMany({
       where: {
-        workoutId: workoutInstance.workoutId,
+        workoutInstanceId: workoutInstance.id,
         exerciseId: exerciseId,
       },
     });

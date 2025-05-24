@@ -5,17 +5,11 @@ import {
   Toolbar,
   Button,
   IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Box,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
 import Link from 'next/link';
-import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import SportsGymnasticsIcon from '@mui/icons-material/SportsGymnastics';
@@ -23,7 +17,6 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ChatIcon from '@mui/icons-material/Chat';
-import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
@@ -37,79 +30,56 @@ const navItems = [
 ];
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const pathname = usePathname();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const drawer = (
-    <List>
-      {navItems.map((item) => (
-        <ListItem
-          key={item.href}
-          component="a"
-          href={item.href}
-          onClick={handleDrawerToggle}
-          sx={{
-            color: 'inherit',
-            '&.Mui-selected': {
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
-            },
-            ...(item.highlight && {
-              background: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
-              },
-              color: 'white',
-            }),
-          }}
-        >
-          <ListItemIcon sx={{ color: 'inherit' }}>
-            {item.icon}
-          </ListItemIcon>
-          <ListItemText primary={item.text} />
-        </ListItem>
-      ))}
-    </List>
-  );
-
   return (
     <>
       <AppBar position="fixed">
-        <Toolbar>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
           {isMobile ? (
             <>
-              <IconButton
-                color="inherit"
-                aria-label="open drawer"
-                edge="start"
-                onClick={handleDrawerToggle}
-                sx={{ mr: 2 }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Box sx={{ flexGrow: 1 }} />
+              {/* Mobile view - icons only across the top */}
               <Box 
-                component="img"
-                src="/logo.gif"
                 sx={{ 
-                  height: 40,
-                  display: 'block'
+                  display: 'flex', 
+                  justifyContent: 'space-around', 
+                  alignItems: 'center',
+                  width: '100%',
+                  px: 1
                 }}
-                alt="Logo"
-              />
-              <Box sx={{ flexGrow: 1 }} />
+              >
+                {navItems.map((item) => (
+                  <IconButton
+                    key={item.href}
+                    color="inherit"
+                    component={Link}
+                    href={item.href}
+                    size="small"
+                    sx={{
+                      borderRadius: 1,
+                      p: 1,
+                      minWidth: 40,
+                      ...(pathname === item.href && {
+                        backgroundColor: 'primary.dark',
+                      }),
+                      ...(item.highlight && {
+                        background: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
+                        '&:hover': {
+                          background: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
+                        },
+                      }),
+                    }}
+                  >
+                    {item.icon}
+                  </IconButton>
+                ))}
+              </Box>
             </>
           ) : (
             <>
+              {/* Desktop view - buttons with icons and text */}
               {navItems.map((item) => (
                 <Button
                   key={item.href}
@@ -138,22 +108,6 @@ export default function Navbar() {
         </Toolbar>
       </AppBar>
       <Toolbar /> {/* Spacer for fixed AppBar */}
-
-      <Drawer
-        variant="temporary"
-        anchor="left"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile
-        }}
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 240 },
-        }}
-      >
-        {drawer}
-      </Drawer>
     </>
   );
 } 

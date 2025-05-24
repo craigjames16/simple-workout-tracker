@@ -17,14 +17,14 @@ export async function POST(
     const { exerciseId, direction } = await req.json();
     const awaitedParams = await params;
     
-    const workoutId = parseInt(awaitedParams.workoutId);
+    const workoutInstanceId = parseInt(awaitedParams.workoutId);
 
     // Get current exercise and its order
     const currentExercise = await prisma.workoutExercise.findFirst({
       where: {
-        workoutId,
+        workoutInstanceId,
         exerciseId,
-        workout: {
+        workoutInstance: {
           userId,
         },
       },
@@ -37,7 +37,7 @@ export async function POST(
     // Find the exercise to swap with
     const swapExercise = await prisma.workoutExercise.findFirst({
       where: {
-        workoutId,
+        workoutInstanceId,
         order: direction === 'up' 
           ? currentExercise.order - 1 
           : currentExercise.order + 1,
