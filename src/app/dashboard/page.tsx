@@ -670,7 +670,7 @@ export default function DashboardPage() {
                               </Avatar>
                               <Box>
                                 <Typography variant="h6">
-                                  Day {day.dayNumber}: {day.isRestDay ? 'Rest Day' : day.workout?.name ?? 'No Workout'}
+                                  Day {day.dayNumber}{day.isRestDay ? ': Rest Day':''}
                                 </Typography>
                                 {day.isRestDay && (
                                   <Chip 

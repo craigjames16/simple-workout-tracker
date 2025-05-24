@@ -5,8 +5,9 @@ import { useServerInsertedHTML } from 'next/navigation';
 import { CacheProvider } from '@emotion/react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { ReactNode, useState } from 'react';
+import { gradients, glassMorphism, borders, borderRadius, shadows, menuStyles, buttonStyles } from '@/lib/theme-constants';
 
-export const trackGradient = 'linear-gradient(45deg, #1c5da6 5%, #08274a 90%)';
+export const trackGradient = gradients.button;
 
 const theme = createTheme({
   palette: {
@@ -47,16 +48,77 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#1e1e1e',
+          backgroundImage: gradients.secondary,
+          border: borders.default,
+          backdropFilter: 'blur(20px)',
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e1e1e !important',
-          backgroundImage: 'none'
+          ...menuStyles.paper,
         }
       }
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          ...menuStyles.paper,
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          ...menuStyles.item,
+          borderRadius: borderRadius.small,
+          margin: '2px 4px',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          ...buttonStyles.gradient,
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          ...buttonStyles.glass,
+        },
+      },
+    },
+    MuiFormControl: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            background: glassMorphism.light,
+            borderRadius: borderRadius.medium,
+            '& fieldset': {
+              borderColor: 'rgba(255,255,255,0.1)',
+            },
+            '&:hover fieldset': {
+              borderColor: 'rgba(255,255,255,0.2)',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: 'rgba(25, 118, 210, 0.5)',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            color: 'rgba(255,255,255,0.7)',
+          },
+        },
+      },
+    },
+  },
+  typography: {
+    button: {
+      textTransform: 'none',
     },
   },
 });

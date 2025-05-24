@@ -18,6 +18,7 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ChatIcon from '@mui/icons-material/Chat';
 import { usePathname } from 'next/navigation';
+import { gradients, glassMorphism, borders, borderRadius } from '@/lib/theme-constants';
 
 const navItems = [
   { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
@@ -31,12 +32,20 @@ const navItems = [
 
 export default function Navbar() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
 
   return (
     <>
-      <AppBar position="fixed">
+      <AppBar 
+        position="fixed"
+        sx={{
+          background: gradients.secondary,
+          border: borders.default,
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0px 4px 20px rgba(0,0,0,0.15)',
+        }}
+      >
         <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
           {isMobile ? (
             <>
@@ -58,16 +67,26 @@ export default function Navbar() {
                     href={item.href}
                     size="small"
                     sx={{
-                      borderRadius: 1,
+                      borderRadius: borderRadius.medium,
                       p: 1,
                       minWidth: 40,
+                      transition: 'all 0.2s ease-in-out',
                       ...(pathname === item.href && {
-                        backgroundColor: 'primary.dark',
+                        background: glassMorphism.medium,
+                        border: borders.accent,
                       }),
                       ...(item.highlight && {
-                        background: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
+                        background: gradients.button,
                         '&:hover': {
-                          background: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
+                          background: gradients.buttonHover,
+                          transform: 'translateY(-1px)',
+                        },
+                      }),
+                      ...(!item.highlight && {
+                        background: glassMorphism.light,
+                        '&:hover': {
+                          background: glassMorphism.hover,
+                          transform: 'translateY(-1px)',
                         },
                       }),
                     }}
@@ -89,13 +108,28 @@ export default function Navbar() {
                   startIcon={item.icon}
                   sx={{
                     mx: 1,
+                    px: 2,
+                    py: 1,
+                    borderRadius: borderRadius.medium,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    transition: 'all 0.2s ease-in-out',
                     ...(pathname === item.href && {
-                      backgroundColor: 'primary.dark',
+                      background: glassMorphism.medium,
+                      border: borders.accent,
                     }),
                     ...(item.highlight && {
-                      background: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
+                      background: gradients.button,
                       '&:hover': {
-                        background: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
+                        background: gradients.buttonHover,
+                        transform: 'translateY(-1px)',
+                      },
+                    }),
+                    ...(!item.highlight && {
+                      background: glassMorphism.light,
+                      '&:hover': {
+                        background: glassMorphism.hover,
+                        transform: 'translateY(-1px)',
                       },
                     }),
                   }}
