@@ -59,22 +59,27 @@ export default function AddExerciseMenu({
           sx={{ 
             fontWeight: 600,
             textAlign: 'center',
-            color: 'primary.main'
+            color: 'white',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
           }}
         >
           💪 Add Exercise
         </Typography>
         <Typography 
           variant="body2" 
-          color="text.secondary" 
-          sx={{ textAlign: 'center', mt: 0.5 }}
+          sx={{ 
+            textAlign: 'center', 
+            mt: 0.5,
+            color: 'rgba(255,255,255,0.9)',
+            fontWeight: 500
+          }}
         >
           Choose an exercise to add to your workout
         </Typography>
       </Box>
       
       <FormControl fullWidth size="small" sx={{ mb: 3 }}>
-        <InputLabel>Category</InputLabel>
+        <InputLabel sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Category</InputLabel>
         <Select
           value={selectedCategory}
           label="Category"
@@ -100,7 +105,7 @@ export default function AddExerciseMenu({
       </FormControl>
 
       <FormControl fullWidth size="small" sx={{ mb: 3 }}>
-        <InputLabel>Exercise</InputLabel>
+        <InputLabel sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Exercise</InputLabel>
         <Select
           value={selectedExercise}
           label="Exercise"

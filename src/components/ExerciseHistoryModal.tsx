@@ -93,7 +93,24 @@ export default function ExerciseHistoryModal({ open, onClose, exerciseName, hist
         <Tabs 
           value={tabValue} 
           onChange={(_, newValue) => setTabValue(newValue)}
-          sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}
+          sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider', 
+            mb: 2,
+            '& .MuiTab-root': {
+              color: 'rgba(255,255,255,0.7)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              '&.Mui-selected': {
+                color: 'primary.main',
+                fontWeight: 700,
+              }
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: 'primary.main',
+              height: 3,
+            }
+          }}
         >
           <Tab label="Sets" />
           <Tab label="Volume" />

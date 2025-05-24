@@ -76,15 +76,20 @@ export default function WorkoutHistoryGrid({
           sx={{ 
             fontWeight: 600,
             textAlign: 'center',
-            color: 'primary.main'
+            color: 'white',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
           }}
         >
           📅 Workout History
         </Typography>
         <Typography 
           variant="body2" 
-          color="text.secondary" 
-          sx={{ textAlign: 'center', mt: 0.5 }}
+          sx={{ 
+            textAlign: 'center', 
+            mt: 0.5,
+            color: 'rgba(255,255,255,0.9)',
+            fontWeight: 500
+          }}
         >
           Track your progress across weeks
         </Typography>
@@ -111,8 +116,11 @@ export default function WorkoutHistoryGrid({
                 : glassMorphism.light,
               border: borders.default,
               color: iteration.iterationNumber === workoutInstance?.planInstanceDays?.[0]?.planInstance?.iterationNumber
-                ? 'primary.main'
-                : 'text.secondary'
+                ? 'white'
+                : 'rgba(255,255,255,0.95)',
+              textShadow: iteration.iterationNumber === workoutInstance?.planInstanceDays?.[0]?.planInstance?.iterationNumber
+                ? '0 1px 2px rgba(0,0,0,0.3)'
+                : '0 1px 2px rgba(0,0,0,0.5)'
             }}
           >
             Week {iteration.iterationNumber} 
