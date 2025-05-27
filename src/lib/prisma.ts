@@ -16,8 +16,15 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient(prismaClientOpt
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-prisma.$connect()
-  .catch((err) => {
-    console.error('Failed to connect to database:', err);
-    process.exit(1);
-  });
+// Remove the immediate connection call - let it connect lazily when needed
+// Only attempt connection if we're not in build mode
+if (process.env.NODE_ENV !== 'production' && typeof window === 'undefined') {
+  // Optional: Add connection testing in development only
+  prisma.$connect()
+    .then(() => {
+      console.log('Database connected successfully');
+    })
+    .catch((err) => {
+      console.warn('Database connection failed (this is okay during build):', err.message);
+    });
+}
