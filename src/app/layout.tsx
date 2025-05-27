@@ -28,6 +28,12 @@ export const metadata = {
       type: 'image/png',
     },
   },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default async function RootLayout({

@@ -66,7 +66,7 @@ export default function ExerciseCard({
                 {exercise.exerciseName}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                {exercise.sets.filter(set => set.completed).length} of {exercise.sets.length} sets completed
+                {(exercise.sets || []).filter(set => set.completed).length} of {(exercise.sets || []).length} sets completed
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>

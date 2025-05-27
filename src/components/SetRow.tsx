@@ -105,7 +105,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
               },
               '& input': {
                 textAlign: 'center',
-                fontSize: { xs: '0.875rem', sm: '1rem' },
+                fontSize: { xs: '16px', sm: '1rem' },
                 fontWeight: 500
               },
               '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
@@ -159,7 +159,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
               },
               '& input': {
                 textAlign: 'center',
-                fontSize: { xs: '0.875rem', sm: '1rem' },
+                fontSize: { xs: '16px', sm: '1rem' },
                 fontWeight: 500
               },
               '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {

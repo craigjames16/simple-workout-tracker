@@ -636,10 +636,10 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
   }
 
   const completedSets = exerciseTrackings.reduce((total, exercise) => 
-    total + exercise.sets.filter(set => set.completed).length, 0
+    total + (exercise.sets || []).filter(set => set.completed).length, 0
   );
   const totalSets = exerciseTrackings.reduce((total, exercise) => 
-    total + exercise.sets.length, 0
+    total + (exercise.sets || []).length, 0
   );
 
   return (
