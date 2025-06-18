@@ -1,11 +1,11 @@
 'use client';
 
-import MuscleGroupBarChart from '@/components/MuscleGroupBarChart';
+
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { 
   Paper, Typography, Box, Tabs, Tab, Card, CardContent, Grid, Chip, CircularProgress,
   Divider, useTheme, useMediaQuery, Avatar, List, ListItem, ListItemText, Button,
-  Collapse, IconButton, Tooltip, Badge
+  Collapse, IconButton, Tooltip, Badge, Select, MenuItem, FormControl, InputLabel
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -20,6 +20,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import EChartsReact from 'echarts-for-react';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -97,6 +98,7 @@ interface CurrentMesocycle {
     name: string;
   };
   planDays: PlanDay[];
+  iterationVolumes?: { iterationNumber: number; totalVolume: number }[];
 }
 
 // Helper component for consistent exercise displays
@@ -417,7 +419,9 @@ const NextWorkout = ({
 export default function DashboardPage() {
   const [tabValue, setTabValue] = useState(0);
   const [muscleGroups, setMuscleGroups] = useState<any>(null);
-  const [currentMesocycle, setCurrentMesocycle] = useState<CurrentMesocycle | null>(null);
+  const [mesocycles, setMesocycles] = useState<any[]>([]);
+  const [selectedMesocycleId, setSelectedMesocycleId] = useState<number | null>(null);
+  const [selectedMesocycle, setSelectedMesocycle] = useState<CurrentMesocycle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
@@ -427,6 +431,61 @@ export default function DashboardPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const router = useRouter();
+
+  // Fetch all mesocycles on mount
+  useEffect(() => {
+    const fetchMesocycles = async () => {
+      try {
+        const res = await fetch('/api/mesocycles');
+        if (!res.ok) throw new Error('Failed to fetch mesocycles');
+        const data = await res.json();
+        setMesocycles(data);
+        // Default to first mesocycle or the one in progress
+        if (data.length > 0) {
+          const inProgress = data.find((m: any) => m.status === 'IN_PROGRESS');
+          setSelectedMesocycleId(inProgress ? inProgress.id : data[0].id);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch mesocycles');
+      }
+    };
+    fetchMesocycles();
+  }, []);
+
+  // Fetch selected mesocycle data
+  useEffect(() => {
+    if (!selectedMesocycleId) return;
+    setLoading(true);
+    const fetchMesocycleData = async () => {
+      try {
+        const res = await fetch(`/api/dashboard?data=mesocycle&id=${selectedMesocycleId}`);
+        if (!res.ok) throw new Error('Failed to fetch mesocycle data');
+        const data = await res.json();
+        if (data.error) setError(data.error);
+        else setSelectedMesocycle(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch mesocycle data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMesocycleData();
+  }, [selectedMesocycleId]);
+
+  // Fetch muscle group data (unchanged)
+  useEffect(() => {
+    const fetchMuscleGroups = async () => {
+      try {
+        const res = await fetch('/api/dashboard?data=muscleGroups');
+        if (!res.ok) throw new Error('Failed to fetch muscle group data');
+        const data = await res.json();
+        setMuscleGroups(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch muscle group data');
+      }
+    };
+    fetchMuscleGroups();
+  }, []);
 
   const startWorkoutInstance = async (iterationId: number, dayId: number) => {
     try {
@@ -485,89 +544,6 @@ export default function DashboardPage() {
     return expandedIterations[key] === true; // Default to collapsed
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [muscleGroupsRes, currentMesocycleRes] = await Promise.all([
-          fetch('/api/dashboard?data=muscleGroups'),
-          fetch('/api/dashboard?data=currentMesocycle')
-        ]);
-
-        if (!muscleGroupsRes.ok || !currentMesocycleRes.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-
-        const [muscleGroupsData, currentMesocycleData] = await Promise.all([
-          muscleGroupsRes.json(),
-          currentMesocycleRes.json()
-        ]);
-
-        if (currentMesocycleData.error) {
-          setError(currentMesocycleData.error);
-        } else {
-          // Process the currentMesocycleData to add volume summary information
-          if (currentMesocycleData.planDays) {
-            currentMesocycleData.planDays = currentMesocycleData.planDays.map((day: any) => {
-              // No need to process rest days
-              if (day.isRestDay) return day;
-              
-              // Process each workout iteration to calculate volume changes
-              if (day.iterations && day.iterations.length > 0) {
-                day.iterations = day.iterations.map((iteration: WorkoutIteration, index: number) => {
-                  // Skip the first iteration (no previous data to compare)
-                  if (index === 0 || iteration.iterationNumber === 1) return iteration;
-                  
-                  // Get the previous iteration to compare with
-                  const prevIteration = day.iterations[index - 1];
-                  if (!prevIteration || !prevIteration.exercises) return iteration;
-                  
-                  // Track volume changes across exercises
-                  let increased = 0;
-                  let decreased = 0;
-                  
-                  // Compare exercises with previous iteration
-                  iteration.exercises.forEach((exercise) => {
-                    // Find matching exercise in previous iteration
-                    const prevExercise = prevIteration.exercises.find(
-                      (prev: Exercise) => prev.id === exercise.id
-                    );
-                    
-                    if (prevExercise) {
-                      if (exercise.volume > prevExercise.volume) {
-                        increased++;
-                      } else if (exercise.volume < prevExercise.volume) {
-                        decreased++;
-                      }
-                    }
-                  });
-                  
-                  return {
-                    ...iteration,
-                    volumeSummary: {
-                      increased,
-                      decreased
-                    }
-                  };
-                });
-              }
-              
-              return day;
-            });
-          }
-          setCurrentMesocycle(currentMesocycleData);
-        }
-        setMuscleGroups(muscleGroupsData);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setError(error instanceof Error ? error.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -598,7 +574,14 @@ export default function DashboardPage() {
         <Typography variant="h4" gutterBottom>
           Dashboard
         </Typography>
-        
+
+        {/* Next Workout always on top */}
+        <NextWorkout 
+          currentMesocycle={selectedMesocycle} 
+          onStartWorkout={startWorkoutInstance}
+          isStartingWorkout={isStartingWorkout}
+        />
+
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs 
             value={tabValue} 
@@ -606,207 +589,387 @@ export default function DashboardPage() {
             aria-label="dashboard tabs"
             variant={isMobile ? "fullWidth" : "standard"}
           >
-            <Tab label="Current Mesocycle" {...a11yProps(0)} />
+            <Tab label="Mesocycle" {...a11yProps(0)} />
             <Tab label="Volume Data" {...a11yProps(1)} />
           </Tabs>
         </Box>
-        
         <TabPanel value={tabValue} index={0}>
+          {/* Mesocycle selection dropdown */}
+          <FormControl sx={{ mb: 3, minWidth: 220 }} size="small">
+            <InputLabel id="mesocycle-select-label">Select Mesocycle</InputLabel>
+            <Select
+              labelId="mesocycle-select-label"
+              value={selectedMesocycleId ?? ''}
+              label="Select Mesocycle"
+              onChange={e => setSelectedMesocycleId(Number(e.target.value))}
+            >
+              {mesocycles.map((m) => (
+                <MenuItem key={m.id} value={m.id}>{m.name} ({m.plan?.name || 'No Plan'})</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
           <Box sx={{ height: '100%', overflow: 'auto' }}>
-            {currentMesocycle ? (
+            {selectedMesocycle ? (
               <>
                 <Box sx={{ 
-                  mb: 3, 
-                  p: 2, 
-                  bgcolor: 'primary.main', 
-                  color: 'primary.contrastText',
-                  borderRadius: 1
+                  mb: 4,
+                  p: 3,
+                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.12) 0%, rgba(25, 118, 210, 0.06) 100%)',
+                  border: '1px solid',
+                  borderColor: 'rgba(25, 118, 210, 0.2)',
+                  borderRadius: 2,
+                  backdropFilter: 'blur(10px)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '3px',
+                    background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+                  }
                 }}>
-                  <Typography variant="h5" gutterBottom>
-                    {currentMesocycle.name}
-                  </Typography>
-                  <Typography variant="body1">
-                    Based on plan: {currentMesocycle.plan.name}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <FitnessCenterIcon sx={{ 
+                      mr: 1.5, 
+                      color: 'primary.main',
+                      fontSize: '1.5rem'
+                    }} />
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        fontWeight: 600,
+                        background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        textShadow: 'none'
+                      }}
+                    >
+                      {selectedMesocycle.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <CalendarTodayIcon sx={{ 
+                      mr: 1, 
+                      color: 'text.secondary',
+                      fontSize: '1rem'
+                    }} />
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        color: 'text.secondary',
+                        fontWeight: 500,
+                        letterSpacing: '0.025em'
+                      }}
+                    >
+                      Based on plan: {selectedMesocycle.plan.name}
+                    </Typography>
+                  </Box>
                 </Box>
 
-                <NextWorkout 
-                  currentMesocycle={currentMesocycle} 
-                  onStartWorkout={startWorkoutInstance}
-                  isStartingWorkout={isStartingWorkout}
-                />
-        
+                {/* ECharts volume per iteration chart will go here */}
+                {selectedMesocycle.iterationVolumes && selectedMesocycle.iterationVolumes.length > 0 && (
+                  <Box sx={{ mb: 4 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Total Volume per Week
+                    </Typography>
+                    <EChartsReact
+                      style={{ width: '100%', height: 300 }}
+                      option={{
+                        tooltip: { 
+                          trigger: 'axis',
+                          formatter: (params: any) => {
+                            const data = params[0];
+                            return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+                          }
+                        },
+                        grid: { left: 80, right: 30, bottom: 50, top: 30 },
+                        xAxis: {
+                          type: 'category',
+                          data: selectedMesocycle.iterationVolumes.map(v => `Week ${v.iterationNumber}`),
+                          name: 'Week',
+                          nameLocation: 'center',
+                          nameGap: 30,
+                          axisLabel: { fontSize: 14 },
+                          splitLine: { show: false }
+                        },
+                        yAxis: {
+                          type: 'value',
+                          name: 'Volume',
+                          nameLocation: 'center',
+                          nameGap: 50,
+                          axisLabel: { fontSize: 14 },
+                          splitLine: { show: false },
+                          axisLine: { show: false },
+                          axisTick: { show: false }
+                        },
+                        series: [
+                          {
+                            data: selectedMesocycle.iterationVolumes.map((v, index) => {
+                              let percentChange = 0;
+                              if (index > 0) {
+                                const prevVolume = selectedMesocycle.iterationVolumes?.[index - 1]?.totalVolume || 0;
+                                percentChange = prevVolume > 0 ? ((v.totalVolume - prevVolume) / prevVolume * 100) : 0;
+                              }
+                              return {
+                                value: v.totalVolume,
+                                percentChange: percentChange
+                              };
+                            }),
+                            type: 'bar',
+                            itemStyle: { color: '#8884d8', borderRadius: [6, 6, 0, 0] },
+                            barWidth: '60%',
+                            label: {
+                              show: true,
+                              position: 'top',
+                              formatter: (params: any) => {
+                                const percentChange = params.data.percentChange;
+                                if (percentChange === 0) return '';
+                                const sign = percentChange > 0 ? '+' : '';
+                                return `${sign}${percentChange.toFixed(1)}%`;
+                              },
+                              fontSize: 12,
+                              fontWeight: 'bold',
+                              color: (params: any) => {
+                                const percentChange = params.data.percentChange;
+                                if (percentChange > 0) return '#4caf50';
+                                if (percentChange < 0) return '#f44336';
+                                return '#666';
+                              }
+                            }
+                          }
+                        ]
+                      }}
+                    />
+                  </Box>
+                )}
+
                 <Grid container spacing={3}>
-                  {[...currentMesocycle.planDays]
+                  {[...selectedMesocycle.planDays]
                     .sort((a, b) => a.dayNumber - b.dayNumber)
                     .map((day) => (
                       <Grid item xs={12} key={day.dayNumber}>
-                        <Card 
-                          elevation={2}
-                          sx={{ 
-                            overflow: 'hidden',
-                            mb: 2
-                          }}
-                        >
-                          <Box sx={{ 
-                            px: 3, 
-                            py: 2, 
-                            bgcolor: 'background.default',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => toggleDayExpanded(day.dayNumber)}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {!day.isRestDay ? (
+                          <Box sx={{ mb: 4 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                               <Avatar 
                                 sx={{ 
-                                  bgcolor: day.isRestDay ? 'info.main' : 'secondary.main',
-                                  mr: 2
+                                  bgcolor: 'secondary.main',
+                                  mr: 2,
+                                  width: 40,
+                                  height: 40
                                 }}
                               >
-                                {day.isRestDay ? day.dayNumber : <FitnessCenterIcon />}
+                                <FitnessCenterIcon />
                               </Avatar>
-                              <Box>
-                                <Typography variant="h6">
-                                  Day {day.dayNumber}{day.isRestDay ? ': Rest Day':''}
-                                </Typography>
-                                {day.isRestDay && (
-                                  <Chip 
-                                    label="Rest Day" 
-                                    color="info" 
-                                    size="small" 
-                                  />
-                                )}
-                              </Box>
+                              <Typography variant="h6">
+                                Day {day.dayNumber}
+                              </Typography>
                             </Box>
-                            <IconButton
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleDayExpanded(day.dayNumber);
-                              }}
-                              size="small"
-                            >
-                              {isDayExpanded(day.dayNumber) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                            </IconButton>
-                          </Box>
-                          
-                          <Collapse in={isDayExpanded(day.dayNumber)}>
-                            {!day.isRestDay && (
-                              <CardContent sx={{ p: 0 }}>
-                                {[
-                                  ...day.iterations.filter(iteration => !!iteration.completedAt)
-                                ]
-                                  .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                  .map((iteration, iterIndex) => (
-                                    <Box 
-                                      key={iteration.iterationNumber} 
-                                      sx={{ 
-                                        p: 2,
-                                        borderTop: iterIndex > 0 ? 1 : 0,
-                                        borderColor: 'divider',
-                                        bgcolor: iterIndex % 2 === 1 ? 'action.hover' : 'transparent'
-                                      }}
-                                    >
-                                      <Box 
-                                        sx={{ 
-                                          display: 'flex', 
-                                          alignItems: 'center',
-                                          mb: 2,
-                                          justifyContent: 'space-between',
-                                          cursor: 'pointer'
-                                        }}
-                                        onClick={() => toggleIterationExpanded(day.dayNumber, iteration.iterationNumber)}
-                                      >
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                          <CalendarTodayIcon 
-                                            fontSize="small" 
-                                            sx={{ mr: 1, color: 'text.secondary' }} 
-                                          />
-                                          <Typography 
-                                            variant="subtitle1" 
-                                            sx={{ 
-                                              fontWeight: 'medium',
-                                              display: 'flex',
-                                              alignItems: 'center'
-                                            }}
-                                          >
-                                            Week {iteration.iterationNumber}
-                                            {iteration.completedAt && (
-                                              <Typography 
-                                                component="span" 
-                                                color="text.secondary" 
-                                                sx={{ ml: 1, fontSize: '0.875rem' }}
-                                              >
-                                                ({new Date(iteration.completedAt).toLocaleDateString()})
-                                              </Typography>
-                                            )}
-                                          </Typography>
-                                        </Box>
-                                        
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          {iteration.volumeSummary && iteration.iterationNumber > 1 && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
-                                              {iteration.volumeSummary.increased > 0 && (
-                                                <Tooltip title={`${iteration.volumeSummary.increased} exercise${iteration.volumeSummary.increased !== 1 ? 's' : ''} with increased volume`}>
-                                                  <Badge badgeContent={iteration.volumeSummary.increased} color="success" sx={{ mr: 1 }}>
-                                                    <ArrowUpwardIcon color="success" fontSize="small" />
-                                                  </Badge>
-                                                </Tooltip>
-                                              )}
-                                              
-                                              {iteration.volumeSummary.decreased > 0 && (
-                                                <Tooltip title={`${iteration.volumeSummary.decreased} exercise${iteration.volumeSummary.decreased !== 1 ? 's' : ''} with decreased volume`}>
-                                                  <Badge badgeContent={iteration.volumeSummary.decreased} color="error">
-                                                    <ArrowDownwardIcon color="error" fontSize="small" />
-                                                  </Badge>
-                                                </Tooltip>
-                                              )}
-                                            </Box>
-                                          )}
-                                          
-                                          <IconButton
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              toggleIterationExpanded(day.dayNumber, iteration.iterationNumber);
-                                            }}
-                                            size="small"
-                                          >
-                                            {isIterationExpanded(day.dayNumber, iteration.iterationNumber) ? 
-                                              <ExpandLessIcon /> : <ExpandMoreIcon />}
-                                          </IconButton>
-                                        </Box>
-                                      </Box>
+                            <Card elevation={2} sx={{ p: 2 }}>
+                              <Typography variant="h6" gutterBottom>
+                                Total Day Volume
+                              </Typography>
+                              <EChartsReact
+                                style={{ width: '100%', height: 280 }}
+                                option={{
+                                  tooltip: { 
+                                    trigger: 'axis',
+                                    formatter: (params: any) => {
+                                      const data = params[0];
+                                      return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+                                    }
+                                  },
+                                  grid: { 
+                                    left: 80, 
+                                    right: 30, 
+                                    bottom: 50, 
+                                    top: 60 
+                                  },
+                                  xAxis: {
+                                    type: 'category',
+                                    data: day.iterations
+                                      .filter((iteration: any) => !!iteration.completedAt)
+                                      .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                      .map((iteration: any) => `Week ${iteration.iterationNumber}`),
+                                    name: 'Week',
+                                    nameLocation: 'center',
+                                    nameGap: 30,
+                                    axisLabel: { fontSize: 13 },
+                                    splitLine: { show: false }
+                                  },
+                                  yAxis: {
+                                    type: 'value',
+                                    name: 'Volume',
+                                    nameLocation: 'center',
+                                    nameGap: 50,
+                                    axisLabel: { fontSize: 13 },
+                                    splitLine: { show: false },
+                                    axisLine: { show: false },
+                                    axisTick: { show: false }
+                                  },
+                                  series: [
+                                    {
+                                      data: day.iterations
+                                        .filter((iteration: any) => !!iteration.completedAt)
+                                        .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                        .map((iteration: any, index: number, sortedIterations: any[]) => {
+                                          const volume = iteration.exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
+                                          let percentChange = 0;
+                                          if (index > 0) {
+                                            const prevVolume = sortedIterations[index - 1].exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
+                                            percentChange = prevVolume > 0 ? ((volume - prevVolume) / prevVolume * 100) : 0;
+                                          }
+                                          return {
+                                            value: volume,
+                                            percentChange: percentChange
+                                          };
+                                        }),
+                                      type: 'bar',
+                                      itemStyle: { color: '#4caf50', borderRadius: [6, 6, 0, 0] },
+                                      barWidth: '60%',
+                                      label: {
+                                        show: true,
+                                        position: 'top',
+                                        formatter: (params: any) => {
+                                          const percentChange = params.data.percentChange;
+                                          if (percentChange === 0) return '';
+                                          const sign = percentChange > 0 ? '+' : '';
+                                          return `${sign}${percentChange.toFixed(1)}%`;
+                                        },
+                                        fontSize: 12,
+                                        fontWeight: 'bold',
+                                        color: (params: any) => {
+                                          const percentChange = params.data.percentChange;
+                                          if (percentChange > 0) return '#4caf50';
+                                          if (percentChange < 0) return '#f44336';
+                                          return '#666';
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }}
+                              />
+                            </Card>
 
-                                      <Collapse in={isIterationExpanded(day.dayNumber, iteration.iterationNumber)}>
-                                        <Grid 
-                                          container 
-                                          spacing={2} 
-                                          sx={{ mb: 1 }}
-                                        >
-                                          {[...iteration.exercises]
-                                            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                                            .map((exercise) => (
-                                              <Grid 
-                                                item 
-                                                xs={12} 
-                                                sm={isTablet ? 6 : 4} 
-                                                md={4} 
-                                                lg={3} 
-                                                key={exercise.id}
-                                              >
-                                                <ExerciseCard exercise={exercise} />
-                                              </Grid>
-                                            ))}
-                                        </Grid>
-                                      </Collapse>
-                                    </Box>
-                                  ))}
-                              </CardContent>
-                            )}
-                          </Collapse>
-                        </Card>
+                            {/* Exercise List with Week-over-Week Progress */}
+                            <Card elevation={1} sx={{ mt: 2, p: 2 }}>
+                              <Typography variant="h6" gutterBottom>
+                                Exercise Progress
+                              </Typography>
+                              <Box sx={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                      <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600 }}>
+                                        Exercise
+                                      </th>
+                                      {day.iterations
+                                        .filter((iteration: any) => !!iteration.completedAt)
+                                        .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                        .slice(1) // Skip first week since no previous data
+                                        .map((iteration: any) => (
+                                          <th key={iteration.iterationNumber} style={{ 
+                                            textAlign: 'center', 
+                                            padding: '8px 12px', 
+                                            fontWeight: 600,
+                                            minWidth: '80px'
+                                          }}>
+                                            Week {iteration.iterationNumber}
+                                          </th>
+                                        ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {/* Get all unique exercises across all iterations */}
+                                    {Array.from(new Set(
+                                      day.iterations
+                                        .filter((iteration: any) => !!iteration.completedAt)
+                                        .flatMap((iteration: any) => iteration.exercises?.map((ex: any) => ex.name) || [])
+                                    )).map((exerciseName: string) => (
+                                      <tr key={exerciseName} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                        <td style={{ 
+                                          padding: '12px', 
+                                          fontWeight: 500,
+                                          borderRight: '1px solid rgba(255, 255, 255, 0.05)'
+                                        }}>
+                                          {exerciseName}
+                                        </td>
+                                        {day.iterations
+                                          .filter((iteration: any) => !!iteration.completedAt)
+                                          .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                          .slice(1)
+                                          .map((iteration: any, index: number) => {
+                                            const currentEx = iteration.exercises.find((ex: any) => ex.name === exerciseName);
+                                            const prevIteration = day.iterations
+                                              .filter((iter: any) => !!iter.completedAt)
+                                              .sort((a, b) => a.iterationNumber - b.iterationNumber)[index]; // Previous iteration
+                                            const prevEx = prevIteration?.exercises.find((ex: any) => ex.name === exerciseName);
+                                            
+                                            let changeText = '-';
+                                            let changeColor = '#666';
+                                            
+                                            if (currentEx && prevEx && prevEx.volume > 0) {
+                                              const percentChange = ((currentEx.volume - prevEx.volume) / prevEx.volume * 100);
+                                              const sign = percentChange > 0 ? '+' : '';
+                                              changeText = `${sign}${percentChange.toFixed(1)}%`;
+                                              changeColor = percentChange > 0 ? '#4caf50' : percentChange < 0 ? '#f44336' : '#666';
+                                            } else if (currentEx && !prevEx) {
+                                              changeText = 'New';
+                                              changeColor = '#2196f3';
+                                            } else if (!currentEx && prevEx) {
+                                              changeText = 'Removed';
+                                              changeColor = '#ff9800';
+                                            }
+                                            
+                                            return (
+                                              <td key={iteration.iterationNumber} style={{ 
+                                                padding: '12px', 
+                                                textAlign: 'center',
+                                                color: changeColor,
+                                                fontWeight: 600,
+                                                fontSize: '0.875rem'
+                                              }}>
+                                                {changeText}
+                                              </td>
+                                            );
+                                          })}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </Box>
+                            </Card>
+                          </Box>
+                        ) : (
+                          <Box sx={{ mb: 4 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                              <Avatar 
+                                sx={{ 
+                                  bgcolor: 'info.main',
+                                  mr: 2,
+                                  width: 40,
+                                  height: 40
+                                }}
+                              >
+                                {day.dayNumber}
+                              </Avatar>
+                              <Typography variant="h6">
+                                Day {day.dayNumber} - Rest Day
+                              </Typography>
+                              <Chip 
+                                label="Rest Day" 
+                                color="info" 
+                                size="small" 
+                                sx={{ ml: 2 }}
+                              />
+                            </Box>
+                          </Box>
+                        )}
                       </Grid>
                     ))}
                 </Grid>
@@ -816,11 +979,147 @@ export default function DashboardPage() {
             )}
           </Box>
         </TabPanel>
-        
         <TabPanel value={tabValue} index={1}>
-          <Box sx={{ height: '100%' }}>
+          <Box sx={{ height: '100%', overflow: 'auto' }}>
             {muscleGroups ? (
-              <MuscleGroupBarChart data={muscleGroups} />
+              <Box>
+                {Object.entries(muscleGroups as Record<string, any[]>).map(([muscleGroup, instances]: [string, any[]]) => {
+                  // Transform the data for ECharts
+                  interface TransformedDataPoint {
+                    instanceId: string;
+                    rollingVolume: number;
+                    volume: number;
+                    date: string;
+                    shortDate: string;
+                  }
+                  
+                  const transformedData: TransformedDataPoint[] = instances.map((instance: any, index: number) => {
+                    const [instanceId, data] = Object.entries(instance)[0] as [string, { volume: number; date: string }];
+                    let rollingVolume = data.volume;
+                    
+                    if (index >= 3) {
+                      // Get up to 3 previous instances plus current instance
+                      const startIdx = Math.max(0, index - 3);
+                      const relevantInstances = instances.slice(startIdx, index + 1);
+                      rollingVolume = relevantInstances
+                        .map((inst: any) => (Object.values(inst)[0] as { volume: number }).volume)
+                        .reduce((acc: number, curr: number) => acc + curr, 0);
+                    }
+
+                    return {
+                      instanceId,
+                      rollingVolume: rollingVolume / 3,
+                      volume: data.volume,
+                      date: new Date(data.date).toLocaleDateString(),
+                      shortDate: new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    };
+                  });
+
+                  return (
+                    <Box key={muscleGroup} sx={{ mb: 4 }}>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {muscleGroup}
+                      </Typography>
+                      <EChartsReact
+                        style={{ width: '100%', height: 300 }}
+                        option={{
+                          tooltip: {
+                            trigger: 'axis',
+                            axisPointer: {
+                              type: 'cross',
+                              crossStyle: {
+                                color: '#999'
+                              }
+                            },
+                            formatter: (params: any) => {
+                              let result = `${params[0].name}<br/>`;
+                              params.forEach((param: any) => {
+                                const value = param.seriesName === 'Rolling Average' 
+                                  ? param.value.toFixed(1) 
+                                  : param.value.toLocaleString();
+                                result += `${param.marker}${param.seriesName}: ${value}<br/>`;
+                              });
+                              return result;
+                            }
+                          },
+                                                     legend: {
+                             data: ['Volume', 'Rolling Average'],
+                             top: 10,
+                             textStyle: {
+                               color: '#000000',
+                               fontSize: 14,
+                               fontWeight: 'bold'
+                             }
+                           },
+                          grid: {
+                            left: 60,
+                            right: 60,
+                            bottom: 60,
+                            top: 60
+                          },
+                          xAxis: [
+                            {
+                              type: 'category',
+                              data: transformedData.map((d: TransformedDataPoint) => d.shortDate),
+                              axisPointer: {
+                                type: 'shadow'
+                              },
+                              axisLabel: {
+                                fontSize: 12,
+                                rotate: transformedData.length > 8 ? 45 : 0
+                              },
+                              name: 'Date',
+                              nameLocation: 'center',
+                              nameGap: 35
+                            }
+                          ],
+                          yAxis: [
+                            {
+                              type: 'value',
+                              name: 'Volume',
+                              nameLocation: 'center',
+                              nameGap: 40,
+                                                             axisLabel: {
+                                 fontSize: 12
+                               },
+                               splitLine: {
+                                 show: false
+                               }
+                            }
+                          ],
+                          series: [
+                            {
+                              name: 'Volume',
+                              type: 'bar',
+                              data: transformedData.map((d: TransformedDataPoint) => d.volume),
+                              itemStyle: {
+                                color: '#8884d8',
+                                borderRadius: [4, 4, 0, 0]
+                              },
+                              barWidth: '60%'
+                            },
+                            {
+                              name: 'Rolling Average',
+                              type: 'line',
+                              data: transformedData.map((d: TransformedDataPoint) => d.rollingVolume),
+                              itemStyle: {
+                                color: '#ff7300'
+                              },
+                              lineStyle: {
+                                width: 3,
+                                color: '#ff7300'
+                              },
+                              symbol: 'circle',
+                              symbolSize: 6,
+                              smooth: true
+                            }
+                          ]
+                        }}
+                      />
+                    </Box>
+                  );
+                })}
+              </Box>
             ) : (
               <Typography variant="h6">No volume data available</Typography>
             )}
