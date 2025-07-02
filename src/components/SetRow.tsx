@@ -49,10 +49,11 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
         ref={ref}
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: '50px 1fr 1fr 50px 80px', sm: '50px 1fr 1fr 50px 80px' },
+          gridTemplateColumns: { xs: '35px 2fr 2fr 30px 30px', sm: '50px 1fr 1fr 50px 50px' },
           gap: { xs: 2, sm: 2.5 },
           alignItems: 'center',
-          p: { xs: 2.5, sm: 3 },
+          p: { xs: 2, sm: 2.5 },
+          py: { xs: 2.5, sm: 2.5 },
           borderRadius: 2,
           background: isCompleted 
             ? 'rgba(34, 197, 94, 0.08)' 
@@ -78,8 +79,8 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          width: { xs: 40, sm: 40 },
-          height: { xs: 40, sm: 40 },
+          width: { xs: 32, sm: 40 },
+          height: { xs: 32, sm: 40 },
           borderRadius: '50%',
           background: isCompleted 
             ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%)'
@@ -90,7 +91,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
           backdropFilter: 'blur(8px)',
           color: 'white',
           fontWeight: 700,
-          fontSize: { xs: '0.875rem', sm: '0.875rem' },
+          fontSize: { xs: '0.75rem', sm: '0.875rem' },
           margin: '0 auto'
         }}>
           {setIndex + 1}
@@ -126,6 +127,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
             onChange={(e) => onUpdateSet('weight', parseFloat(e.target.value))}
             disabled={isCompleted || isWorkoutCompleted}
             sx={{
+              minWidth: { xs: 48, sm: 56 },
               '& .MuiOutlinedInput-root': {
                 height: { xs: 48, sm: 48 },
                 borderRadius: 2,
@@ -214,6 +216,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
             onChange={(e) => onUpdateSet('reps', parseInt(e.target.value))}
             disabled={isCompleted || isWorkoutCompleted}
             sx={{
+              minWidth: { xs: 48, sm: 56 },
               '& .MuiOutlinedInput-root': {
                 height: { xs: 48, sm: 48 },
                 borderRadius: 2,
@@ -283,8 +286,8 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
             onClick={onMenuOpen}
             disabled={isCompleted || isWorkoutCompleted}
             sx={{ 
-              width: { xs: 40, sm: 40 },
-              height: { xs: 40, sm: 40 },
+              width: { xs: 32, sm: 40 },
+              height: { xs: 32, sm: 40 },
               borderRadius: 2,
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -297,7 +300,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
               }
             }}
           >
-            <MoreVertIcon sx={{ fontSize: { xs: '1.125rem', sm: '1.25rem' } }} />
+            <MoreVertIcon sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
           </IconButton>
         </Box>
 
