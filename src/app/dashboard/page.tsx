@@ -22,6 +22,8 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import EChartsReact from 'echarts-for-react';
 import Link from 'next/link';
 
+import GradientButton from '@/components/GradientButton';
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -429,6 +431,50 @@ export default function DashboardPage() {
     }
   };
 
+  const handleCompleteRestDay = async (instanceId: number, dayId: number) => {
+    try {
+      const response = await fetch(
+        `/api/plan-instances/${instanceId}/days/${dayId}/complete-rest`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to complete rest day');
+      }
+
+      // Refresh the mesocycle detail data
+      const updatedDetail = await fetch(`/api/mesocycles/${selectedMesocycle?.id}`);
+      const data = await updatedDetail.json();
+      setMesocycleDetail(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
+  const handleStartWorkout = async (instanceId: number, dayId: number) => {
+    try {
+      const response = await fetch(
+        `/api/plan-instances/${instanceId}/days/${dayId}/start`,
+        {
+          method: 'POST',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to start workout');
+      }
+
+      const workoutInstance = await response.json();
+
+      // Redirect to the track page with the new workout instance
+      window.location.href = `/track/${workoutInstance.id}`;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer>
@@ -471,8 +517,6 @@ export default function DashboardPage() {
             Dashboard
           </Typography>
         </Box>
-
-
 
         <Box sx={{ 
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -563,7 +607,7 @@ export default function DashboardPage() {
               </Select>
             </FormControl>
 
-            <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
+            <IconButton onClick={handleMenuOpen} sx={{ ml: 1, borderRadius: 1 }}>
               <MoreVertIcon />
             </IconButton>
           </Box>
@@ -634,31 +678,31 @@ export default function DashboardPage() {
                 </Box>
 
                 {/* ECharts volume per iteration chart will go here */}
-                {selectedMesocycle.iterationVolumes && selectedMesocycle.iterationVolumes.length > 0 && (
-                  <Box sx={{ 
-                    mb: 4,
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                <Box sx={{ 
+                  mb: 4,
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                }}>
+                  <Box sx={{
+                    p: { xs: 2, sm: 3 },
                   }}>
-                    <Box sx={{
-                      p: { xs: 2, sm: 3 },
-                    }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontWeight: 700,
-                          color: 'white',
-                          fontSize: { xs: '1.125rem', sm: '1.25rem' }
-                        }}
-                      >
-                        Total Volume per Week
-                      </Typography>
-                    </Box>
-                    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        fontWeight: 700,
+                        color: 'white',
+                        fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                      }}
+                    >
+                      Total Volume per Week
+                    </Typography>
+                  </Box>
+                  <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                    {selectedMesocycle.iterationVolumes && selectedMesocycle.iterationVolumes.length > 0 ? (
                       <EChartsReact
                         style={{ width: '100%', height: 300 }}
                         option={{
@@ -727,9 +771,25 @@ export default function DashboardPage() {
                           ]
                         }}
                       />
-                    </Box>
+                    ) : (
+                      <Box sx={{ 
+                        height: 300, 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        justifyContent: 'center', 
+                        alignItems: 'center',
+                        color: 'rgba(255, 255, 255, 0.6)'
+                      }}>
+                        <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }}>
+                          No Volume Data Available
+                        </Typography>
+                        <Typography variant="body2" sx={{ textAlign: 'center', maxWidth: 300 }}>
+                          Complete some workouts to see your volume progress over time
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
-                )}
+                </Box>
 
                 <Grid container spacing={3}>
                   {[...selectedMesocycle.planDays]
@@ -776,86 +836,104 @@ export default function DashboardPage() {
                                 </Typography>
                               </Box>
                               <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                                <EChartsReact
-                                  style={{ width: '100%', height: 280 }}
-                                  option={{
-                                    tooltip: { 
-                                      trigger: 'axis',
-                                      formatter: (params: any) => {
-                                        const data = params[0];
-                                        return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
-                                      }
-                                    },
-                                    grid: { 
-                                      left: 80, 
-                                      right: 30, 
-                                      bottom: 50, 
-                                      top: 60 
-                                    },
-                                    xAxis: {
-                                      type: 'category',
-                                      data: day.iterations
-                                        .filter((iteration: any) => !!iteration.completedAt)
-                                        .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                        .map((iteration: any) => `Week ${iteration.iterationNumber}`),
-                                      name: 'Week',
-                                      nameLocation: 'center',
-                                      nameGap: 30,
-                                      axisLabel: { fontSize: 13 },
-                                      splitLine: { show: false }
-                                    },
-                                    yAxis: {
-                                      type: 'value',
-                                      name: 'Volume',
-                                      nameLocation: 'center',
-                                      nameGap: 50,
-                                      axisLabel: { fontSize: 13 },
-                                      splitLine: { show: false },
-                                      axisLine: { show: false },
-                                      axisTick: { show: false }
-                                    },
-                                    series: [
-                                      {
+                                {day.iterations.filter((iteration: any) => !!iteration.completedAt).length > 0 ? (
+                                  <EChartsReact
+                                    style={{ width: '100%', height: 280 }}
+                                    option={{
+                                      tooltip: { 
+                                        trigger: 'axis',
+                                        formatter: (params: any) => {
+                                          const data = params[0];
+                                          return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+                                        }
+                                      },
+                                      grid: { 
+                                        left: 80, 
+                                        right: 30, 
+                                        bottom: 50, 
+                                        top: 60 
+                                      },
+                                      xAxis: {
+                                        type: 'category',
                                         data: day.iterations
                                           .filter((iteration: any) => !!iteration.completedAt)
                                           .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                          .map((iteration: any, index: number, sortedIterations: any[]) => {
-                                            const volume = iteration.exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
-                                            let percentChange = 0;
-                                            if (index > 0) {
-                                              const prevVolume = sortedIterations[index - 1].exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
-                                              percentChange = prevVolume > 0 ? ((volume - prevVolume) / prevVolume * 100) : 0;
+                                          .map((iteration: any) => `Week ${iteration.iterationNumber}`),
+                                        name: 'Week',
+                                        nameLocation: 'center',
+                                        nameGap: 30,
+                                        axisLabel: { fontSize: 13 },
+                                        splitLine: { show: false }
+                                      },
+                                      yAxis: {
+                                        type: 'value',
+                                        name: 'Volume',
+                                        nameLocation: 'center',
+                                        nameGap: 50,
+                                        axisLabel: { fontSize: 13 },
+                                        splitLine: { show: false },
+                                        axisLine: { show: false },
+                                        axisTick: { show: false }
+                                      },
+                                      series: [
+                                        {
+                                          data: day.iterations
+                                            .filter((iteration: any) => !!iteration.completedAt)
+                                            .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                            .map((iteration: any, index: number, sortedIterations: any[]) => {
+                                              const volume = iteration.exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
+                                              let percentChange = 0;
+                                              if (index > 0) {
+                                                const prevVolume = sortedIterations[index - 1].exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
+                                                percentChange = prevVolume > 0 ? ((volume - prevVolume) / prevVolume * 100) : 0;
+                                              }
+                                              return {
+                                                value: volume,
+                                                percentChange: percentChange
+                                              };
+                                            }),
+                                          type: 'bar',
+                                          itemStyle: { color: '#4caf50', borderRadius: [4, 4, 0, 0] },
+                                          barWidth: '60%',
+                                          label: {
+                                            show: true,
+                                            position: 'top',
+                                            formatter: (params: any) => {
+                                              const percentChange = params.data.percentChange;
+                                              if (percentChange === 0) return '';
+                                              const sign = percentChange > 0 ? '+' : '';
+                                              return `${sign}${percentChange.toFixed(1)}%`;
+                                            },
+                                            fontSize: 12,
+                                            fontWeight: 'bold',
+                                            color: (params: any) => {
+                                              const percentChange = params.data.percentChange;
+                                              if (percentChange > 0) return '#4caf50';
+                                              if (percentChange < 0) return '#f44336';
+                                              return '#666';
                                             }
-                                            return {
-                                              value: volume,
-                                              percentChange: percentChange
-                                            };
-                                          }),
-                                        type: 'bar',
-                                        itemStyle: { color: '#4caf50', borderRadius: [4, 4, 0, 0] },
-                                        barWidth: '60%',
-                                        label: {
-                                          show: true,
-                                          position: 'top',
-                                          formatter: (params: any) => {
-                                            const percentChange = params.data.percentChange;
-                                            if (percentChange === 0) return '';
-                                            const sign = percentChange > 0 ? '+' : '';
-                                            return `${sign}${percentChange.toFixed(1)}%`;
-                                          },
-                                          fontSize: 12,
-                                          fontWeight: 'bold',
-                                          color: (params: any) => {
-                                            const percentChange = params.data.percentChange;
-                                            if (percentChange > 0) return '#4caf50';
-                                            if (percentChange < 0) return '#f44336';
-                                            return '#666';
                                           }
                                         }
-                                      }
-                                    ]
-                                  }}
-                                />
+                                      ]
+                                    }}
+                                  />
+                                ) : (
+                                  <Box sx={{ 
+                                    height: 280, 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    color: 'rgba(255, 255, 255, 0.6)'
+                                  }}>
+                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }}>
+                                      No Volume Data Available
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ textAlign: 'center', maxWidth: 300 }}>
+                                      Complete this workout to see your volume progress
+                                    </Typography>
+                                  </Box>
+                                )}
                               </Box>
                             </Box>
 
@@ -884,90 +962,108 @@ export default function DashboardPage() {
                                 </Typography>
                               </Box>
                               <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                                <Box sx={{ overflowX: 'auto' }}>
-                                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                      <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                        <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, color: 'white' }}>
-                                          Exercise
-                                        </th>
-                                        {day.iterations
-                                          .filter((iteration: any) => !!iteration.completedAt)
-                                          .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                          .slice(1) // Skip first week since no previous data
-                                          .map((iteration: any) => (
-                                            <th key={iteration.iterationNumber} style={{ 
-                                              textAlign: 'center', 
-                                              padding: '8px 12px', 
-                                              fontWeight: 600,
-                                              minWidth: '80px',
-                                              color: 'white'
-                                            }}>
-                                              Week {iteration.iterationNumber}
-                                            </th>
-                                          ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {/* Get all unique exercises across all iterations */}
-                                      {Array.from(new Set(
-                                        day.iterations
-                                          .filter((iteration: any) => !!iteration.completedAt)
-                                          .flatMap((iteration: any) => iteration.exercises?.map((ex: any) => ex.name) || [])
-                                      )).map((exerciseName: string) => (
-                                        <tr key={exerciseName} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                                          <td style={{ 
-                                            padding: '12px', 
-                                            fontWeight: 500,
-                                            borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-                                            color: 'rgba(255, 255, 255, 0.9)'
-                                          }}>
-                                            {exerciseName}
-                                          </td>
+                                {day.iterations.filter((iteration: any) => !!iteration.completedAt).length > 1 ? (
+                                  <Box sx={{ overflowX: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                      <thead>
+                                        <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                          <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, color: 'white' }}>
+                                            Exercise
+                                          </th>
                                           {day.iterations
                                             .filter((iteration: any) => !!iteration.completedAt)
                                             .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                            .slice(1)
-                                            .map((iteration: any, index: number) => {
-                                              const currentEx = iteration.exercises.find((ex: any) => ex.name === exerciseName);
-                                              const prevIteration = day.iterations
-                                                .filter((iter: any) => !!iter.completedAt)
-                                                .sort((a, b) => a.iterationNumber - b.iterationNumber)[index]; // Previous iteration
-                                              const prevEx = prevIteration?.exercises.find((ex: any) => ex.name === exerciseName);
-                                              
-                                              let changeText = '-';
-                                              let changeColor = '#666';
-                                              
-                                              if (currentEx && prevEx && prevEx.volume > 0) {
-                                                const percentChange = ((currentEx.volume - prevEx.volume) / prevEx.volume * 100);
-                                                const sign = percentChange > 0 ? '+' : '';
-                                                changeText = `${sign}${percentChange.toFixed(1)}%`;
-                                                changeColor = percentChange > 0 ? '#4caf50' : percentChange < 0 ? '#f44336' : '#666';
-                                              } else if (currentEx && !prevEx) {
-                                                changeText = 'New';
-                                                changeColor = '#2196f3';
-                                              } else if (!currentEx && prevEx) {
-                                                changeText = 'Removed';
-                                                changeColor = '#ff9800';
-                                              }
-                                              
-                                              return (
-                                                <td key={`${exerciseName}-${iteration.iterationNumber}`} style={{ 
-                                                  padding: '12px', 
-                                                  textAlign: 'center',
-                                                  color: changeColor,
-                                                  fontWeight: 600,
-                                                  fontSize: '0.875rem'
-                                                }}>
-                                                  {changeText}
-                                                </td>
-                                              );
-                                            })}
+                                            .slice(1) // Skip first week since no previous data
+                                            .map((iteration: any) => (
+                                              <th key={iteration.iterationNumber} style={{ 
+                                                textAlign: 'center', 
+                                                padding: '8px 12px', 
+                                                fontWeight: 600,
+                                                minWidth: '80px',
+                                                color: 'white'
+                                              }}>
+                                                Week {iteration.iterationNumber}
+                                              </th>
+                                            ))}
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </Box>
+                                      </thead>
+                                      <tbody>
+                                        {/* Get all unique exercises across all iterations */}
+                                        {Array.from(new Set(
+                                          day.iterations
+                                            .filter((iteration: any) => !!iteration.completedAt)
+                                            .flatMap((iteration: any) => iteration.exercises?.map((ex: any) => ex.name) || [])
+                                        )).map((exerciseName: string) => (
+                                          <tr key={exerciseName} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                            <td style={{ 
+                                              padding: '12px', 
+                                              fontWeight: 500,
+                                              borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+                                              color: 'rgba(255, 255, 255, 0.9)'
+                                            }}>
+                                              {exerciseName}
+                                            </td>
+                                            {day.iterations
+                                              .filter((iteration: any) => !!iteration.completedAt)
+                                              .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                              .slice(1)
+                                              .map((iteration: any, index: number) => {
+                                                const currentEx = iteration.exercises.find((ex: any) => ex.name === exerciseName);
+                                                const prevIteration = day.iterations
+                                                  .filter((iter: any) => !!iter.completedAt)
+                                                  .sort((a, b) => a.iterationNumber - b.iterationNumber)[index]; // Previous iteration
+                                                const prevEx = prevIteration?.exercises.find((ex: any) => ex.name === exerciseName);
+                                                
+                                                let changeText = '-';
+                                                let changeColor = '#666';
+                                                
+                                                if (currentEx && prevEx && prevEx.volume > 0) {
+                                                  const percentChange = ((currentEx.volume - prevEx.volume) / prevEx.volume * 100);
+                                                  const sign = percentChange > 0 ? '+' : '';
+                                                  changeText = `${sign}${percentChange.toFixed(1)}%`;
+                                                  changeColor = percentChange > 0 ? '#4caf50' : percentChange < 0 ? '#f44336' : '#666';
+                                                } else if (currentEx && !prevEx) {
+                                                  changeText = 'New';
+                                                  changeColor = '#2196f3';
+                                                } else if (!currentEx && prevEx) {
+                                                  changeText = 'Removed';
+                                                  changeColor = '#ff9800';
+                                                }
+                                                
+                                                return (
+                                                  <td key={`${exerciseName}-${iteration.iterationNumber}`} style={{ 
+                                                    padding: '12px', 
+                                                    textAlign: 'center',
+                                                    color: changeColor,
+                                                    fontWeight: 600,
+                                                    fontSize: '0.875rem'
+                                                  }}>
+                                                    {changeText}
+                                                  </td>
+                                                );
+                                              })}
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </Box>
+                                ) : (
+                                  <Box sx={{ 
+                                    height: 200, 
+                                    display: 'flex', 
+                                    flexDirection: 'column',
+                                    justifyContent: 'center', 
+                                    alignItems: 'center',
+                                    color: 'rgba(255, 255, 255, 0.6)'
+                                  }}>
+                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }}>
+                                      No Progress Data Available
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ textAlign: 'center', maxWidth: 300 }}>
+                                      Complete at least 2 workouts to see exercise progress comparison
+                                    </Typography>
+                                  </Box>
+                                )}
                               </Box>
                             </Box>
                           </Box>
@@ -1211,33 +1307,37 @@ export default function DashboardPage() {
                       {instance.days
                         .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
                         .map((day) => {
-                          const completed = day.planDay.isRestDay ? day.isComplete : !!day.workoutInstance?.completedAt;
+                          const isRestDay = day.planDay.isRestDay;
+                          const isWorkoutStarted = day.workoutInstance && !day.workoutInstance.completedAt;
+                          const isWorkoutComplete = day.workoutInstance?.completedAt;
+                          const completed = isRestDay ? day.isComplete : !!isWorkoutComplete;
+
+                          let onClick = undefined;
+                          if (isRestDay && !day.isComplete) {
+                            onClick = () => handleCompleteRestDay(instance.id, day.id);
+                          } else if (!isRestDay && !day.workoutInstance) {
+                            onClick = () => handleStartWorkout(instance.id, day.id);
+                          } else if (!isRestDay && (isWorkoutStarted || isWorkoutComplete)) {
+                            onClick = () => window.location.href = `/track/${day.workoutInstance?.id}`;
+                          }
+
+                          const label = `Day ${day.planDay.dayNumber} ${isRestDay ? 'Rest' : 'Workout'}`;
+                          
                           return (
-                            (() => {
-                              const label = `Day ${day.planDay.dayNumber} ${day.planDay.isRestDay ? 'Rest' : 'Workout'}`;
-                              if (!day.planDay.isRestDay && day.workoutInstance?.id) {
-                                return (
-                                  <Chip
-                                    key={day.id}
-                                    label={label}
-                                    color={completed ? 'success' : 'default'}
-                                    size="small"
-                                    component={Link}
-                                    href={`/track/${day.workoutInstance.id}`}
-                                    clickable
-                                    sx={{ cursor: 'pointer' }}
-                                  />
-                                );
-                              }
-                              return (
-                                <Chip
-                                  key={day.id}
-                                  label={label}
-                                  color={completed ? 'success' : 'default'}
-                                  size="small"
-                                />
-                              );
-                            })()
+                            <Chip
+                              key={day.id}
+                              label={label}
+                              color={completed ? 'success' : 'default'}
+                              size="small"
+                              clickable={!!onClick}
+                              onClick={onClick}
+                              sx={{ 
+                                cursor: onClick ? 'pointer' : 'default',
+                                '&:hover': onClick ? {
+                                  backgroundColor: 'action.hover',
+                                } : {}
+                              }}
+                            />
                           );
                         })}
                     </Box>
@@ -1251,7 +1351,7 @@ export default function DashboardPage() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHistoryOpen(false)}>Close</Button>
+          <GradientButton onClick={() => setHistoryOpen(false)}>Close</GradientButton>
         </DialogActions>
       </Dialog>
 

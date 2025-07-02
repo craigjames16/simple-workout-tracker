@@ -19,6 +19,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import CheckIcon from '@mui/icons-material/Check';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
+import GradientButton from '@/components/GradientButton';
 
 interface CurrentMesocycle {
   id: number;
@@ -203,7 +204,7 @@ const NextWorkout = ({
           
           <Box sx={{ width: { xs: '100%', sm: 'auto' }, display: 'flex', justifyContent: { xs: 'center', sm: 'flex-end' } }}>
             {isRestDay ? (
-              <Button 
+              <GradientButton 
                 variant="outlined" 
                 color="info"
                 size="small"
@@ -226,9 +227,9 @@ const NextWorkout = ({
                 }}
               >
                 Complete Rest Day
-              </Button>
+              </GradientButton>
             ) : (
-              <Button 
+              <GradientButton 
                 variant="contained"
                 size="small"
                 startIcon={<PlayArrowIcon />}
@@ -236,7 +237,7 @@ const NextWorkout = ({
                 disabled={isStartingWorkout}
               >
                 {isStartingWorkout ? 'Starting...' : (nextWorkout.inProgress ? 'Continue Workout' : 'Start Workout')}
-              </Button>
+              </GradientButton>
             )}
           </Box>
         </Box>
