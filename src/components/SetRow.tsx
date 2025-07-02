@@ -210,7 +210,7 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
             fullWidth
             type="number"
             value={set.reps || ''}
-            placeholder={set.lastSet ? String(set.lastSet.reps) : "0"}
+            placeholder={set.lastSet ? String(set.lastSet.reps+1) : "0"}
             onChange={(e) => onUpdateSet('reps', parseInt(e.target.value))}
             disabled={isCompleted || isWorkoutCompleted}
             sx={{
