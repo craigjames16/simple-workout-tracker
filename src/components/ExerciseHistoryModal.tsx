@@ -1,7 +1,8 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, Grid, Tab, Tabs } from '@mui/material';
 import { format } from 'date-fns';
 import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
+import EChartsReact from 'echarts-for-react';
+import GradientButton from './GradientButton';
 
 interface ExerciseSet {
   weight: number;
@@ -29,32 +30,53 @@ const ExerciseHistoryChart = ({ history }: { history: HistoryInstance[] }) => {
     volume: instance.volume,
   }));
 
+  const option = {
+    tooltip: { 
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const data = params[0];
+        return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+      }
+    },
+    grid: { left: 80, right: 30, bottom: 50, top: 30 },
+    xAxis: {
+      type: 'category',
+      data: chartData.map(d => d.date),
+      name: 'Date',
+      nameLocation: 'center',
+      nameGap: 30,
+      axisLabel: { fontSize: 14 },
+      splitLine: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Volume',
+      nameLocation: 'center',
+      nameGap: 50,
+      axisLabel: { fontSize: 14 },
+      splitLine: { show: false },
+      axisLine: { show: false },
+      axisTick: { show: false }
+    },
+    series: [
+      {
+        data: chartData.map(d => d.volume),
+        type: 'line',
+        itemStyle: { color: '#8884d8' },
+        lineStyle: { width: 3 },
+        symbol: 'circle',
+        symbolSize: 6,
+        smooth: true
+      }
+    ]
+  };
+
   return (
     <Box sx={{ width: '100%', height: 250 }}>
-      <RechartsContainer>
-        <LineChart 
-          data={chartData}
-          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-        >
-          <XAxis 
-            dataKey="date" 
-            axisLine={false} 
-            tickLine={false}
-            tick={{ fill: 'transparent' }}
-          />
-          <YAxis 
-            axisLine={false} 
-            tickLine={false} 
-          />
-          <Tooltip />
-          <Line 
-            type="monotone" 
-            dataKey="volume" 
-            stroke="#8884d8" 
-            dot={false} 
-          />
-        </LineChart>
-      </RechartsContainer>
+      <EChartsReact
+        style={{ width: '100%', height: 250 }}
+        option={option}
+      />
     </Box>
   );
 };
@@ -120,24 +142,50 @@ export default function ExerciseHistoryModal({ open, onClose, exerciseName, hist
           <>
             {history?.sort((a, b) => 
               new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
-            ).map((instance, index) => (
-              <Box key={index} sx={{ mb: 2 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  {format(new Date(instance.completedAt), 'MMM d, yyyy')}
-                </Typography>
-                <Grid container spacing={2} sx={{ pl: 2 }}>
-                  {instance.sets
-                    .sort((a, b) => a.setNumber - b.setNumber)
-                    .map((set, setIndex) => (
-                      <Grid item xs={12} key={setIndex}>
-                        <Typography variant="body2">
-                          Set {set.setNumber}: {set.weight}lbs × {set.reps} reps
-                        </Typography>
-                      </Grid>
-                    ))}
-                </Grid>
-              </Box>
-            ))}
+            ).map((instance, index) => {
+              // Group sets by weight
+              const setsByWeight = instance.sets.reduce((acc, set) => {
+                if (!acc[set.weight]) {
+                  acc[set.weight] = [];
+                }
+                acc[set.weight].push(set);
+                return acc;
+              }, {} as Record<number, ExerciseSet[]>);
+
+              return (
+                <Box key={index} sx={{ mb: 3, p: 2, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: 'primary.main', mb: 1 }}>
+                    {format(new Date(instance.completedAt), 'MMM d, yyyy')}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 2 }}>
+                    Total Volume: {instance.volume.toLocaleString()} lbs
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {Object.entries(setsByWeight)
+                      .sort(([weightA], [weightB]) => Number(weightB) - Number(weightA)) // Sort by weight descending
+                      .map(([weight, sets]) => (
+                        <Box 
+                          key={weight}
+                          sx={{ 
+                            px: 2, 
+                            py: 1.5, 
+                            borderRadius: 1, 
+                            bgcolor: 'rgba(59, 130, 246, 0.1)', 
+                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                          }}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', mb: 0.5 }}>
+                            {weight}lbs
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                            {sets.length} set{sets.length > 1 ? 's' : ''}: {sets.map(set => set.reps).join(', ')} reps
+                          </Typography>
+                        </Box>
+                      ))}
+                  </Box>
+                </Box>
+              );
+            })}
 
             {history?.length === 0 && (
               <Typography color="text.secondary">
@@ -150,7 +198,7 @@ export default function ExerciseHistoryModal({ open, onClose, exerciseName, hist
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Close</Button>
+        <GradientButton onClick={onClose}>Close</GradientButton>
       </DialogActions>
     </Dialog>
   );
