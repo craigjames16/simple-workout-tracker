@@ -33,6 +33,10 @@ import DialogActions from '@mui/material/DialogActions';
 import { ExerciseCategory } from '@prisma/client';
 import { ResponsiveContainer } from './ResponsiveContainer';
 import GradientButton from './GradientButton';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import HotelIcon from '@mui/icons-material/Hotel';
+
 interface Exercise {
   id: number;
   name: string;
@@ -338,208 +342,490 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
 
   if (isLoading) {
     return (
-      <Container maxWidth="xl">
-        <Paper sx={{ p: 3, mt: 3, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
           <CircularProgress />
-        </Paper>
-      </Container>
+        </Box>
+      </ResponsiveContainer>
     );
   }
 
   return (
     <ResponsiveContainer maxWidth="lg">
-      <Paper sx={{ p: 3 }}>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h5">
+      <Box sx={{
+        p: { xs: 2, sm: 3 }, 
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
+        {/* Header Section */}
+        <Box sx={{
+          pb: { xs: 2, sm: 3 },
+        }}>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontWeight: 700,
+              color: 'white',
+              fontSize: { xs: '1.5rem', sm: '2rem' }
+            }}
+          >
             {mode === 'edit' ? 'Edit Workout Plan' : 'Create Workout Plan'}
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={addWorkoutDay}
-          >
-            Add Day
-          </Button>
         </Box>
 
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            fullWidth
-            label="Plan Name"
-            value={planName}
-            onChange={(e) => setPlanName(e.target.value)}
-            sx={{ mb: 2 }}
-          />
+        {error && (
+          <Box sx={{ mb: 3 }}>
+            <Alert severity="error" sx={{ 
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: 'rgba(239, 68, 68, 0.9)'
+            }}>
+              {error}
+            </Alert>
+          </Box>
+        )}
+
+        {/* Plan Name Section */}
+        <Box sx={{ 
+          mb: 4,
+          borderRadius: 2,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
+          <Box sx={{
+            p: { xs: 2, sm: 3 },
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <FitnessCenterIcon sx={{ 
+                mr: 1.5, 
+                color: 'white',
+                fontSize: '1.5rem'
+              }} />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'white',
+                  fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                }}
+              >
+                Plan Details
+              </Typography>
+            </Box>
+            <TextField
+              fullWidth
+              label="Plan Name"
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+              sx={{ 
+                '& .MuiOutlinedInput-root': {
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 2,
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&.Mui-focused': {
+                    borderColor: 'rgba(59, 130, 246, 0.5)',
+                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                  },
+                  '& fieldset': {
+                    border: 'none'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&.Mui-focused': {
+                    color: 'rgba(59, 130, 246, 0.8)'
+                  }
+                },
+                '& .MuiInputBase-input': {
+                  color: 'white'
+                }
+              }}
+            />
+          </Box>
         </Box>
 
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Grid container spacing={2}>
-            {[...workoutDays]
-              .sort((a, b) => a.dayNumber - b.dayNumber)
-              .map((day, dayIndex) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
-                <Card sx={{ bgcolor: '#171717 !important', boxShadow: '5px 5px 5px rgba(0, 0, 0, 0.1)' }}>
-                  <CardHeader
-                    title={day.name}
-                    action={
-                      <IconButton onClick={() => removeWorkoutDay(day.id)}>
-                        <DeleteIcon />
-                      </IconButton>
-                    }
-                  />
-                  <CardContent>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={day.isRestDay}
-                          onChange={() => toggleRestDay(day.id)}
-                        />
+        {/* Days Management Section */}
+        <Box sx={{ 
+          mb: 4,
+          borderRadius: 2,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
+          <Box sx={{
+            p: { xs: 2, sm: 3 },
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CalendarTodayIcon sx={{ 
+                  mr: 1.5, 
+                  color: 'white',
+                  fontSize: '1.5rem'
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'white',
+                    fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                  }}
+                >
+                  Workout Days
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={addWorkoutDay}
+                sx={{
+                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  color: 'white',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 8px 25px -8px rgba(59, 130, 246, 0.3)'
+                  }
+                }}
+              >
+                Add Day
+              </Button>
+            </Box>
+
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Grid container spacing={3}>
+                {[...workoutDays]
+                  .sort((a, b) => a.dayNumber - b.dayNumber)
+                  .map((day, dayIndex) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
+                    <Box sx={{
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.35)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
                       }
-                      label="Rest Day"
-                      sx={{ mb: 2 }}
-                    />
-
-                    {!day.isRestDay && (
-                      <Box sx={{ mb: 2 }}>
-                        <FormControl fullWidth>
-                          <InputLabel>Category</InputLabel>
-                          <Select
-                            value={selectedCategories[day.id] || 'ALL'}
-                            label="Category"
-                            onChange={(e) => setSelectedCategories(prev => ({
-                              ...prev,
-                              [day.id]: e.target.value
-                            }))}
-                            sx={{ mb: 2 }}
-                          >
-                            <MenuItem value="ALL">All Categories</MenuItem>
-                            {Object.values(ExerciseCategory).map((category) => (
-                              <MenuItem key={category} value={category}>
-                                {category.charAt(0) + category.slice(1).toLowerCase()}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-
-                        <FormControl fullWidth>
-                          <InputLabel>Exercise</InputLabel>
-                          <Select
-                            value={selectedExercises[day.id] || ''}
-                            label="Exercise"
-                            onChange={(e) => setSelectedExercises(prev => ({
-                              ...prev,
-                              [day.id]: e.target.value
-                            }))}
-                          >
-                            {filteredExercises(day.id)
-                              .map((exercise) => (
-                                <MenuItem key={exercise.id} value={exercise.id}>
-                                  {exercise.name}
-                                </MenuItem>
-                              ))}
-                          </Select>
-                        </FormControl>
-
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            variant="contained"
-                            onClick={() => handleAddExercise(day.id)}
-                            disabled={!selectedExercises[day.id]}
-                            sx={{ flex: 1 }}
-                          >
-                            Add
-                          </Button>
-                          <Button
-                            variant="outlined"
-                            onClick={() => handleOpenNewExerciseDialog(dayIndex)}
-                            startIcon={<AddIcon />}
-                          >
-                            Create New
-                          </Button>
-                        </Box>
-                      </Box>
-                    )}
-                    
-                    {day.isRestDay ? (
-                      <Typography variant="body2" color="textSecondary" align="center">
-                        Rest Day - No exercises
-                      </Typography>
-                    ) : (
-                      <Droppable 
-                        droppableId={day.id} 
-                        isDropDisabled={day.isRestDay}
-                        type="EXERCISE"
-                        isCombineEnabled={false}
-                        ignoreContainerClipping={false}
-                      >
-                        {(provided, snapshot) => (
-                          <Box
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
+                    }}>
+                      <Box sx={{
+                        p: { xs: 2, sm: 3 },
+                      }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            {day.isRestDay ? (
+                              <HotelIcon sx={{ 
+                                mr: 1, 
+                                color: 'rgba(156, 163, 175, 0.9)',
+                                fontSize: '1.25rem'
+                              }} />
+                            ) : (
+                              <FitnessCenterIcon sx={{ 
+                                mr: 1, 
+                                color: 'rgba(59, 130, 246, 0.9)',
+                                fontSize: '1.25rem'
+                              }} />
+                            )}
+                            <Typography 
+                              variant="h6" 
+                              sx={{ 
+                                fontWeight: 700,
+                                color: 'white',
+                                fontSize: { xs: '1rem', sm: '1.125rem' }
+                              }}
+                            >
+                              {day.name}
+                            </Typography>
+                          </Box>
+                          <IconButton 
+                            onClick={() => removeWorkoutDay(day.id)}
                             sx={{ 
-                              minHeight: 100,
-                              backgroundColor: snapshot.isDraggingOver 
-                                ? 'rgba(255, 255, 255, 0.05)' 
-                                : 'transparent',
-                              transition: 'background-color 0.2s ease',
-                              borderRadius: 1,
-                              padding: 1
+                              color: 'rgba(239, 68, 68, 0.7)',
+                              '&:hover': {
+                                color: 'rgba(239, 68, 68, 0.9)',
+                                background: 'rgba(239, 68, 68, 0.1)'
+                              }
                             }}
                           >
-                            {day.workoutExercises.map((exercise, index) => (
-                              <Draggable
-                                key={`${exercise.id}`}
-                                draggableId={`${day.id}-exercise-${exercise.id}`}
-                                index={index}
-                                isDragDisabled={false}
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={day.isRestDay}
+                              onChange={() => toggleRestDay(day.id)}
+                              sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                  color: 'rgba(156, 163, 175, 0.9)',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(156, 163, 175, 0.08)',
+                                  },
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                  backgroundColor: 'rgba(156, 163, 175, 0.5)',
+                                },
+                              }}
+                            />
+                          }
+                          label={
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.875rem' }}>
+                              Rest Day
+                            </Typography>
+                          }
+                          sx={{ mb: 2 }}
+                        />
+
+                        {!day.isRestDay && (
+                          <Box sx={{ mb: 2 }}>
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                              <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Category</InputLabel>
+                              <Select
+                                value={selectedCategories[day.id] || 'ALL'}
+                                label="Category"
+                                onChange={(e) => setSelectedCategories(prev => ({
+                                  ...prev,
+                                  [day.id]: e.target.value
+                                }))}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    borderRadius: 2,
+                                    color: 'white',
+                                    '&:hover': {
+                                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    },
+                                    '&.Mui-focused': {
+                                      borderColor: 'rgba(59, 130, 246, 0.5)',
+                                      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                                    },
+                                    '& fieldset': {
+                                      border: 'none'
+                                    }
+                                  },
+                                  '& .MuiInputLabel-root': {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    '&.Mui-focused': {
+                                      color: 'rgba(59, 130, 246, 0.8)'
+                                    }
+                                  },
+                                  '& .MuiSelect-icon': {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                  }
+                                }}
                               >
-                                {(provided, snapshot) => (
-                                  <Box
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    sx={{
-                                      p: 1,
-                                      mb: 1,
-                                      bgcolor: snapshot.isDragging 
-                                        ? 'rgba(255, 255, 255, 0.1)'
-                                        : 'background.paper',
-                                      borderRadius: 1,
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      boxShadow: 1,
-                                    }}
-                                  >
-                                    <Typography>{exercise.name}</Typography>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => removeExerciseFromDay(day.id, exercise.id)}
-                                    >
-                                      <DeleteIcon />
-                                    </IconButton>
-                                  </Box>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
+                                <MenuItem value="ALL" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>All Categories</MenuItem>
+                                {Object.values(ExerciseCategory).map((category) => (
+                                  <MenuItem key={category} value={category} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                    {category.charAt(0) + category.slice(1).toLowerCase()}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+
+                            <FormControl fullWidth sx={{ mb: 2 }}>
+                              <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Exercise</InputLabel>
+                              <Select
+                                value={selectedExercises[day.id] || ''}
+                                label="Exercise"
+                                onChange={(e) => setSelectedExercises(prev => ({
+                                  ...prev,
+                                  [day.id]: e.target.value
+                                }))}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    borderRadius: 2,
+                                    color: 'white',
+                                    '&:hover': {
+                                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    },
+                                    '&.Mui-focused': {
+                                      borderColor: 'rgba(59, 130, 246, 0.5)',
+                                      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                                    },
+                                    '& fieldset': {
+                                      border: 'none'
+                                    }
+                                  },
+                                  '& .MuiInputLabel-root': {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    '&.Mui-focused': {
+                                      color: 'rgba(59, 130, 246, 0.8)'
+                                    }
+                                  },
+                                  '& .MuiSelect-icon': {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                  }
+                                }}
+                              >
+                                {filteredExercises(day.id)
+                                  .map((exercise) => (
+                                    <MenuItem key={exercise.id} value={exercise.id} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                      {exercise.name}
+                                    </MenuItem>
+                                  ))}
+                              </Select>
+                            </FormControl>
+
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Button
+                                variant="contained"
+                                onClick={() => handleAddExercise(day.id)}
+                                disabled={!selectedExercises[day.id]}
+                                sx={{ 
+                                  flex: 1,
+                                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+                                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                                  color: 'white',
+                                  '&:hover': {
+                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: '0 8px 25px -8px rgba(59, 130, 246, 0.3)'
+                                  },
+                                  '&:disabled': {
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    color: 'rgba(255, 255, 255, 0.3)'
+                                  }
+                                }}
+                              >
+                                Add
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                onClick={() => handleOpenNewExerciseDialog(dayIndex)}
+                                startIcon={<AddIcon />}
+                                sx={{
+                                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                                  color: 'rgba(255, 255, 255, 0.8)',
+                                  '&:hover': {
+                                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                                    background: 'rgba(255, 255, 255, 0.05)'
+                                  }
+                                }}
+                              >
+                                Create New
+                              </Button>
+                            </Box>
                           </Box>
                         )}
-                      </Droppable>
-                    )}
-                  </CardContent>
-                </Card>
+                        
+                        {day.isRestDay ? (
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: 'rgba(255, 255, 255, 0.6)',
+                              textAlign: 'center',
+                              fontStyle: 'italic'
+                            }}
+                          >
+                            Rest Day - No exercises
+                          </Typography>
+                        ) : (
+                          <Droppable 
+                            droppableId={day.id} 
+                            isDropDisabled={day.isRestDay}
+                            type="EXERCISE"
+                            isCombineEnabled={false}
+                            ignoreContainerClipping={false}
+                          >
+                            {(provided, snapshot) => (
+                              <Box
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                sx={{ 
+                                  minHeight: 100,
+                                  backgroundColor: snapshot.isDraggingOver 
+                                    ? 'rgba(59, 130, 246, 0.1)' 
+                                    : 'rgba(255, 255, 255, 0.02)',
+                                  transition: 'background-color 0.2s ease',
+                                  borderRadius: 1,
+                                  padding: 1,
+                                  border: '1px dashed rgba(255, 255, 255, 0.1)'
+                                }}
+                              >
+                                {day.workoutExercises.map((exercise, index) => (
+                                  <Draggable
+                                    key={`${exercise.id}`}
+                                    draggableId={`${day.id}-exercise-${exercise.id}`}
+                                    index={index}
+                                    isDragDisabled={false}
+                                  >
+                                    {(provided, snapshot) => (
+                                      <Box
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        sx={{
+                                          p: 1.5,
+                                          mb: 1,
+                                          bgcolor: snapshot.isDragging 
+                                            ? 'rgba(59, 130, 246, 0.2)'
+                                            : 'rgba(255, 255, 255, 0.05)',
+                                          borderRadius: 1,
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                                          transition: 'all 0.2s ease',
+                                          '&:hover': {
+                                            background: 'rgba(255, 255, 255, 0.08)',
+                                            border: '1px solid rgba(255, 255, 255, 0.2)'
+                                          }
+                                        }}
+                                      >
+                                        <Typography sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.875rem' }}>
+                                          {exercise.name}
+                                        </Typography>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => removeExerciseFromDay(day.id, exercise.id)}
+                                          sx={{ 
+                                            color: 'rgba(239, 68, 68, 0.7)',
+                                            '&:hover': {
+                                              color: 'rgba(239, 68, 68, 0.9)',
+                                              background: 'rgba(239, 68, 68, 0.1)'
+                                            }
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </Box>
+                            )}
+                          </Droppable>
+                        )}
+                      </Box>
+                    </Box>
+                  </Grid>
+                ))}
               </Grid>
-            ))}
-          </Grid>
-        </DragDropContext>
+            </DragDropContext>
+          </Box>
+        </Box>
 
+        {/* Save Button */}
         <Box sx={{ mt: 3 }}>
           <GradientButton
             fullWidth
@@ -547,13 +833,45 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
             color="primary"
             onClick={handleSave}
             disabled={!planName || workoutDays.length === 0}
+            sx={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              color: 'white',
+              py: 1.5,
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              '&:hover': {
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 12px 35px -8px rgba(59, 130, 246, 0.4)'
+              },
+              '&:disabled': {
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'rgba(255, 255, 255, 0.3)',
+                transform: 'none',
+                boxShadow: 'none'
+              }
+            }}
           >
-            Save Plan
+            {mode === 'edit' ? 'Update Plan' : 'Create Plan'}
           </GradientButton>
         </Box>
-      </Paper>
-      <Dialog open={openNewExerciseDialog} onClose={handleCloseNewExerciseDialog}>
-        <DialogTitle>Create New Exercise</DialogTitle>
+      </Box>
+
+      {/* Create Exercise Dialog */}
+      <Dialog 
+        open={openNewExerciseDialog} 
+        onClose={handleCloseNewExerciseDialog}
+        PaperProps={{
+          sx: {
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ color: 'white', fontWeight: 600 }}>Create New Exercise</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -562,28 +880,106 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
             fullWidth
             value={newExercise.name}
             onChange={(e) => setNewExercise(prev => ({ ...prev, name: e.target.value }))}
-            sx={{ mb: 2 }}
+            sx={{ 
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: 2,
+                color: 'white',
+                '&:hover': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                },
+                '&.Mui-focused': {
+                  borderColor: 'rgba(59, 130, 246, 0.5)',
+                  boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                },
+                '& fieldset': {
+                  border: 'none'
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&.Mui-focused': {
+                  color: 'rgba(59, 130, 246, 0.8)'
+                }
+              },
+              '& .MuiInputBase-input': {
+                color: 'white'
+              }
+            }}
           />
           <FormControl fullWidth>
-            <InputLabel>Category</InputLabel>
+            <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Category</InputLabel>
             <Select
               value={newExercise.category}
               label="Category"
               onChange={(e) => setNewExercise(prev => ({ ...prev, category: e.target.value as ExerciseCategory }))}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 2,
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&.Mui-focused': {
+                    borderColor: 'rgba(59, 130, 246, 0.5)',
+                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                  },
+                  '& fieldset': {
+                    border: 'none'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&.Mui-focused': {
+                    color: 'rgba(59, 130, 246, 0.8)'
+                  }
+                },
+                '& .MuiSelect-icon': {
+                  color: 'rgba(255, 255, 255, 0.7)'
+                }
+              }}
             >
               {Object.values(ExerciseCategory).map((category) => (
-                <MenuItem key={category} value={category}>
+                <MenuItem key={category} value={category} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
                   {category.charAt(0) + category.slice(1).toLowerCase()}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseNewExerciseDialog}>Cancel</Button>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={handleCloseNewExerciseDialog}
+            sx={{
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.05)'
+              }
+            }}
+          >
+            Cancel
+          </Button>
           <GradientButton 
             onClick={handleCreateAndAddExercise}
             disabled={!newExercise.name || !newExercise.category}
+            sx={{
+              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              color: 'white',
+              '&:hover': {
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 8px 25px -8px rgba(59, 130, 246, 0.3)'
+              },
+              '&:disabled': {
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'rgba(255, 255, 255, 0.3)'
+              }
+            }}
           >
             Create & Add
           </GradientButton>

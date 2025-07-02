@@ -42,41 +42,14 @@ export default function AddExerciseMenu({
     <Box sx={{ 
       p: 3, 
       minWidth: 350,
-      background: gradients.secondary,
-      border: borders.default,
-      borderRadius: borderRadius.large,
-      backdropFilter: 'blur(20px)',
+      // background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+      // border: '1px solid rgba(255, 255, 255, 0.1)',
+      // borderRadius: borderRadius.medium,
+      // overflow: 'hidden',
+      // backdropFilter: 'blur(20px)',
+      // boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     }}>
-      <Box sx={{
-        p: 2,
-        mb: 3,
-        background: gradients.primary,
-        borderRadius: borderRadius.medium,
-        border: borders.default,
-      }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            fontWeight: 600,
-            textAlign: 'center',
-            color: 'white',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-          }}
-        >
-          💪 Add Exercise
-        </Typography>
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            textAlign: 'center', 
-            mt: 0.5,
-            color: 'rgba(255,255,255,0.9)',
-            fontWeight: 500
-          }}
-        >
-          Choose an exercise to add to your workout
-        </Typography>
-      </Box>
+      {/* Header removed as per new compact design */}
       
       <FormControl fullWidth size="small" sx={{ mb: 3 }}>
         <InputLabel sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 500 }}>Category</InputLabel>

@@ -4,8 +4,8 @@ export const gradients = {
   // Primary gradients
   primary: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.3) 100%)',
   secondary: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-  button: 'linear-gradient(45deg, #2196F3 30%, #1565C0 90%)',
-  buttonHover: 'linear-gradient(45deg, #1976D2 30%, #0D47A1 90%)',
+  button: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+  buttonHover: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
   
   // Accent gradients
   success: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(46, 125, 50, 0.3) 100%)',

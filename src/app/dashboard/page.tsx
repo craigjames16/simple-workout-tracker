@@ -1,26 +1,26 @@
 'use client';
 
-
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { 
   Paper, Typography, Box, Tabs, Tab, Card, CardContent, Grid, Chip, CircularProgress,
-  Divider, useTheme, useMediaQuery, Avatar, List, ListItem, ListItemText, Button,
-  Collapse, IconButton, Tooltip, Badge, Select, MenuItem, FormControl, InputLabel
+  Divider, useTheme, useMediaQuery, Avatar, List, ListItem, ListItemText, Button, TextField,
+  Select, MenuItem, FormControl, InputLabel, IconButton, Menu, Dialog, DialogTitle,
+  DialogContent, DialogActions, LinearProgress
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CheckIcon from '@mui/icons-material/Check';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import HistoryIcon from '@mui/icons-material/History';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import EChartsReact from 'echarts-for-react';
+import Link from 'next/link';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -99,6 +99,46 @@ interface CurrentMesocycle {
   };
   planDays: PlanDay[];
   iterationVolumes?: { iterationNumber: number; totalVolume: number }[];
+}
+
+interface PlanInstance {
+  id: number;
+  status: string | null;
+  iterationNumber: number;
+  rir: number;
+  completedAt: string | null;
+  days: Array<{
+    id: number;
+    isComplete: boolean;
+    planDay: {
+      isRestDay: boolean;
+      dayNumber: number;
+    };
+    workoutInstance: {
+      id: number;
+      completedAt: string | null;
+      workoutExercises: Array<{
+        id: number;
+        exercise: {
+          name: string;
+        };
+      }>;
+    } | null;
+  }>;
+}
+
+interface MesocycleDetail {
+  id: number;
+  name: string;
+  plan: {
+    id: number;
+    name: string;
+  };
+  iterations: number;
+  status: string | null;
+  instances: PlanInstance[];
+  startedAt: string;
+  completedAt: string | null;
 }
 
 // Helper component for consistent exercise displays
@@ -205,216 +245,7 @@ const ExerciseCard = ({ exercise }: { exercise: Exercise }) => {
   );
 };
 
-// Next Workout Component
-const NextWorkout = ({ 
-  currentMesocycle,
-  onStartWorkout,
-  isStartingWorkout
-}: { 
-  currentMesocycle: CurrentMesocycle | null;
-  onStartWorkout: (iterationId: number, dayId: number) => Promise<void>;
-  isStartingWorkout: boolean;
-}) => {
-  const [nextWorkout, setNextWorkout] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchNextWorkout = async () => {
-      if (!currentMesocycle) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        const response = await fetch(`/api/workout-instances/latest`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch next workout');
-        }
-        
-        const data = await response.json();
-        setNextWorkout(data);
-      } catch (err) {
-        console.error('Error fetching next workout:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchNextWorkout();
-  }, [currentMesocycle]);
-
-  const handleStartWorkout = async () => {
-    if (!nextWorkout) return;
-
-    if (nextWorkout.needsNewIteration) {
-      // Create a new iteration first
-      try {
-        const response = await fetch(`/api/plan-instances`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            planId: currentMesocycle?.plan.id
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create new iteration');
-        }
-
-        const newIteration = await response.json();
-        // Now start the workout with the new iteration's first day
-        const firstDay = newIteration.days[0];
-        onStartWorkout(newIteration.id, firstDay.id);
-      } catch (err) {
-        console.error('Error creating new iteration:', err);
-        setError(err instanceof Error ? err.message : 'Failed to create new iteration');
-      }
-    } else {
-      // Start workout with existing iteration
-      if (!nextWorkout.iterationId || !nextWorkout.dayId) {
-        setError('Missing required workout information. Please try refreshing the page.');
-        return;
-      }
-      onStartWorkout(nextWorkout.iterationId, nextWorkout.dayId);
-    }
-  };
-  
-  if (loading) {
-    return (
-      <Card elevation={3} sx={{ mb: 3 }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress size={28} />
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  if (error) {
-    return (
-      <Card elevation={3} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography color="error">
-            Error loading next workout: {error}
-          </Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  if (!nextWorkout) {
-    return (
-      <Card elevation={3} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography>
-            No upcoming workouts found. Please check your mesocycle configuration.
-          </Typography>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  const isRestDay = nextWorkout.isRestDay;
-  
-  return (
-    <Card 
-      elevation={2} 
-      sx={{ 
-        mb: 3, 
-        overflow: 'hidden',
-        border: '1px solid',
-        borderColor: 'divider',
-      }}
-    >
-      <Box sx={{ 
-        bgcolor: 'background.paper', 
-        color: 'text.primary',
-        px: 2,
-        py: 1,
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-      }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 'medium' }}>
-          Next Workout
-        </Typography>
-      </Box>
-      
-      <CardContent sx={{ px: { xs: 1.5, sm: 2 }, py: { xs: 1.5, sm: 2 } }}>
-          <Box sx={{ 
-    display: 'flex', 
-    flexDirection: { xs: 'column', sm: 'row' },
-    alignItems: { xs: 'center', sm: 'center' },
-    justifyContent: 'space-between',
-    gap: { xs: 2, sm: 0 }
-  }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-      <Avatar 
-        sx={{ 
-          bgcolor: isRestDay ? 'info.main' : 'secondary.main',
-          mr: 1.5,
-          width: 32,
-          height: 32
-        }}
-      >
-        {isRestDay ? nextWorkout.dayNumber : <FitnessCenterIcon fontSize="small" />}
-      </Avatar>
-      <Box>
-        <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-          Day {nextWorkout.dayNumber}: {isRestDay ? 'Rest Day' : nextWorkout.workoutName}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Week {nextWorkout.iterationNumber}
-        </Typography>
-      </Box>
-    </Box>
-          
-              <Box sx={{ width: { xs: '100%', sm: 'auto' }, display: 'flex', justifyContent: { xs: 'center', sm: 'flex-end' } }}>
-      {isRestDay ? (
-        <Button 
-          variant="outlined" 
-          color="info"
-          size="small"
-          startIcon={<CheckIcon />}
-          onClick={async () => {
-            try {
-              const response = await fetch(`/api/plan-instances/${nextWorkout.iterationId}/days/${nextWorkout.dayId}/complete-rest`, {
-                method: 'POST',
-              });
-              
-              if (!response.ok) {
-                throw new Error('Failed to complete rest day');
-              }
-              
-              window.location.reload();
-            } catch (error) {
-              console.error('Error completing rest day:', error);
-              alert('Failed to complete rest day. Please try again.');
-            }
-          }}
-        >
-          Complete Rest Day
-        </Button>
-      ) : (
-        <Button 
-          variant="contained"
-          size="small"
-          startIcon={<PlayArrowIcon />}
-          onClick={handleStartWorkout}
-          disabled={isStartingWorkout}
-        >
-          {isStartingWorkout ? 'Starting...' : (nextWorkout.inProgress ? 'Continue Workout' : 'Start Workout')}
-        </Button>
-      )}
-    </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-};
 
 export default function DashboardPage() {
   const [tabValue, setTabValue] = useState(0);
@@ -426,11 +257,17 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({});
   const [expandedIterations, setExpandedIterations] = useState<Record<string, boolean>>({});
-  const [isStartingWorkout, setIsStartingWorkout] = useState(false);
+  // State for mesocycle management actions
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [newMesocycle, setNewMesocycle] = useState({ name: '', planId: '', iterations: 4 });
+  const [mesocycleDetail, setMesocycleDetail] = useState<MesocycleDetail | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  const router = useRouter();
 
   // Fetch all mesocycles on mount
   useEffect(() => {
@@ -487,34 +324,20 @@ export default function DashboardPage() {
     fetchMuscleGroups();
   }, []);
 
-  const startWorkoutInstance = async (iterationId: number, dayId: number) => {
-    try {
-      setIsStartingWorkout(true);
-      const response = await fetch(
-        `/api/plan-instances/${iterationId}/days/${dayId}/start`,
-        {
-          method: 'POST',
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to start new workout instance');
+  // Fetch available plans for creating new mesocycles
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await fetch('/api/plans');
+        if (!res.ok) throw new Error('Failed to fetch plans');
+        const data = await res.json();
+        setPlans(data);
+      } catch (err) {
+        /* silently ignore plan fetch errors so we don't block main UI */
       }
-
-      const newWorkoutInstance = await response.json();
-      router.push(`/track/${newWorkoutInstance.id}`);
-    } catch (error) {
-      console.error('Error starting workout instance:', error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to start new workout instance'
-      );
-    } finally {
-      setIsStartingWorkout(false);
-    }
-  };
+    };
+    fetchPlans();
+  }, []);
 
   // Toggle expanded state for a day
   const toggleDayExpanded = (dayNumber: number) => {
@@ -548,6 +371,64 @@ export default function DashboardPage() {
     setTabValue(newValue);
   };
 
+  // Fetch detailed mesocycle data when history dialog is opened
+  useEffect(() => {
+    if (!historyOpen || !selectedMesocycle) return;
+    const fetchDetail = async () => {
+      try {
+        const res = await fetch(`/api/mesocycles/${selectedMesocycle.id}`);
+        if (!res.ok) throw new Error('Failed to fetch mesocycle detail');
+        const data = await res.json();
+        setMesocycleDetail(data);
+      } catch (err) {
+        /* no-op: error will be shown via existing error mechanism */
+      }
+    };
+    fetchDetail();
+  }, [historyOpen, selectedMesocycle]);
+
+  /* --------------------------- Mesocycle actions --------------------------- */
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+
+  const handleCreateMesocycle = async () => {
+    try {
+      const response = await fetch('/api/mesocycles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMesocycle),
+      });
+      if (!response.ok) throw new Error('Failed to create mesocycle');
+      const data = await response.json();
+      setMesocycles(prev => [...prev, data]);
+      setSelectedMesocycleId(data.id);
+      setCreateOpen(false);
+      setNewMesocycle({ name: '', planId: '', iterations: 4 });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create mesocycle');
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedMesocycle) return;
+    try {
+      const response = await fetch(`/api/mesocycles/${selectedMesocycle.id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete mesocycle');
+      setMesocycles(prev => prev.filter(m => m.id !== selectedMesocycle.id));
+      const remaining = mesocycles.filter(m => m.id !== selectedMesocycle.id);
+      setSelectedMesocycleId(remaining.length ? remaining[0].id : null);
+      setDeleteOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete mesocycle');
+      setDeleteOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <ResponsiveContainer>
@@ -570,24 +451,69 @@ export default function DashboardPage() {
 
   return (
     <ResponsiveContainer maxWidth="lg">
-      <Paper sx={{ p: { xs: 2, sm: 3 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Typography variant="h4" gutterBottom>
-          Dashboard
-        </Typography>
+      <Box sx={{
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+        p: { xs: 2, sm: 3 },
+      }}>
+        <Box sx={{
+          pb: { xs: 2, sm: 3 },
+        }}>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontWeight: 700,
+              color: 'white',
+              fontSize: { xs: '1.5rem', sm: '2rem' }
+            }}
+          >
+            Dashboard
+          </Typography>
+        </Box>
 
-        {/* Next Workout always on top */}
-        <NextWorkout 
-          currentMesocycle={selectedMesocycle} 
-          onStartWorkout={startWorkoutInstance}
-          isStartingWorkout={isStartingWorkout}
-        />
 
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+
+        <Box sx={{ 
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          mb: 2
+        }}>
           <Tabs 
             value={tabValue} 
             onChange={handleTabChange} 
             aria-label="dashboard tabs"
             variant={isMobile ? "fullWidth" : "standard"}
+            sx={{
+              '& .MuiTabs-root': {
+                minHeight: 40,
+              },
+              '& .MuiTab-root': {
+                minWidth: 'auto',
+                px: 3,
+                py: 1.5,
+                borderRadius: 1,
+                color: 'rgba(156, 163, 175, 0.9)',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                textTransform: 'none',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  transform: 'translateY(-1px)'
+                },
+                                      '&.Mui-selected': {
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)',
+                        color: 'white',
+                        fontWeight: 600,
+                        border: '1px solid rgba(59, 130, 246, 0.15)',
+                        boxShadow: '0 4px 12px -4px rgba(59, 130, 246, 0.1)'
+                      }
+              },
+              '& .MuiTabs-indicator': {
+                display: 'none'
+              }
+            }}
           >
             <Tab label="Mesocycle" {...a11yProps(0)} />
             <Tab label="Volume Data" {...a11yProps(1)} />
@@ -595,156 +521,213 @@ export default function DashboardPage() {
         </Box>
         <TabPanel value={tabValue} index={0}>
           {/* Mesocycle selection dropdown */}
-          <FormControl sx={{ mb: 3, minWidth: 220 }} size="small">
-            <InputLabel id="mesocycle-select-label">Select Mesocycle</InputLabel>
-            <Select
-              labelId="mesocycle-select-label"
-              value={selectedMesocycleId ?? ''}
-              label="Select Mesocycle"
-              onChange={e => setSelectedMesocycleId(Number(e.target.value))}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <FormControl 
+              sx={{ 
+                minWidth: 220,
+                '& .MuiOutlinedInput-root': {
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 2,
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&.Mui-focused': {
+                    borderColor: 'rgba(59, 130, 246, 0.5)',
+                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                  },
+                  '& fieldset': {
+                    border: 'none'
+                  }
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&.Mui-focused': {
+                    color: 'rgba(59, 130, 246, 0.8)'
+                  }
+                }
+              }} 
+              size="small"
             >
-              {mesocycles.map((m) => (
-                <MenuItem key={m.id} value={m.id}>{m.name} ({m.plan?.name || 'No Plan'})</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+              <InputLabel id="mesocycle-select-label">Select Mesocycle</InputLabel>
+              <Select
+                labelId="mesocycle-select-label"
+                value={selectedMesocycleId ?? ''}
+                label="Select Mesocycle"
+                onChange={e => setSelectedMesocycleId(Number(e.target.value))}
+              >
+                {mesocycles.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>{m.name} ({m.plan?.name || 'No Plan'})</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <IconButton onClick={handleMenuOpen} sx={{ ml: 1 }}>
+              <MoreVertIcon />
+            </IconButton>
+          </Box>
+
+          {/* Management Menu */}
+          <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
+            <MenuItem onClick={() => { setHistoryOpen(true); handleMenuClose(); }}>
+              <HistoryIcon fontSize="small" sx={{ mr: 1 }} /> History
+            </MenuItem>
+            <MenuItem onClick={() => { setCreateOpen(true); handleMenuClose(); }}>
+              <AddIcon fontSize="small" sx={{ mr: 1 }} /> Create New
+            </MenuItem>
+            <MenuItem onClick={() => { setDeleteOpen(true); handleMenuClose(); }} sx={{ color: 'error.main' }}>
+              <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete Mesocycle
+            </MenuItem>
+          </Menu>
           
           <Box sx={{ height: '100%', overflow: 'auto' }}>
             {selectedMesocycle ? (
               <>
                 <Box sx={{ 
                   mb: 4,
-                  p: 3,
-                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.12) 0%, rgba(25, 118, 210, 0.06) 100%)',
-                  border: '1px solid',
-                  borderColor: 'rgba(25, 118, 210, 0.2)',
                   borderRadius: 2,
-                  backdropFilter: 'blur(10px)',
-                  position: 'relative',
                   overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
-                  }
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
                 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <FitnessCenterIcon sx={{ 
-                      mr: 1.5, 
-                      color: 'primary.main',
-                      fontSize: '1.5rem'
-                    }} />
-                    <Typography 
-                      variant="h4" 
-                      sx={{ 
-                        fontWeight: 600,
-                        background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        textShadow: 'none'
-                      }}
-                    >
-                      {selectedMesocycle.name}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <CalendarTodayIcon sx={{ 
-                      mr: 1, 
-                      color: 'text.secondary',
-                      fontSize: '1rem'
-                    }} />
-                    <Typography 
-                      variant="body1" 
-                      sx={{ 
-                        color: 'text.secondary',
-                        fontWeight: 500,
-                        letterSpacing: '0.025em'
-                      }}
-                    >
-                      Based on plan: {selectedMesocycle.plan.name}
-                    </Typography>
+                  <Box sx={{
+                    p: { xs: 2, sm: 3 },
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <FitnessCenterIcon sx={{ 
+                        mr: 1.5, 
+                        color: 'white',
+                        fontSize: '1.5rem'
+                      }} />
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          fontWeight: 700,
+                          color: 'white',
+                          fontSize: { xs: '1.5rem', sm: '2rem' }
+                        }}
+                      >
+                        {selectedMesocycle.name}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <CalendarTodayIcon sx={{ 
+                        mr: 1, 
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontSize: '1rem'
+                      }} />
+                      <Typography 
+                        variant="body1" 
+                        sx={{ 
+                          color: 'rgba(255, 255, 255, 0.8)',
+                          fontWeight: 500,
+                          letterSpacing: '0.025em'
+                        }}
+                      >
+                        Based on plan: {selectedMesocycle.plan.name}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
 
                 {/* ECharts volume per iteration chart will go here */}
                 {selectedMesocycle.iterationVolumes && selectedMesocycle.iterationVolumes.length > 0 && (
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Total Volume per Week
-                    </Typography>
-                    <EChartsReact
-                      style={{ width: '100%', height: 300 }}
-                      option={{
-                        tooltip: { 
-                          trigger: 'axis',
-                          formatter: (params: any) => {
-                            const data = params[0];
-                            return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
-                          }
-                        },
-                        grid: { left: 80, right: 30, bottom: 50, top: 30 },
-                        xAxis: {
-                          type: 'category',
-                          data: selectedMesocycle.iterationVolumes.map(v => `Week ${v.iterationNumber}`),
-                          name: 'Week',
-                          nameLocation: 'center',
-                          nameGap: 30,
-                          axisLabel: { fontSize: 14 },
-                          splitLine: { show: false }
-                        },
-                        yAxis: {
-                          type: 'value',
-                          name: 'Volume',
-                          nameLocation: 'center',
-                          nameGap: 50,
-                          axisLabel: { fontSize: 14 },
-                          splitLine: { show: false },
-                          axisLine: { show: false },
-                          axisTick: { show: false }
-                        },
-                        series: [
-                          {
-                            data: selectedMesocycle.iterationVolumes.map((v, index) => {
-                              let percentChange = 0;
-                              if (index > 0) {
-                                const prevVolume = selectedMesocycle.iterationVolumes?.[index - 1]?.totalVolume || 0;
-                                percentChange = prevVolume > 0 ? ((v.totalVolume - prevVolume) / prevVolume * 100) : 0;
-                              }
-                              return {
-                                value: v.totalVolume,
-                                percentChange: percentChange
-                              };
-                            }),
-                            type: 'bar',
-                            itemStyle: { color: '#8884d8', borderRadius: [6, 6, 0, 0] },
-                            barWidth: '60%',
-                            label: {
-                              show: true,
-                              position: 'top',
-                              formatter: (params: any) => {
-                                const percentChange = params.data.percentChange;
-                                if (percentChange === 0) return '';
-                                const sign = percentChange > 0 ? '+' : '';
-                                return `${sign}${percentChange.toFixed(1)}%`;
-                              },
-                              fontSize: 12,
-                              fontWeight: 'bold',
-                              color: (params: any) => {
-                                const percentChange = params.data.percentChange;
-                                if (percentChange > 0) return '#4caf50';
-                                if (percentChange < 0) return '#f44336';
-                                return '#666';
+                  <Box sx={{ 
+                    mb: 4,
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                  }}>
+                    <Box sx={{
+                      p: { xs: 2, sm: 3 },
+                    }}>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          fontWeight: 700,
+                          color: 'white',
+                          fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                        }}
+                      >
+                        Total Volume per Week
+                      </Typography>
+                    </Box>
+                    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                      <EChartsReact
+                        style={{ width: '100%', height: 300 }}
+                        option={{
+                          tooltip: { 
+                            trigger: 'axis',
+                            formatter: (params: any) => {
+                              const data = params[0];
+                              return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+                            }
+                          },
+                          grid: { left: 80, right: 30, bottom: 50, top: 30 },
+                          xAxis: {
+                            type: 'category',
+                            data: selectedMesocycle.iterationVolumes?.map(v => `Week ${v.iterationNumber}`) || [],
+                            name: 'Week',
+                            nameLocation: 'center',
+                            nameGap: 30,
+                            axisLabel: { fontSize: 14 },
+                            splitLine: { show: false }
+                          },
+                          yAxis: {
+                            type: 'value',
+                            name: 'Volume',
+                            nameLocation: 'center',
+                            nameGap: 50,
+                            axisLabel: { fontSize: 14 },
+                            splitLine: { show: false },
+                            axisLine: { show: false },
+                            axisTick: { show: false }
+                          },
+                          series: [
+                            {
+                              data: selectedMesocycle.iterationVolumes?.map((v, index) => {
+                                let percentChange = 0;
+                                if (index > 0) {
+                                  const prevVolume = selectedMesocycle.iterationVolumes?.[index - 1]?.totalVolume || 0;
+                                  percentChange = prevVolume > 0 ? ((v.totalVolume - prevVolume) / prevVolume * 100) : 0;
+                                }
+                                return {
+                                  value: v.totalVolume,
+                                  percentChange: percentChange
+                                };
+                              }) || [],
+                              type: 'bar',
+                              itemStyle: { color: '#8884d8', borderRadius: [4, 4, 0, 0] },
+                              barWidth: '60%',
+                              label: {
+                                show: true,
+                                position: 'top',
+                                formatter: (params: any) => {
+                                  const percentChange = params.data.percentChange;
+                                  if (percentChange === 0) return '';
+                                  const sign = percentChange > 0 ? '+' : '';
+                                  return `${sign}${percentChange.toFixed(1)}%`;
+                                },
+                                fontSize: 12,
+                                fontWeight: 'bold',
+                                color: (params: any) => {
+                                  const percentChange = params.data.percentChange;
+                                  if (percentChange > 0) return '#4caf50';
+                                  if (percentChange < 0) return '#f44336';
+                                  return '#666';
+                                }
                               }
                             }
-                          }
-                        ]
-                      }}
-                    />
+                          ]
+                        }}
+                      />
+                    </Box>
                   </Box>
                 )}
 
@@ -770,180 +753,223 @@ export default function DashboardPage() {
                                 Day {day.dayNumber}
                               </Typography>
                             </Box>
-                            <Card elevation={2} sx={{ p: 2 }}>
-                              <Typography variant="h6" gutterBottom>
-                                Total Day Volume
-                              </Typography>
-                              <EChartsReact
-                                style={{ width: '100%', height: 280 }}
-                                option={{
-                                  tooltip: { 
-                                    trigger: 'axis',
-                                    formatter: (params: any) => {
-                                      const data = params[0];
-                                      return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
-                                    }
-                                  },
-                                  grid: { 
-                                    left: 80, 
-                                    right: 30, 
-                                    bottom: 50, 
-                                    top: 60 
-                                  },
-                                  xAxis: {
-                                    type: 'category',
-                                    data: day.iterations
-                                      .filter((iteration: any) => !!iteration.completedAt)
-                                      .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                      .map((iteration: any) => `Week ${iteration.iterationNumber}`),
-                                    name: 'Week',
-                                    nameLocation: 'center',
-                                    nameGap: 30,
-                                    axisLabel: { fontSize: 13 },
-                                    splitLine: { show: false }
-                                  },
-                                  yAxis: {
-                                    type: 'value',
-                                    name: 'Volume',
-                                    nameLocation: 'center',
-                                    nameGap: 50,
-                                    axisLabel: { fontSize: 13 },
-                                    splitLine: { show: false },
-                                    axisLine: { show: false },
-                                    axisTick: { show: false }
-                                  },
-                                  series: [
-                                    {
+                            <Box sx={{
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                              backdropFilter: 'blur(20px)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                            }}>
+                              <Box sx={{
+                                p: { xs: 2, sm: 3 },
+                              }}>
+                                <Typography 
+                                  variant="h6" 
+                                  sx={{ 
+                                    fontWeight: 700,
+                                    color: 'white',
+                                    fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                                  }}
+                                >
+                                  Total Day Volume
+                                </Typography>
+                              </Box>
+                              <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                                <EChartsReact
+                                  style={{ width: '100%', height: 280 }}
+                                  option={{
+                                    tooltip: { 
+                                      trigger: 'axis',
+                                      formatter: (params: any) => {
+                                        const data = params[0];
+                                        return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+                                      }
+                                    },
+                                    grid: { 
+                                      left: 80, 
+                                      right: 30, 
+                                      bottom: 50, 
+                                      top: 60 
+                                    },
+                                    xAxis: {
+                                      type: 'category',
                                       data: day.iterations
                                         .filter((iteration: any) => !!iteration.completedAt)
                                         .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                        .map((iteration: any, index: number, sortedIterations: any[]) => {
-                                          const volume = iteration.exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
-                                          let percentChange = 0;
-                                          if (index > 0) {
-                                            const prevVolume = sortedIterations[index - 1].exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
-                                            percentChange = prevVolume > 0 ? ((volume - prevVolume) / prevVolume * 100) : 0;
+                                        .map((iteration: any) => `Week ${iteration.iterationNumber}`),
+                                      name: 'Week',
+                                      nameLocation: 'center',
+                                      nameGap: 30,
+                                      axisLabel: { fontSize: 13 },
+                                      splitLine: { show: false }
+                                    },
+                                    yAxis: {
+                                      type: 'value',
+                                      name: 'Volume',
+                                      nameLocation: 'center',
+                                      nameGap: 50,
+                                      axisLabel: { fontSize: 13 },
+                                      splitLine: { show: false },
+                                      axisLine: { show: false },
+                                      axisTick: { show: false }
+                                    },
+                                    series: [
+                                      {
+                                        data: day.iterations
+                                          .filter((iteration: any) => !!iteration.completedAt)
+                                          .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                          .map((iteration: any, index: number, sortedIterations: any[]) => {
+                                            const volume = iteration.exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
+                                            let percentChange = 0;
+                                            if (index > 0) {
+                                              const prevVolume = sortedIterations[index - 1].exercises.reduce((sum: number, ex: any) => sum + (ex.volume || 0), 0);
+                                              percentChange = prevVolume > 0 ? ((volume - prevVolume) / prevVolume * 100) : 0;
+                                            }
+                                            return {
+                                              value: volume,
+                                              percentChange: percentChange
+                                            };
+                                          }),
+                                        type: 'bar',
+                                        itemStyle: { color: '#4caf50', borderRadius: [4, 4, 0, 0] },
+                                        barWidth: '60%',
+                                        label: {
+                                          show: true,
+                                          position: 'top',
+                                          formatter: (params: any) => {
+                                            const percentChange = params.data.percentChange;
+                                            if (percentChange === 0) return '';
+                                            const sign = percentChange > 0 ? '+' : '';
+                                            return `${sign}${percentChange.toFixed(1)}%`;
+                                          },
+                                          fontSize: 12,
+                                          fontWeight: 'bold',
+                                          color: (params: any) => {
+                                            const percentChange = params.data.percentChange;
+                                            if (percentChange > 0) return '#4caf50';
+                                            if (percentChange < 0) return '#f44336';
+                                            return '#666';
                                           }
-                                          return {
-                                            value: volume,
-                                            percentChange: percentChange
-                                          };
-                                        }),
-                                      type: 'bar',
-                                      itemStyle: { color: '#4caf50', borderRadius: [6, 6, 0, 0] },
-                                      barWidth: '60%',
-                                      label: {
-                                        show: true,
-                                        position: 'top',
-                                        formatter: (params: any) => {
-                                          const percentChange = params.data.percentChange;
-                                          if (percentChange === 0) return '';
-                                          const sign = percentChange > 0 ? '+' : '';
-                                          return `${sign}${percentChange.toFixed(1)}%`;
-                                        },
-                                        fontSize: 12,
-                                        fontWeight: 'bold',
-                                        color: (params: any) => {
-                                          const percentChange = params.data.percentChange;
-                                          if (percentChange > 0) return '#4caf50';
-                                          if (percentChange < 0) return '#f44336';
-                                          return '#666';
                                         }
                                       }
-                                    }
-                                  ]
-                                }}
-                              />
-                            </Card>
+                                    ]
+                                  }}
+                                />
+                              </Box>
+                            </Box>
 
                             {/* Exercise List with Week-over-Week Progress */}
-                            <Card elevation={1} sx={{ mt: 2, p: 2 }}>
-                              <Typography variant="h6" gutterBottom>
-                                Exercise Progress
-                              </Typography>
-                              <Box sx={{ overflowX: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                  <thead>
-                                    <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                                      <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600 }}>
-                                        Exercise
-                                      </th>
-                                      {day.iterations
-                                        .filter((iteration: any) => !!iteration.completedAt)
-                                        .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                        .slice(1) // Skip first week since no previous data
-                                        .map((iteration: any) => (
-                                          <th key={iteration.iterationNumber} style={{ 
-                                            textAlign: 'center', 
-                                            padding: '8px 12px', 
-                                            fontWeight: 600,
-                                            minWidth: '80px'
-                                          }}>
-                                            Week {iteration.iterationNumber}
-                                          </th>
-                                        ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {/* Get all unique exercises across all iterations */}
-                                    {Array.from(new Set(
-                                      day.iterations
-                                        .filter((iteration: any) => !!iteration.completedAt)
-                                        .flatMap((iteration: any) => iteration.exercises?.map((ex: any) => ex.name) || [])
-                                    )).map((exerciseName: string) => (
-                                      <tr key={exerciseName} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                                        <td style={{ 
-                                          padding: '12px', 
-                                          fontWeight: 500,
-                                          borderRight: '1px solid rgba(255, 255, 255, 0.05)'
-                                        }}>
-                                          {exerciseName}
-                                        </td>
+                            <Box sx={{ 
+                              mt: 2,
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                              backdropFilter: 'blur(20px)',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                            }}>
+                              <Box sx={{
+                                p: { xs: 2, sm: 3 },
+                              }}>
+                                <Typography 
+                                  variant="h6" 
+                                  sx={{ 
+                                    fontWeight: 700,
+                                    color: 'white',
+                                    fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                                  }}
+                                >
+                                  Exercise Progress
+                                </Typography>
+                              </Box>
+                              <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                                <Box sx={{ overflowX: 'auto' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                      <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                                        <th style={{ textAlign: 'left', padding: '8px 12px', fontWeight: 600, color: 'white' }}>
+                                          Exercise
+                                        </th>
                                         {day.iterations
                                           .filter((iteration: any) => !!iteration.completedAt)
                                           .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                          .slice(1)
-                                          .map((iteration: any, index: number) => {
-                                            const currentEx = iteration.exercises.find((ex: any) => ex.name === exerciseName);
-                                            const prevIteration = day.iterations
-                                              .filter((iter: any) => !!iter.completedAt)
-                                              .sort((a, b) => a.iterationNumber - b.iterationNumber)[index]; // Previous iteration
-                                            const prevEx = prevIteration?.exercises.find((ex: any) => ex.name === exerciseName);
-                                            
-                                            let changeText = '-';
-                                            let changeColor = '#666';
-                                            
-                                            if (currentEx && prevEx && prevEx.volume > 0) {
-                                              const percentChange = ((currentEx.volume - prevEx.volume) / prevEx.volume * 100);
-                                              const sign = percentChange > 0 ? '+' : '';
-                                              changeText = `${sign}${percentChange.toFixed(1)}%`;
-                                              changeColor = percentChange > 0 ? '#4caf50' : percentChange < 0 ? '#f44336' : '#666';
-                                            } else if (currentEx && !prevEx) {
-                                              changeText = 'New';
-                                              changeColor = '#2196f3';
-                                            } else if (!currentEx && prevEx) {
-                                              changeText = 'Removed';
-                                              changeColor = '#ff9800';
-                                            }
-                                            
-                                            return (
-                                              <td key={iteration.iterationNumber} style={{ 
-                                                padding: '12px', 
-                                                textAlign: 'center',
-                                                color: changeColor,
-                                                fontWeight: 600,
-                                                fontSize: '0.875rem'
-                                              }}>
-                                                {changeText}
-                                              </td>
-                                            );
-                                          })}
+                                          .slice(1) // Skip first week since no previous data
+                                          .map((iteration: any) => (
+                                            <th key={iteration.iterationNumber} style={{ 
+                                              textAlign: 'center', 
+                                              padding: '8px 12px', 
+                                              fontWeight: 600,
+                                              minWidth: '80px',
+                                              color: 'white'
+                                            }}>
+                                              Week {iteration.iterationNumber}
+                                            </th>
+                                          ))}
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
+                                    </thead>
+                                    <tbody>
+                                      {/* Get all unique exercises across all iterations */}
+                                      {Array.from(new Set(
+                                        day.iterations
+                                          .filter((iteration: any) => !!iteration.completedAt)
+                                          .flatMap((iteration: any) => iteration.exercises?.map((ex: any) => ex.name) || [])
+                                      )).map((exerciseName: string) => (
+                                        <tr key={exerciseName} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                          <td style={{ 
+                                            padding: '12px', 
+                                            fontWeight: 500,
+                                            borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+                                            color: 'rgba(255, 255, 255, 0.9)'
+                                          }}>
+                                            {exerciseName}
+                                          </td>
+                                          {day.iterations
+                                            .filter((iteration: any) => !!iteration.completedAt)
+                                            .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                                            .slice(1)
+                                            .map((iteration: any, index: number) => {
+                                              const currentEx = iteration.exercises.find((ex: any) => ex.name === exerciseName);
+                                              const prevIteration = day.iterations
+                                                .filter((iter: any) => !!iter.completedAt)
+                                                .sort((a, b) => a.iterationNumber - b.iterationNumber)[index]; // Previous iteration
+                                              const prevEx = prevIteration?.exercises.find((ex: any) => ex.name === exerciseName);
+                                              
+                                              let changeText = '-';
+                                              let changeColor = '#666';
+                                              
+                                              if (currentEx && prevEx && prevEx.volume > 0) {
+                                                const percentChange = ((currentEx.volume - prevEx.volume) / prevEx.volume * 100);
+                                                const sign = percentChange > 0 ? '+' : '';
+                                                changeText = `${sign}${percentChange.toFixed(1)}%`;
+                                                changeColor = percentChange > 0 ? '#4caf50' : percentChange < 0 ? '#f44336' : '#666';
+                                              } else if (currentEx && !prevEx) {
+                                                changeText = 'New';
+                                                changeColor = '#2196f3';
+                                              } else if (!currentEx && prevEx) {
+                                                changeText = 'Removed';
+                                                changeColor = '#ff9800';
+                                              }
+                                              
+                                              return (
+                                                <td key={`${exerciseName}-${iteration.iterationNumber}`} style={{ 
+                                                  padding: '12px', 
+                                                  textAlign: 'center',
+                                                  color: changeColor,
+                                                  fontWeight: 600,
+                                                  fontSize: '0.875rem'
+                                                }}>
+                                                  {changeText}
+                                                </td>
+                                              );
+                                            })}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </Box>
                               </Box>
-                            </Card>
+                            </Box>
                           </Box>
                         ) : (
                           <Box sx={{ mb: 4 }}>
@@ -975,7 +1001,16 @@ export default function DashboardPage() {
                 </Grid>
               </>
             ) : (
-              <Typography variant="h6">No active mesocycle found</Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textAlign: 'center',
+                  py: 4
+                }}
+              >
+                No active mesocycle found
+              </Typography>
             )}
           </Box>
         </TabPanel>
@@ -1016,116 +1051,264 @@ export default function DashboardPage() {
                   });
 
                   return (
-                    <Box key={muscleGroup} sx={{ mb: 4 }}>
-                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.primary' }}>
-                        {muscleGroup}
-                      </Typography>
-                      <EChartsReact
-                        style={{ width: '100%', height: 300 }}
-                        option={{
-                          tooltip: {
-                            trigger: 'axis',
-                            axisPointer: {
-                              type: 'cross',
-                              crossStyle: {
-                                color: '#999'
+                    <Box key={muscleGroup} sx={{ 
+                      mb: 4,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                    }}>
+                      <Box sx={{
+                        p: { xs: 2, sm: 3 },
+                      }}>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 700,
+                            color: 'white',
+                            fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                          }}
+                        >
+                          {muscleGroup}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                        <EChartsReact
+                          style={{ width: '100%', height: 300 }}
+                          option={{
+                            tooltip: {
+                              trigger: 'axis',
+                              axisPointer: {
+                                type: 'cross',
+                                crossStyle: {
+                                  color: '#999'
+                                }
+                              },
+                              formatter: (params: any) => {
+                                let result = `${params[0].name}<br/>`;
+                                params.forEach((param: any) => {
+                                  const value = param.seriesName === 'Rolling Average' 
+                                    ? param.value.toFixed(1) 
+                                    : param.value.toLocaleString();
+                                  result += `${param.marker}${param.seriesName}: ${value}<br/>`;
+                                });
+                                return result;
                               }
                             },
-                            formatter: (params: any) => {
-                              let result = `${params[0].name}<br/>`;
-                              params.forEach((param: any) => {
-                                const value = param.seriesName === 'Rolling Average' 
-                                  ? param.value.toFixed(1) 
-                                  : param.value.toLocaleString();
-                                result += `${param.marker}${param.seriesName}: ${value}<br/>`;
-                              });
-                              return result;
-                            }
-                          },
-                                                     legend: {
-                             data: ['Volume', 'Rolling Average'],
-                             top: 10,
-                             textStyle: {
-                               color: '#000000',
-                               fontSize: 14,
-                               fontWeight: 'bold'
-                             }
-                           },
-                          grid: {
-                            left: 60,
-                            right: 60,
-                            bottom: 60,
-                            top: 60
-                          },
-                          xAxis: [
-                            {
-                              type: 'category',
-                              data: transformedData.map((d: TransformedDataPoint) => d.shortDate),
-                              axisPointer: {
-                                type: 'shadow'
-                              },
-                              axisLabel: {
-                                fontSize: 12,
-                                rotate: transformedData.length > 8 ? 45 : 0
-                              },
-                              name: 'Date',
-                              nameLocation: 'center',
-                              nameGap: 35
-                            }
-                          ],
-                          yAxis: [
-                            {
-                              type: 'value',
-                              name: 'Volume',
-                              nameLocation: 'center',
-                              nameGap: 40,
-                                                             axisLabel: {
-                                 fontSize: 12
-                               },
-                               splitLine: {
-                                 show: false
-                               }
-                            }
-                          ],
-                          series: [
-                            {
-                              name: 'Volume',
-                              type: 'bar',
-                              data: transformedData.map((d: TransformedDataPoint) => d.volume),
-                              itemStyle: {
-                                color: '#8884d8',
-                                borderRadius: [4, 4, 0, 0]
-                              },
-                              barWidth: '60%'
+                            legend: {
+                              data: ['Volume', 'Rolling Average'],
+                              top: 10,
+                              textStyle: {
+                                color: '#ffffff',
+                                fontSize: 14,
+                                fontWeight: 'bold'
+                              }
                             },
-                            {
-                              name: 'Rolling Average',
-                              type: 'line',
-                              data: transformedData.map((d: TransformedDataPoint) => d.rollingVolume),
-                              itemStyle: {
-                                color: '#ff7300'
+                            grid: {
+                              left: 60,
+                              right: 60,
+                              bottom: 60,
+                              top: 60
+                            },
+                            xAxis: [
+                              {
+                                type: 'category',
+                                data: transformedData.map((d: TransformedDataPoint) => d.shortDate),
+                                axisPointer: {
+                                  type: 'shadow'
+                                },
+                                axisLabel: {
+                                  fontSize: 12,
+                                  rotate: transformedData.length > 8 ? 45 : 0
+                                },
+                                name: 'Date',
+                                nameLocation: 'center',
+                                nameGap: 35
+                              }
+                            ],
+                            yAxis: [
+                              {
+                                type: 'value',
+                                name: 'Volume',
+                                nameLocation: 'center',
+                                nameGap: 40,
+                                axisLabel: {
+                                  fontSize: 12
+                                },
+                                splitLine: {
+                                  show: false
+                                }
+                              }
+                            ],
+                            series: [
+                              {
+                                name: 'Volume',
+                                type: 'bar',
+                                data: transformedData.map((d: TransformedDataPoint) => d.volume),
+                                itemStyle: {
+                                  color: '#8884d8',
+                                  borderRadius: [4, 4, 0, 0]
+                                },
+                                barWidth: '60%'
                               },
-                              lineStyle: {
-                                width: 3,
-                                color: '#ff7300'
-                              },
-                              symbol: 'circle',
-                              symbolSize: 6,
-                              smooth: true
-                            }
-                          ]
-                        }}
-                      />
+                              {
+                                name: 'Rolling Average',
+                                type: 'line',
+                                data: transformedData.map((d: TransformedDataPoint) => d.rollingVolume),
+                                itemStyle: {
+                                  color: '#ff7300'
+                                },
+                                lineStyle: {
+                                  width: 3,
+                                  color: '#ff7300'
+                                },
+                                symbol: 'circle',
+                                symbolSize: 6,
+                                smooth: true
+                              }
+                            ]
+                          }}
+                        />
+                      </Box>
                     </Box>
                   );
                 })}
               </Box>
             ) : (
-              <Typography variant="h6">No volume data available</Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  textAlign: 'center',
+                  py: 4
+                }}
+              >
+                No volume data available
+              </Typography>
             )}
           </Box>
         </TabPanel>
-      </Paper>
+      </Box>
+
+      {/* --------------------- Mesocycle Management Dialogs --------------------- */}
+
+      {/* History Dialog */}
+      <Dialog open={historyOpen} onClose={() => setHistoryOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Mesocycle History - {selectedMesocycle?.name}</DialogTitle>
+        <DialogContent dividers sx={{ maxHeight: 600 }}>
+          {mesocycleDetail ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {mesocycleDetail.instances
+                .sort((a, b) => a.iterationNumber - b.iterationNumber)
+                .map((instance) => (
+                  <Card key={instance.id} variant="outlined" sx={{ p: 2 }}>
+                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                      Week {instance.iterationNumber}
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {instance.days
+                        .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
+                        .map((day) => {
+                          const completed = day.planDay.isRestDay ? day.isComplete : !!day.workoutInstance?.completedAt;
+                          return (
+                            (() => {
+                              const label = `Day ${day.planDay.dayNumber} ${day.planDay.isRestDay ? 'Rest' : 'Workout'}`;
+                              if (!day.planDay.isRestDay && day.workoutInstance?.id) {
+                                return (
+                                  <Chip
+                                    key={day.id}
+                                    label={label}
+                                    color={completed ? 'success' : 'default'}
+                                    size="small"
+                                    component={Link}
+                                    href={`/track/${day.workoutInstance.id}`}
+                                    clickable
+                                    sx={{ cursor: 'pointer' }}
+                                  />
+                                );
+                              }
+                              return (
+                                <Chip
+                                  key={day.id}
+                                  label={label}
+                                  color={completed ? 'success' : 'default'}
+                                  size="small"
+                                />
+                              );
+                            })()
+                          );
+                        })}
+                    </Box>
+                  </Card>
+                ))}
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHistoryOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Mesocycle Dialog */}
+      <Dialog open={createOpen} onClose={() => setCreateOpen(false)}>
+        <DialogTitle>Create New Mesocycle</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <TextField
+            fullWidth
+            label="Name"
+            value={newMesocycle.name}
+            onChange={(e) => setNewMesocycle(prev => ({ ...prev, name: e.target.value }))}
+            sx={{ mb: 2 }}
+          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Base Plan</InputLabel>
+            <Select
+              value={newMesocycle.planId}
+              label="Base Plan"
+              onChange={(e) => setNewMesocycle(prev => ({ ...prev, planId: e.target.value }))}
+            >
+              {plans.map((plan: any) => (
+                <MenuItem key={plan.id} value={plan.id}>{plan.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <TextField
+            fullWidth
+            type="number"
+            label="Number of Iterations"
+            value={newMesocycle.iterations}
+            onChange={(e) => setNewMesocycle(prev => ({ ...prev, iterations: parseInt(e.target.value) }))}
+            inputProps={{ min: 1, max: 12 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreateMesocycle} variant="contained" disabled={!newMesocycle.name || !newMesocycle.planId}>
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+        <DialogTitle>Delete Mesocycle</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete this mesocycle? This action cannot be undone.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={handleConfirmDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </ResponsiveContainer>
   );
 }

@@ -18,10 +18,11 @@ export const ResponsiveContainer = ({
       maxWidth={maxWidth}
       sx={{
         ...sx,
-        mt: { xs: 0, sm: 2, md: 4 },
-        px: { xs: 0, sm: 2 },
+        mt: { xs: 0, sm: 0, md: 0 },
+        px: { xs: 0, sm: 0 },
       }}
       {...props}
-    />
+    /
+    >
   );
 };

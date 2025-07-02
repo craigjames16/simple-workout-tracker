@@ -18,15 +18,12 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ChatIcon from '@mui/icons-material/Chat';
 import { usePathname } from 'next/navigation';
-import { gradients, glassMorphism, borders, borderRadius } from '@/lib/theme-constants';
 
 const navItems = [
   { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
   { text: 'Dashboard', href: '/dashboard', icon: <HomeIcon /> },
   { text: 'Exercises', href: '/exercises', icon: <SportsGymnasticsIcon /> },
-  { text: 'Workouts', href: '/workouts', icon: <FitnessCenterIcon /> },
   { text: 'Plans', href: '/plans', icon: <ListAltIcon /> },
-  { text: 'Mesocycles', href: '/mesocycles', icon: <RepeatIcon /> },
   { text: 'Chat', href: '/chat', icon: <ChatIcon /> },
 ];
 
@@ -40,13 +37,19 @@ export default function Navbar() {
       <AppBar 
         position="fixed"
         sx={{
-          background: gradients.secondary,
-          border: borders.default,
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
           backdropFilter: 'blur(20px)',
-          boxShadow: '0px 4px 20px rgba(0,0,0,0.15)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         }}
       >
-        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
+        <Toolbar sx={{
+          minHeight: { xs: 56, sm: 64 },
+          width: '100%',
+          maxWidth: (theme) => theme.breakpoints.values.lg,
+          mx: 'auto',
+          px: { xs: 1, md: 2 },
+        }}>
           {isMobile ? (
             <>
               {/* Mobile view - icons only across the top */}
@@ -67,28 +70,29 @@ export default function Navbar() {
                     href={item.href}
                     size="small"
                     sx={{
-                      borderRadius: borderRadius.medium,
+                      borderRadius: 2,
                       p: 1,
                       minWidth: 40,
-                      transition: 'all 0.2s ease-in-out',
-                      ...(pathname === item.href && {
-                        background: glassMorphism.medium,
-                        border: borders.accent,
-                      }),
-                      ...(item.highlight && {
-                        background: gradients.button,
-                        '&:hover': {
-                          background: gradients.buttonHover,
-                          transform: 'translateY(-1px)',
-                        },
-                      }),
-                      ...(!item.highlight && {
-                        background: glassMorphism.light,
-                        '&:hover': {
-                          background: glassMorphism.hover,
-                          transform: 'translateY(-1px)',
-                        },
-                      }),
+                      width: 40,
+                      height: 40,
+                      background: pathname === item.href 
+                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)'
+                        : item.highlight
+                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)'
+                          : 'rgba(255, 255, 255, 0.05)',
+                      border: pathname === item.href 
+                        ? '1px solid rgba(59, 130, 246, 0.3)'
+                        : '1px solid rgba(255, 255, 255, 0.1)',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        background: pathname === item.href 
+                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.12) 100%)'
+                          : 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        transform: 'translateY(-1px)',
+                        color: 'white'
+                      }
                     }}
                   >
                     {item.icon}
@@ -108,30 +112,29 @@ export default function Navbar() {
                   startIcon={item.icon}
                   sx={{
                     mx: 1,
-                    px: 2,
-                    py: 1,
-                    borderRadius: borderRadius.medium,
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: 2,
                     fontWeight: 600,
                     textTransform: 'none',
-                    transition: 'all 0.2s ease-in-out',
-                    ...(pathname === item.href && {
-                      background: glassMorphism.medium,
-                      border: borders.accent,
-                    }),
-                    ...(item.highlight && {
-                      background: gradients.button,
-                      '&:hover': {
-                        background: gradients.buttonHover,
-                        transform: 'translateY(-1px)',
-                      },
-                    }),
-                    ...(!item.highlight && {
-                      background: glassMorphism.light,
-                      '&:hover': {
-                        background: glassMorphism.hover,
-                        transform: 'translateY(-1px)',
-                      },
-                    }),
+                    background: pathname === item.href 
+                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)'
+                      : item.highlight
+                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)'
+                        : 'rgba(255, 255, 255, 0.05)',
+                    border: pathname === item.href 
+                      ? '1px solid rgba(59, 130, 246, 0.3)'
+                      : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      background: pathname === item.href 
+                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.12) 100%)'
+                        : 'rgba(255, 255, 255, 0.1)',
+                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                      transform: 'translateY(-1px)',
+                      color: 'white'
+                    }
                   }}
                 >
                   {item.text}

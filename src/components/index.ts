@@ -27,3 +27,4 @@ export {
 } from '@mui/material';
 
 export {ResponsiveContainer} from './ResponsiveContainer';
+export {default as StyledCard} from './StyledCard';

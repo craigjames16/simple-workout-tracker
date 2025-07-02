@@ -92,80 +92,122 @@ export default function PlansPage() {
 
   return (
     <ResponsiveContainer sx={{ mt: 4, pb: 4 }}>
-      <Paper>
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="h5">
+         <Box sx={{
+         p: { xs: 2, sm: 3 },
+          }}>
+        <Box sx={{
+          pb: { xs: 2, sm: 3 },
+        }}>
+        <Typography variant="h4"
+          sx={{ 
+            fontWeight: 700,
+            color: 'white',
+            fontSize: { xs: '1.5rem', sm: '2rem' }
+          }}>
             Plans
           </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
+          </Box>  
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 0, mt: 3 }}>
           {plans.map((plan) => (
-            <Card
+            <Box
               key={plan.id}
               component={Link}
               href={`/plans/${plan.id}`}
               sx={{ 
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                alignItems: { sm: 'center' },
-                p: 2,
+                borderRadius: 2,
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 textDecoration: 'none',
                 color: 'inherit',
-                transition: 'all 0.2s',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 3,
-                  backgroundColor: 'action.hover'
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.35)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                 }
               }}
             >
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                flex: 1,
-                gap: 2,
+              <Box sx={{
+                p: { xs: 2, sm: 3 },
               }}>
-                <CalendarTodayIcon color="action" />
-                <Box>
-                  <Typography variant="h6" sx={{ mb: 0.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <FitnessCenterIcon sx={{ 
+                    mr: 1.5, 
+                    color: 'white',
+                    fontSize: '1.5rem'
+                  }} />
+                  <Typography 
+                    variant="h5" 
+                    sx={{ 
+                      fontWeight: 700,
+                      color: 'white',
+                      fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                    }}
+                  >
                     {plan.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <CalendarTodayIcon sx={{ 
+                    mr: 1, 
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '1rem'
+                  }} />
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      color: 'rgba(255, 255, 255, 0.8)',
+                      fontWeight: 500,
+                      letterSpacing: '0.025em'
+                    }}
+                  >
+                    {plan.days.length} days
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Chip
+                    size="small"
+                    icon={<FitnessCenterIcon />}
+                    label={`${plan.days.length} days`}
+                    sx={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      color: 'rgba(59, 130, 246, 0.9)',
+                      '& .MuiChip-icon': {
+                        color: 'rgba(59, 130, 246, 0.9)'
+                      }
+                    }}
+                  />
+                  {plan.instances?.some(i => i?.status === 'IN_PROGRESS') && (
                     <Chip
                       size="small"
-                      icon={<FitnessCenterIcon />}
-                      label={`${plan.days.length} days`}
-                      color="primary"
-                      variant="outlined"
+                      label="In Progress"
+                      sx={{
+                        background: 'rgba(255, 193, 7, 0.1)',
+                        border: '1px solid rgba(255, 193, 7, 0.2)',
+                        color: 'rgba(255, 193, 7, 0.9)'
+                      }}
                     />
-                    {plan.instances?.some(i => i?.status === 'IN_PROGRESS') && (
-                      <Chip
-                        size="small"
-                        label="In Progress"
-                        color="warning"
-                        variant="outlined"
-                      />
-                    )}
-                  </Box>
+                  )}
+                  <Chip
+                    size="small"
+                    label="View Details →"
+                    sx={{
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      ml: 'auto'
+                    }}
+                  />
                 </Box>
               </Box>
-              <Typography 
-                variant="body2" 
-                color="primary"
-                sx={{ 
-                  mt: { xs: 2, sm: 0 },
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5
-                }}
-              >
-                View Details →
-              </Typography>
-            </Card>
+            </Box>
           ))}
         </Box>
-      </Paper>
+      </Box>
 
       <FloatingActionButton
         icon={<AddIcon />}

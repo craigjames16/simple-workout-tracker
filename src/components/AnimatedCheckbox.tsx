@@ -9,41 +9,58 @@ interface AnimatedCheckboxProps {
   size?: "small" | "medium" | "large";
 }
 
-const StyledButton = styled(motion.button)(({ theme }) => ({
-  width: '20px',
-  height: '20px',
-  borderRadius: '2px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  border: `1px solid ${theme.palette.grey[500]}`,
-  backgroundColor: 'transparent',
-  cursor: 'pointer',
-  padding: 0,
-  '&[data-checked="true"]': {
-    backgroundColor: '#2e7d32',
-    border: 'none'
-  },
-  '&:disabled': {
-    opacity: 0.5,
-    cursor: 'not-allowed'
-  },
-  '&:not(:disabled):hover': {
-    borderColor: '#2e7d32'
-  }
-}));
+const StyledButton = styled(motion.button)<{ size?: string }>(({ theme, size }) => {
+  const sizeMap = {
+    small: { width: '20px', height: '20px', fontSize: '12px' },
+    medium: { width: '24px', height: '24px', fontSize: '14px' },
+    large: { width: '32px', height: '32px', fontSize: '16px' }
+  };
+  
+  const dimensions = sizeMap[size as keyof typeof sizeMap] || sizeMap.large;
+  
+  return {
+    width: dimensions.width,
+    height: dimensions.height,
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    cursor: 'pointer',
+    padding: 0,
+    margin: 0,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    position: 'relative',
+    '&[data-checked="true"]': {
+      background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+      borderColor: '#22c55e',
+      transform: 'scale(1.05)'
+    },
+    '&:disabled': {
+      opacity: 0.5,
+      cursor: 'not-allowed'
+    },
+    '&:not(:disabled):hover': {
+      borderColor: '#22c55e',
+      transform: 'scale(1.02)'
+    }
+  };
+});
 
 export function AnimatedCheckbox({ 
   checked, 
   onChange, 
-  disabled = false
+  disabled = false,
+  size = "large"
 }: AnimatedCheckboxProps) {
   return (
     <StyledButton
       onClick={onChange}
       disabled={disabled}
       data-checked={checked}
-      whileHover={!disabled ? { scale: 1.05 } : undefined}
+      size={size}
+      whileHover={!disabled ? { scale: checked ? 1.05 : 1.02 } : undefined}
       whileTap={!disabled ? { scale: 0.95 } : undefined}
     >
       <motion.div
@@ -58,8 +75,19 @@ export function AnimatedCheckbox({
           damping: 15,
           mass: 1.2
         }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          height: '100%',
+          color: 'white',
+          fontWeight: 700,
+          fontSize: size === 'large' ? '16px' : size === 'medium' ? '14px' : '12px',
+          lineHeight: 1
+        }}
       >
-        <Check sx={{ color: 'white', fontSize: 16 }} />
+        ✓
       </motion.div>
     </StyledButton>
   );

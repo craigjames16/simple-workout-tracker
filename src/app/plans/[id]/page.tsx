@@ -130,37 +130,117 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
 
   return (
     <ResponsiveContainer>
-      <Paper>
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h5">{plan.name}</Typography>
-            <IconButton onClick={handleMenuOpen}>
-              <MoreVertIcon />
-            </IconButton>
-          </Box>
-          <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip
-              size="small"
-              icon={<CalendarTodayIcon />}
-              label={`Created ${new Date(plan.createdAt).toLocaleDateString()}`}
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              icon={<FitnessCenterIcon />}
-              label={`${plan.days.length} days`}
-              color="primary"
-              variant="outlined"
-            />
-            <Chip
-              size="small"
-              icon={<HotelIcon />}
-              label={`${plan.days.filter(day => day.isRestDay).length} rest days`}
-              variant="outlined"
-            />
+      <Box sx={{
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+        p: { xs: 2, sm: 3 },
+      }}>
+        {/* Header Section */}
+        <Box sx={{
+          pb: { xs: 2, sm: 3 },
+        }}>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontWeight: 700,
+              color: 'white',
+              fontSize: { xs: '1.5rem', sm: '2rem' }
+            }}
+          >
+            Plan Details
+          </Typography>
+        </Box>
+
+        {/* Plan Header Box */}
+        <Box sx={{ 
+          mb: 4,
+          borderRadius: 2,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
+          <Box sx={{
+            p: { xs: 2, sm: 3 },
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <FitnessCenterIcon sx={{ 
+                  mr: 1.5, 
+                  color: 'white',
+                  fontSize: '1.5rem'
+                }} />
+                <Typography 
+                  variant="h4" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'white',
+                    fontSize: { xs: '1.5rem', sm: '2rem' }
+                  }}
+                >
+                  {plan.name}
+                </Typography>
+              </Box>
+              <IconButton 
+                onClick={handleMenuOpen}
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&:hover': {
+                    color: 'white',
+                    background: 'rgba(255, 255, 255, 0.1)'
+                  }
+                }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <Chip
+                size="small"
+                icon={<CalendarTodayIcon />}
+                label={`Created ${new Date(plan.createdAt).toLocaleDateString()}`}
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  '& .MuiChip-icon': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  }
+                }}
+              />
+              <Chip
+                size="small"
+                icon={<FitnessCenterIcon />}
+                label={`${plan.days.length} days`}
+                sx={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  color: 'rgba(59, 130, 246, 0.9)',
+                  '& .MuiChip-icon': {
+                    color: 'rgba(59, 130, 246, 0.9)'
+                  }
+                }}
+              />
+              <Chip
+                size="small"
+                icon={<HotelIcon />}
+                label={`${plan.days.filter(day => day.isRestDay).length} rest days`}
+                sx={{
+                  background: 'rgba(156, 163, 175, 0.1)',
+                  border: '1px solid rgba(156, 163, 175, 0.2)',
+                  color: 'rgba(156, 163, 175, 0.9)',
+                  '& .MuiChip-icon': {
+                    color: 'rgba(156, 163, 175, 0.9)'
+                  }
+                }}
+              />
+            </Box>
           </Box>
         </Box>
 
+        {/* Management Menu */}
         <Menu
           anchorEl={menuAnchorEl}
           open={Boolean(menuAnchorEl)}
@@ -176,36 +256,89 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
           </MenuItem>
         </Menu>
 
-        <List sx={{ p: 0 }}>
+        {/* Days List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {plan.days
             .sort((a, b) => a.dayNumber - b.dayNumber)
             .map((day, index) => (
-              <Box key={day.id}>
-                <ListItem
-                  sx={{
-                    flexDirection: 'column',
-                    alignItems: 'stretch',
-                    py: 2,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Box
+                key={day.id}
+                sx={{
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.35)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                  }
+                }}
+              >
+                <Box sx={{
+                  p: { xs: 2, sm: 3 },
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     {day.isRestDay ? (
-                      <HotelIcon sx={{ mr: 1 }} color="action" />
+                      <HotelIcon sx={{ 
+                        mr: 1.5, 
+                        color: 'rgba(156, 163, 175, 0.9)',
+                        fontSize: '1.5rem'
+                      }} />
                     ) : (
-                      <FitnessCenterIcon sx={{ mr: 1 }} color="action" />
+                      <FitnessCenterIcon sx={{ 
+                        mr: 1.5, 
+                        color: 'rgba(59, 130, 246, 0.9)',
+                        fontSize: '1.5rem'
+                      }} />
                     )}
-                    <Typography variant="subtitle1">
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        fontWeight: 700,
+                        color: 'white',
+                        fontSize: { xs: '1.125rem', sm: '1.25rem' }
+                      }}
+                    >
                       Day {day.dayNumber}
                     </Typography>
+                    {day.isRestDay && (
+                      <Chip
+                        size="small"
+                        label="Rest Day"
+                        sx={{
+                          ml: 2,
+                          background: 'rgba(156, 163, 175, 0.1)',
+                          border: '1px solid rgba(156, 163, 175, 0.2)',
+                          color: 'rgba(156, 163, 175, 0.9)'
+                        }}
+                      />
+                    )}
                   </Box>
 
                   {day.isRestDay ? (
-                    <Typography color="text.secondary" variant="body2">
-                      Rest Day
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontStyle: 'italic'
+                      }}
+                    >
+                      Rest and recovery day
                     </Typography>
                   ) : day.workout ? (
                     <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: 'rgba(255, 255, 255, 0.8)',
+                          mb: 2,
+                          fontWeight: 500
+                        }}
+                      >
                         {day.workout.workoutExercises.length} exercises
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -214,23 +347,35 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
                             key={exIndex}
                             size="small"
                             label={ex.exercise.name}
-                            variant="outlined"
-                            sx={{ mb: 0.5 }}
+                            sx={{
+                              background: 'rgba(59, 130, 246, 0.1)',
+                              border: '1px solid rgba(59, 130, 246, 0.2)',
+                              color: 'rgba(59, 130, 246, 0.9)',
+                              '&:hover': {
+                                background: 'rgba(59, 130, 246, 0.2)',
+                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                              }
+                            }}
                           />
                         ))}
                       </Box>
                     </Box>
                   ) : (
-                    <Typography color="error" variant="body2">
+                    <Typography 
+                      variant="body1" 
+                      sx={{ 
+                        color: 'rgba(239, 68, 68, 0.9)',
+                        fontStyle: 'italic'
+                      }}
+                    >
                       No workout assigned
                     </Typography>
                   )}
-                </ListItem>
-                {index < plan.days.length - 1 && <Divider />}
+                </Box>
               </Box>
             ))}
-        </List>
-      </Paper>
+        </Box>
+      </Box>
     </ResponsiveContainer>
   );
 } 

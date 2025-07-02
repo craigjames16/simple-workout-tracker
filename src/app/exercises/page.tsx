@@ -168,12 +168,22 @@ export default function ExercisesPage() {
     : getSortedExercises(exercises[selectedCategory] || []);
 
   return (
-    <ResponsiveContainer maxWidth="md">
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom>
+    <ResponsiveContainer maxWidth="md">  
+      <Box sx={{
+         p: { xs: 2, sm: 3 },
+      }}>
+        <Box sx={{
+          pb: { xs: 2, sm: 3 },
+        }}>
+        <Typography variant="h4"
+          sx={{ 
+            fontWeight: 700,
+            color: 'white',
+            fontSize: { xs: '1.5rem', sm: '2rem' }
+          }}>
           Exercises
         </Typography>
-
+        </Box>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs 
             value={selectedCategory}
@@ -249,7 +259,6 @@ export default function ExercisesPage() {
             </TableBody>
           </Table>
         </TableContainer>
-      </Paper>
 
       <ExerciseHistoryModal
         open={showHistoryDialog}
@@ -314,6 +323,7 @@ export default function ExercisesPage() {
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
+      </Box>
     </ResponsiveContainer>
   );
 } 

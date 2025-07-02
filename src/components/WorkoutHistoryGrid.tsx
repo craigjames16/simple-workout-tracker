@@ -58,43 +58,7 @@ export default function WorkoutHistoryGrid({
     <Box sx={{ 
       p: 3, 
       width: '100%',
-      background: gradients.secondary,
-      border: borders.default,
-      borderRadius: borderRadius.large,
-      backdropFilter: 'blur(20px)',
-      boxShadow: shadows.elevated,
     }}>
-      <Box sx={{
-        p: 2,
-        mb: 3,
-        background: gradients.primary,
-        borderRadius: borderRadius.medium,
-        border: borders.default,
-      }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            fontWeight: 600,
-            textAlign: 'center',
-            color: 'white',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-          }}
-        >
-          📅 Workout History
-        </Typography>
-        <Typography 
-          variant="body2" 
-          sx={{ 
-            textAlign: 'center', 
-            mt: 0.5,
-            color: 'rgba(255,255,255,0.9)',
-            fontWeight: 500
-          }}
-        >
-          Track your progress across weeks
-        </Typography>
-      </Box>
-
       <Box sx={{ 
         display: 'grid',
         gridTemplateColumns: `repeat(${workoutHistory.length}, 70px)`,

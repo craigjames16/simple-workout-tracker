@@ -19,15 +19,16 @@ const theme = createTheme({
       main: '#3d3d3d',
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: '#0f172a',
+      paper: '#1e293b',
     },
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
         'html, body': {
-          backgroundColor: '#121212',
+          backgroundColor: '#0f172a',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
           minHeight: '100vh',
           margin: 0,
           padding: 0,
@@ -40,7 +41,7 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1a1a1a !important',
+          backgroundColor: '#1e293b !important',
         },
       },
     },

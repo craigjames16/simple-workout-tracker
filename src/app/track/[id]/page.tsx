@@ -22,6 +22,7 @@ import GradientButton from '@/components/GradientButton';
 import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import ExerciseHistoryModal from '@/components/ExerciseHistoryModal';
+import { gradients, borders } from '@/lib/theme-constants';
 
 // Import new components
 import WorkoutHeader from '@/components/WorkoutHeader';
@@ -670,7 +671,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
             textAlign: 'center', 
             py: 8,
             background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)',
-            borderRadius: 2,
+            borderRadius: 1,
             border: '1px dashed rgba(255,255,255,0.2)'
           }}>
             <Typography variant="h6" gutterBottom>
@@ -713,40 +714,53 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           left: 0, 
           right: 0, 
           p: 2, 
-          bgcolor: 'background.paper',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
           zIndex: 1000
         }}>
-          <GradientButton
-            variant="contained"
-            fullWidth
-            size="large"
-            onClick={handleCompleteWorkout}
-            disabled={
-              !exerciseTrackings.every((tracking) =>
-                tracking.sets?.every((set) => set.completed === true || set.skipped === true)
-              ) || !!workoutInstance.completedAt
-            }
-            sx={{ 
-              py: 2,
-              fontSize: { xs: '1rem', sm: '1.1rem' },
-              fontWeight: 600,
-              borderRadius: 2
-            }}
-          >
-            {workoutInstance.completedAt ? (
-              <>✓ Completed</>
-            ) : (
-              <>
-                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                  🎉 Complete Workout ({completedSets}/{totalSets} sets)
-                </Box>
-                <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
-                  🎉 Complete ({completedSets}/{totalSets})
-                </Box>
-              </>
-            )}
-          </GradientButton>
+          <Box sx={{
+            borderRadius: 2,
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          }}>
+            <Box sx={{
+              p: { xs: 2, sm: 3 },
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            }}>
+              <GradientButton
+                variant="contained"
+                fullWidth
+                size="large"
+                onClick={handleCompleteWorkout}
+                disabled={
+                  !exerciseTrackings.every((tracking) =>
+                    tracking.sets?.every((set) => set.completed === true || set.skipped === true)
+                  ) || !!workoutInstance.completedAt
+                }
+                sx={{ 
+                  py: 2,
+                  fontSize: { xs: '1rem', sm: '1.1rem' },
+                  fontWeight: 600,
+                  borderRadius: 2,
+                }}
+              >
+                {workoutInstance.completedAt ? (
+                  <>Completed</>
+                ) : (
+                  <>
+                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                      Complete Workout ({completedSets}/{totalSets} sets)
+                    </Box>
+                    <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>
+                      Complete ({completedSets}/{totalSets})
+                    </Box>
+                  </>
+                )}
+              </GradientButton>
+            </Box>
+          </Box>
         </Box>
       )}
 
@@ -828,6 +842,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
         anchorEl={workoutMenuAnchorEl}
         open={Boolean(workoutMenuAnchorEl)}
         onClose={handleWorkoutMenuClose}
+      
       >
         <AddExerciseMenu
           availableExercises={availableExercises}
@@ -855,12 +870,8 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
         PaperProps={{
           sx: {
             maxHeight: '80vh',
-            width: '100vw',
-            left: '0px !important',
-            right: '0px !important',
-            maxWidth: '100% !important',
             position: 'fixed',
-            top: { xs: '132px !important', sm: '156px !important' }
+            top: { xs: '132px !important', sm: '156px !important' },
           }
         }}
         transformOrigin={{ horizontal: 'center', vertical: 'top' }}
