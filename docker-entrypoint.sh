@@ -10,6 +10,7 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "DATABASE_URL is configured"
+echo $DATABASE_URL
 
 # Optional: Run any runtime Prisma operations here if needed
 # For example, if you want to run migrations at startup:

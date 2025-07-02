@@ -4,6 +4,8 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+console.log(process.env.DATABASE_URL);
+
 const prismaClientOptions = {
   datasources: {
     db: {
