@@ -15,7 +15,7 @@ RUN npm ci
 
 # Set environment for Prisma generation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x,debian-openssl-3.0.x"
+ENV PRISMA_CLI_BINARY_TARGETS="linux-musl-openssl-3.0.x,debian-openssl-3.0.x,rhel-openssl-1.0.x"
 
 # Generate Prisma Client
 RUN npx prisma generate
