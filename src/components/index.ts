@@ -28,3 +28,6 @@ export {
 
 export {ResponsiveContainer} from './ResponsiveContainer';
 export {default as StyledCard} from './StyledCard';
+export {SortableExercise} from './SortableExercise';
+export { ThemeProvider, useTheme } from './ThemeProvider';
+export { ThemeSelector } from './ThemeSelector';

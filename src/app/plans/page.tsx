@@ -23,6 +23,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import { useRouter } from 'next/navigation';
+import { gradients, themeColors, borders } from '@/lib/theme-constants';
 
 
 interface Plan {
@@ -116,7 +117,7 @@ export default function PlansPage() {
               sx={{ 
                 borderRadius: 2,
                 overflow: 'hidden',
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                background: gradients.surface,
                 backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -173,11 +174,11 @@ export default function PlansPage() {
                     icon={<FitnessCenterIcon />}
                     label={`${plan.days.length} days`}
                     sx={{
-                      background: 'rgba(59, 130, 246, 0.1)',
-                      border: '1px solid rgba(59, 130, 246, 0.2)',
-                      color: 'rgba(59, 130, 246, 0.9)',
+                      background: `rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`,
+                      border: borders.accent,
+                      color: themeColors.primary.main,
                       '& .MuiChip-icon': {
-                        color: 'rgba(59, 130, 246, 0.9)'
+                        color: themeColors.primary.main
                       }
                     }}
                   />

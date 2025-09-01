@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Check } from "@mui/icons-material";
 import { styled } from '@mui/material/styles';
+import { gradients } from '@/lib/theme-constants';
 
 interface AnimatedCheckboxProps {
   checked: boolean;
@@ -33,7 +34,7 @@ const StyledButton = styled(motion.button)<{ size?: string }>(({ theme, size }) 
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     position: 'relative',
     '&[data-checked="true"]': {
-      background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+      background: gradients.success,
       borderColor: '#22c55e',
       transform: 'scale(1.05)'
     },

@@ -1,35 +1,30 @@
-// Standardized styling constants for consistent design across components
+// DEPRECATED: This file is maintained for backward compatibility
+// For new components, use the useThemeStyles hook instead
+// This provides a dynamic theme system with multiple theme options
 
-export const gradients = {
-  // Primary gradients
-  primary: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.3) 100%)',
-  secondary: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-  button: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-  buttonHover: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
-  
-  // Accent gradients
-  success: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(46, 125, 50, 0.3) 100%)',
-  warning: 'linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(230, 81, 0, 0.3) 100%)',
-  error: 'linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(198, 40, 40, 0.3) 100%)',
-} as const;
+import { themes } from '@/components/ThemeProvider';
+import { createGradients, createThemeColors, createBorders } from '@/lib/theme-utils';
+
+// Default theme for backward compatibility
+const defaultTheme = themes.default;
+
+// Core theme colors - change these to switch your entire app theme
+export const themeColors = createThemeColors(defaultTheme);
+
+export const gradients = createGradients(defaultTheme);
+
+export const borders = createBorders(defaultTheme);
 
 export const glassMorphism = {
   // Glass-like backgrounds
-  light: 'rgba(255,255,255,0.1)',
-  medium: 'rgba(255,255,255,0.15)', 
+  light: themeColors.overlay.light,
+  medium: themeColors.overlay.medium, 
   dark: 'rgba(255,255,255,0.05)',
   
   // Interactive states
-  hover: 'rgba(255,255,255,0.2)',
+  hover: themeColors.overlay.strong,
   active: 'rgba(255,255,255,0.25)',
   disabled: 'rgba(255,255,255,0.03)',
-} as const;
-
-export const borders = {
-  default: '1px solid rgba(255,255,255,0.1)',
-  thick: '2px solid rgba(255,255,255,0.15)',
-  accent: '1px solid rgba(25, 118, 210, 0.3)',
-  dashed: '1px dashed rgba(255,255,255,0.2)',
 } as const;
 
 export const borderRadius = {
@@ -48,19 +43,26 @@ export const shadows = {
 // Common component styles
 export const cardStyles = {
   default: {
-    background: gradients.secondary,
+    background: gradients.glass,
     border: borders.default,
     borderRadius: borderRadius.large,
     overflow: 'hidden',
     backdropFilter: 'blur(10px)',
   },
   elevated: {
-    background: gradients.secondary,
+    background: gradients.glass,
     border: borders.default,
     borderRadius: borderRadius.large,
     overflow: 'hidden',
     backdropFilter: 'blur(10px)',
     boxShadow: shadows.glass,
+  },
+  surface: {
+    background: gradients.surface,
+    border: borders.default,
+    borderRadius: borderRadius.large,
+    overflow: 'hidden',
+    backdropFilter: 'blur(10px)',
   },
   header: {
     background: gradients.primary,
@@ -83,11 +85,18 @@ export const buttonStyles = {
     borderRadius: borderRadius.medium,
     border: 'none',
   },
+  primary: {
+    background: gradients.primary,
+    '&:hover': { background: gradients.primaryHover },
+    borderRadius: borderRadius.medium,
+    border: 'none',
+    color: themeColors.text.primary,
+  },
 } as const;
 
 export const menuStyles = {
   paper: {
-    background: gradients.secondary,
+    background: gradients.glass,
     border: borders.default,
     borderRadius: borderRadius.medium,
     backdropFilter: 'blur(20px)',
@@ -98,4 +107,15 @@ export const menuStyles = {
       backgroundColor: glassMorphism.hover,
     },
   },
+} as const;
+
+// Text styles for consistent typography
+export const textStyles = {
+  primary: { color: themeColors.text.primary },
+  secondary: { color: themeColors.text.secondary },
+  muted: { color: themeColors.text.muted },
+  accent: { color: themeColors.primary.main },
+  error: { color: themeColors.accent.error },
+  success: { color: themeColors.accent.success },
+  warning: { color: themeColors.accent.warning },
 } as const; 

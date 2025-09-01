@@ -23,6 +23,7 @@ import EChartsReact from 'echarts-for-react';
 import Link from 'next/link';
 
 import GradientButton from '@/components/GradientButton';
+import { gradients, themeColors, borders } from '@/lib/theme-constants';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -547,11 +548,11 @@ export default function DashboardPage() {
                   transform: 'translateY(-1px)'
                 },
                                       '&.Mui-selected': {
-                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)',
+                        background: gradients.glass,
                         color: 'white',
                         fontWeight: 600,
-                        border: '1px solid rgba(59, 130, 246, 0.15)',
-                        boxShadow: '0 4px 12px -4px rgba(59, 130, 246, 0.1)'
+                        border: borders.default,
+                        boxShadow: '0 4px 12px -4px rgba(0, 0, 0, 0.1)'
                       }
               },
               '& .MuiTabs-indicator': {
@@ -578,8 +579,8 @@ export default function DashboardPage() {
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                   },
                   '&.Mui-focused': {
-                    borderColor: 'rgba(59, 130, 246, 0.5)',
-                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                    borderColor: themeColors.primary.main,
+                    boxShadow: `0 0 0 3px rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`
                   },
                   '& fieldset': {
                     border: 'none'
@@ -588,7 +589,7 @@ export default function DashboardPage() {
                 '& .MuiInputLabel-root': {
                   color: 'rgba(255, 255, 255, 0.7)',
                   '&.Mui-focused': {
-                    color: 'rgba(59, 130, 246, 0.8)'
+                    color: themeColors.primary.main
                   }
                 }
               }} 
@@ -632,7 +633,7 @@ export default function DashboardPage() {
                   mb: 4,
                   borderRadius: 2,
                   overflow: 'hidden',
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  background: gradients.surface,
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -682,7 +683,7 @@ export default function DashboardPage() {
                   mb: 4,
                   borderRadius: 2,
                   overflow: 'hidden',
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  background: gradients.surface,
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -816,7 +817,7 @@ export default function DashboardPage() {
                             <Box sx={{
                               borderRadius: 2,
                               overflow: 'hidden',
-                              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                              background: gradients.surface,
                               backdropFilter: 'blur(20px)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -942,7 +943,7 @@ export default function DashboardPage() {
                               mt: 2,
                               borderRadius: 2,
                               overflow: 'hidden',
-                              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                              background: gradients.surface,
                               backdropFilter: 'blur(20px)',
                               border: '1px solid rgba(255, 255, 255, 0.1)',
                               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -1151,7 +1152,7 @@ export default function DashboardPage() {
                       mb: 4,
                       borderRadius: 2,
                       overflow: 'hidden',
-                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                      background: gradients.surface,
                       backdropFilter: 'blur(20px)',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'

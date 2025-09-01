@@ -18,6 +18,7 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ChatIcon from '@mui/icons-material/Chat';
 import { usePathname } from 'next/navigation';
+import { gradients, themeColors } from '@/lib/theme-constants';
 
 const navItems = [
   { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
@@ -37,7 +38,7 @@ export default function Navbar() {
       <AppBar 
         position="fixed"
         sx={{
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          background: gradients.surface,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -76,9 +77,9 @@ export default function Navbar() {
                       width: 40,
                       height: 40,
                       background: pathname === item.href 
-                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)'
+                        ? gradients.glassHover
                         : item.highlight
-                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)'
+                          ? gradients.glass
                           : 'rgba(255, 255, 255, 0.05)',
                       border: pathname === item.href 
                         ? '1px solid rgba(59, 130, 246, 0.3)'
@@ -87,7 +88,7 @@ export default function Navbar() {
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       '&:hover': {
                         background: pathname === item.href 
-                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.12) 100%)'
+                          ? gradients.glassHover
                           : 'rgba(255, 255, 255, 0.1)',
                         borderColor: 'rgba(255, 255, 255, 0.2)',
                         transform: 'translateY(-1px)',
@@ -118,9 +119,9 @@ export default function Navbar() {
                     fontWeight: 600,
                     textTransform: 'none',
                     background: pathname === item.href 
-                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.08) 100%)'
+                      ? gradients.glassHover
                       : item.highlight
-                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.06) 100%)'
+                        ? gradients.glass
                         : 'rgba(255, 255, 255, 0.05)',
                     border: pathname === item.href 
                       ? '1px solid rgba(59, 130, 246, 0.3)'
@@ -129,7 +130,7 @@ export default function Navbar() {
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
                       background: pathname === item.href 
-                        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.12) 100%)'
+                        ? gradients.glassHover
                         : 'rgba(255, 255, 255, 0.1)',
                       borderColor: 'rgba(255, 255, 255, 0.2)',
                       transform: 'translateY(-1px)',

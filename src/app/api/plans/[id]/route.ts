@@ -30,6 +30,9 @@ export async function GET(
                   include: {
                     exercise: true,
                   },
+                  orderBy: {
+                    order: 'asc'
+                  }
                 },
               },
             },
@@ -127,7 +130,7 @@ export async function PUT(
                       exercise: {
                         connect: { id: exercise.id },
                       },
-                      order: exerciseIndex,
+                      order: exercise.order !== undefined ? exercise.order : exerciseIndex + 1,
                     })),
                   },
                 },
@@ -143,7 +146,7 @@ export async function PUT(
                       exercise: {
                         connect: { id: exercise.id },
                       },
-                      order: exerciseIndex,
+                      order: exercise.order !== undefined ? exercise.order : exerciseIndex + 1,
                     })),
                   },
                 },
@@ -174,7 +177,7 @@ export async function PUT(
                     exercise: {
                       connect: { id: exercise.id },
                     },
-                    order: exerciseIndex,
+                    order: exercise.order !== undefined ? exercise.order - 1 : exerciseIndex,
                   })),
                 },
               },

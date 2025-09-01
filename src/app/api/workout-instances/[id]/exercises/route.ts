@@ -60,7 +60,33 @@ export async function POST(
     // Fetch the updated workout instance with exercises
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
       where: { id: parseInt(awaitedParams.id), userId: session.user.id },
-      include: { workout: true, workoutExercises: { include: { exercise: true } } },
+      include: {
+        exerciseSets: true,
+        workoutExercises: {
+          include: {
+            exercise: {
+              include: {
+                adjustments: {
+                  where: {
+                    completed: false
+                  }
+                }
+              }
+            }
+          }
+        },
+        workout: true,
+        planInstanceDays: {
+          include: {
+            planDay: true,
+            planInstance: {
+              include: {
+                mesocycle: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!updatedWorkoutInstance) {
@@ -73,50 +99,43 @@ export async function POST(
     // Add the processed workout instance logic back in
     const processedWorkoutInstance = {
       ...updatedWorkoutInstance,
-      workout: {
-        ...updatedWorkoutInstance.workout,
-        exercises: await Promise.all(updatedWorkoutInstance.workoutExercises.map(async ex => {
-          // Find the last completed workout instance for this exercise
-          const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
-            where: {
-              id: { not: updatedWorkoutInstance.id }, // Exclude current workout
-              completedAt: { not: null },
-              workout: {
-                workoutExercises: {
-                  some: {
-                    exerciseId: ex.exerciseId
-                  }
-                }
-              },
-              userId: session.user.id
-            },
-            include: {
-              exerciseSets: {
-                where: {
+      workoutExercises: await Promise.all(updatedWorkoutInstance.workoutExercises.map(async ex => {
+        // Find the last completed workout instance for this exercise
+        const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
+          where: {
+            id: { not: updatedWorkoutInstance.id }, // Exclude current workout
+            completedAt: { not: null },
+            workout: {
+              workoutExercises: {
+                some: {
                   exerciseId: ex.exerciseId
-                },
-                include: {
-                  exercise: true
-                },
-                orderBy: {
-                  setNumber: 'asc'
                 }
               }
-            },
-            orderBy: {
-              completedAt: 'desc'
             }
-          });
+          },
+          include: {
+            exerciseSets: {
+              where: {
+                exerciseId: ex.exerciseId
+              },
+              orderBy: {
+                setNumber: 'asc'
+              }
+            }
+          },
+          orderBy: {
+            completedAt: 'desc'
+          }
+        });
 
-          return {
-            ...ex,
-            exercise: {
-              ...ex.exercise
-            },
-            lastSets: lastCompletedWorkout?.exerciseSets || []
-          };
-        }))
-      }
+        return {
+          ...ex,
+          exercise: {
+            ...ex.exercise
+          },
+          lastSets: lastCompletedWorkout?.exerciseSets || []
+        };
+      }))
     };
 
     return NextResponse.json(processedWorkoutInstance);
@@ -176,19 +195,27 @@ export async function DELETE(
         userId: session.user.id
       },
       include: {
+        exerciseSets: true,
         workoutExercises: {
           include: {
-            exercise: true
+            exercise: {
+              include: {
+                adjustments: {
+                  where: {
+                    completed: false
+                  }
+                }
+              }
+            }
           }
         },
-        workout: {
+        workout: true,
+        planInstanceDays: {
           include: {
-            workoutExercises: {
+            planDay: true,
+            planInstance: {
               include: {
-                exercise: true,
-              },
-              orderBy: {
-                order: 'asc',
+                mesocycle: true,
               },
             },
           },
@@ -205,47 +232,43 @@ export async function DELETE(
 
     const processedWorkoutInstance = {
       ...updatedWorkoutInstance,
-      workout: {
-        ...updatedWorkoutInstance.workout,
-        exercises: await Promise.all(updatedWorkoutInstance.workoutExercises.map(async ex => {
-          // Find the last completed workout instance for this exercise
-          const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
-            where: {
-              id: { not: updatedWorkoutInstance.id }, // Exclude current workout
-              completedAt: { not: null },
-              userId: session.user.id,
-              workout: {
-                workoutExercises: {
-                  some: {
-                    exerciseId: ex.exerciseId
-                  }
-                }
-              }
-            },
-            include: {
-              exerciseSets: {
-                where: {
+      workoutExercises: await Promise.all(updatedWorkoutInstance.workoutExercises.map(async ex => {
+        // Find the last completed workout instance for this exercise
+        const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
+          where: {
+            id: { not: updatedWorkoutInstance.id }, // Exclude current workout
+            completedAt: { not: null },
+            workout: {
+              workoutExercises: {
+                some: {
                   exerciseId: ex.exerciseId
-                },
-                orderBy: {
-                  setNumber: 'asc'
                 }
               }
-            },
-            orderBy: {
-              completedAt: 'desc'
             }
-          });
+          },
+          include: {
+            exerciseSets: {
+              where: {
+                exerciseId: ex.exerciseId
+              },
+              orderBy: {
+                setNumber: 'asc'
+              }
+            }
+          },
+          orderBy: {
+            completedAt: 'desc'
+          }
+        });
 
-          return {
-            ...ex,
-            exercise: {
-              ...ex.exercise
-            },
-            lastSets: lastCompletedWorkout?.exerciseSets || []
-          };
-        }))
-      }
+        return {
+          ...ex,
+          exercise: {
+            ...ex.exercise
+          },
+          lastSets: lastCompletedWorkout?.exerciseSets || []
+        };
+      }))
     };
 
     return NextResponse.json(processedWorkoutInstance);

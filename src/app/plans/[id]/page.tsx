@@ -24,6 +24,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import HotelIcon from '@mui/icons-material/Hotel';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation';
+import { gradients, themeColors, borders } from '@/lib/theme-constants';
 
 interface Exercise {
   exercise: {
@@ -157,7 +158,7 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
           mb: 4,
           borderRadius: 2,
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          background: gradients.surface,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -215,11 +216,11 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
                 icon={<FitnessCenterIcon />}
                 label={`${plan.days.length} days`}
                 sx={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  border: '1px solid rgba(59, 130, 246, 0.2)',
-                  color: 'rgba(59, 130, 246, 0.9)',
+                  background: `rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`,
+                  border: borders.accent,
+                  color: themeColors.primary.main,
                   '& .MuiChip-icon': {
-                    color: 'rgba(59, 130, 246, 0.9)'
+                    color: themeColors.primary.main
                   }
                 }}
               />
@@ -266,7 +267,7 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
                 sx={{
                   borderRadius: 2,
                   overflow: 'hidden',
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+                  background: gradients.surface,
                   backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -291,7 +292,7 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
                     ) : (
                       <FitnessCenterIcon sx={{ 
                         mr: 1.5, 
-                        color: 'rgba(59, 130, 246, 0.9)',
+                        color: themeColors.primary.main,
                         fontSize: '1.5rem'
                       }} />
                     )}
@@ -348,12 +349,12 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
                             size="small"
                             label={ex.exercise.name}
                             sx={{
-                              background: 'rgba(59, 130, 246, 0.1)',
-                              border: '1px solid rgba(59, 130, 246, 0.2)',
-                              color: 'rgba(59, 130, 246, 0.9)',
+                              background: `rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`,
+                              border: borders.accent,
+                              color: themeColors.primary.main,
                               '&:hover': {
-                                background: 'rgba(59, 130, 246, 0.2)',
-                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                background: `rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.2)`,
+                                border: borders.accent,
                               }
                             }}
                           />

@@ -28,7 +28,7 @@ const theme = createTheme({
       styleOverrides: {
         'html, body': {
           backgroundColor: '#0f172a',
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          background: gradients.surface,
           minHeight: '100vh',
           margin: 0,
           padding: 0,

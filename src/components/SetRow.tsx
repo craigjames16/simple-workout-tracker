@@ -4,6 +4,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Chip from '@mui/material/Chip';
 import { motion } from "framer-motion";
 import { AnimatedCheckbox } from '@/components/AnimatedCheckbox';
+import { gradients } from '@/lib/theme-constants';
 
 interface SetRowProps {
   set: {
@@ -83,8 +84,8 @@ const SetRow = forwardRef<HTMLElement, SetRowProps>(({
           height: { xs: 32, sm: 40 },
           borderRadius: '50%',
           background: isCompleted 
-            ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%)'
-            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
+            ? gradients.success
+            : gradients.glass,
           border: `1px solid ${isCompleted 
             ? 'rgba(34, 197, 94, 0.3)' 
             : 'rgba(255, 255, 255, 0.15)'}`,

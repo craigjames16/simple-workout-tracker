@@ -24,6 +24,9 @@ export async function GET() {
                 workoutExercises: {
                   include: {
                     exercise: true
+                  },
+                  orderBy: {
+                    order: 'asc'
                   }
                 }
               }

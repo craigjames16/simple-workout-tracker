@@ -20,6 +20,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import GradientButton from '@/components/GradientButton';
+import { gradients } from '@/lib/theme-constants';
 
 interface CurrentMesocycle {
   id: number;
@@ -152,7 +153,7 @@ const NextWorkout = ({
         mb: 3, 
         borderRadius: 2,
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+        background: gradients.surface,
         backdropFilter: 'blur(20px)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'

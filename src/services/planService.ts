@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 
 interface ExerciseInput {
   id: string | number;
+  order?: number;
 }
 
 interface DayInput {
@@ -39,7 +40,7 @@ export async function createPlan({ name, userId, days }: CreatePlanInput) {
                 createMany: {
                   data: day.workoutExercises!.map((exercise, exerciseIndex) => ({
                     exerciseId: parseInt(String(exercise.id)),
-                    order: exerciseIndex
+                    order: exercise.order !== undefined ? exercise.order : exerciseIndex + 1
                   }))
                 }
               }

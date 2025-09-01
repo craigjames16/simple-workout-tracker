@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import EChartsReact from 'echarts-for-react';
 import GradientButton from './GradientButton';
+import { gradients, themeColors, borders } from '@/lib/theme-constants';
 
 interface ExerciseSet {
   weight: number;
@@ -170,8 +171,8 @@ export default function ExerciseHistoryModal({ open, onClose, exerciseName, hist
                             px: 2, 
                             py: 1.5, 
                             borderRadius: 1, 
-                            bgcolor: 'rgba(59, 130, 246, 0.1)', 
-                            border: '1px solid rgba(59, 130, 246, 0.2)',
+                            bgcolor: `rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`, 
+                            border: borders.accent,
                           }}
                         >
                           <Typography variant="body2" sx={{ fontWeight: 600, color: 'rgba(255,255,255,0.9)', mb: 0.5 }}>

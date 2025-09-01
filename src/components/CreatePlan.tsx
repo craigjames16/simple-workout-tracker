@@ -24,7 +24,23 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -32,10 +48,12 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import { ExerciseCategory } from '@prisma/client';
 import { ResponsiveContainer } from './ResponsiveContainer';
+import { gradients, themeColors, textStyles } from '@/lib/theme-constants';
 import GradientButton from './GradientButton';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import HotelIcon from '@mui/icons-material/Hotel';
+import WorkoutDayCard from './WorkoutDayCard';
 
 interface Exercise {
   id: number;
@@ -105,6 +123,12 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   });
   const [creatingExerciseForDayIndex, setCreatingExerciseForDayIndex] = useState<number | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+
+  // dnd-kit sensors for pointer and keyboard sorting
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     const fetchExercises = async () => {
@@ -186,45 +210,18 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     }));
   };
 
-  const handleDragEnd = (result: DropResult) => {
-    const { source, destination } = result;
-    
-    // Return if dropped outside or no destination
-    if (!destination) {
-      return;
-    }
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id === over.id) return;
 
-    // Return if dropped in same position
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      return;
-    }
-
-    const sourceDay = workoutDays.find(day => day.id === source.droppableId);
-    const destDay = workoutDays.find(day => day.id === destination.droppableId);
-
-    if (!sourceDay || !destDay || destDay.isRestDay) {
-      return;
-    }
-
-    const newWorkoutDays = [...workoutDays];
-    const sourceExercises = [...sourceDay.workoutExercises];
-    const [movedExercise] = sourceExercises.splice(source.index, 1);
-
-    const destExercises = destDay.id === sourceDay.id 
-      ? sourceExercises 
-      : [...destDay.workoutExercises];
-    
-    destExercises.splice(destination.index, 0, movedExercise);
-
-    setWorkoutDays(newWorkoutDays.map(day => {
-      if (day.id === sourceDay.id) {
-        return { ...day, workoutExercises: sourceExercises };
-      }
-      if (day.id === destDay.id) {
-        return { ...day, workoutExercises: destExercises };
+    setWorkoutDays((prev) => prev.map((day) => {
+      if (day.isRestDay) return day;
+      const ids = day.workoutExercises.map((ex) => `exercise-${ex.id}-${day.id}`);
+      const from = ids.indexOf(String(active.id));
+      const to = ids.indexOf(String(over.id));
+      if (from !== -1 && to !== -1) {
+        return { ...day, workoutExercises: arrayMove(day.workoutExercises, from, to) };
       }
       return day;
     }));
@@ -244,7 +241,10 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           name: planName,
           days: workoutDays.map(day => ({
             isRestDay: day.isRestDay,
-            workoutExercises: day.workoutExercises.map(ex => ({ id: ex.id }))
+            workoutExercises: day.workoutExercises.map((ex, index) => ({ 
+              id: ex.id,
+              order: index + 1
+            }))
           }))
         }),
       });
@@ -352,6 +352,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
 
   return (
     <ResponsiveContainer maxWidth="lg">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <Box sx={{
         p: { xs: 2, sm: 3 }, 
         height: '100%', 
@@ -391,7 +392,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           mb: 4,
           borderRadius: 2,
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          background: gradients.surface,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -457,7 +458,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           mb: 4,
           borderRadius: 2,
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          background: gradients.surface,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
@@ -488,11 +489,11 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
                 startIcon={<AddIcon />}
                 onClick={addWorkoutDay}
                 sx={{
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+                  background: gradients.primary,
                   border: '1px solid rgba(59, 130, 246, 0.2)',
                   color: 'white',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                    background: gradients.primaryHover,
                     transform: 'translateY(-1px)',
                     boxShadow: '0 8px 25px -8px rgba(59, 130, 246, 0.3)'
                   }
@@ -502,326 +503,34 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
               </Button>
             </Box>
 
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Grid container spacing={3}>
-                {[...workoutDays]
-                  .sort((a, b) => a.dayNumber - b.dayNumber)
-                  .map((day, dayIndex) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
-                    <Box sx={{
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.35)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                      }
-                    }}>
-                      <Box sx={{
-                        p: { xs: 2, sm: 3 },
-                      }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            {day.isRestDay ? (
-                              <HotelIcon sx={{ 
-                                mr: 1, 
-                                color: 'rgba(156, 163, 175, 0.9)',
-                                fontSize: '1.25rem'
-                              }} />
-                            ) : (
-                              <FitnessCenterIcon sx={{ 
-                                mr: 1, 
-                                color: 'rgba(59, 130, 246, 0.9)',
-                                fontSize: '1.25rem'
-                              }} />
-                            )}
-                            <Typography 
-                              variant="h6" 
-                              sx={{ 
-                                fontWeight: 700,
-                                color: 'white',
-                                fontSize: { xs: '1rem', sm: '1.125rem' }
-                              }}
-                            >
-                              {day.name}
-                            </Typography>
-                          </Box>
-                          <IconButton 
-                            onClick={() => removeWorkoutDay(day.id)}
-                            sx={{ 
-                              color: 'rgba(239, 68, 68, 0.7)',
-                              '&:hover': {
-                                color: 'rgba(239, 68, 68, 0.9)',
-                                background: 'rgba(239, 68, 68, 0.1)'
-                              }
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Box>
-
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={day.isRestDay}
-                              onChange={() => toggleRestDay(day.id)}
-                              sx={{
-                                '& .MuiSwitch-switchBase.Mui-checked': {
-                                  color: 'rgba(156, 163, 175, 0.9)',
-                                  '&:hover': {
-                                    backgroundColor: 'rgba(156, 163, 175, 0.08)',
-                                  },
-                                },
-                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                  backgroundColor: 'rgba(156, 163, 175, 0.5)',
-                                },
-                              }}
-                            />
-                          }
-                          label={
-                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.875rem' }}>
-                              Rest Day
-                            </Typography>
-                          }
-                          sx={{ mb: 2 }}
-                        />
-
-                        {!day.isRestDay && (
-                          <Box sx={{ mb: 2 }}>
-                            <FormControl fullWidth sx={{ mb: 2 }}>
-                              <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Category</InputLabel>
-                              <Select
-                                value={selectedCategories[day.id] || 'ALL'}
-                                label="Category"
-                                onChange={(e) => setSelectedCategories(prev => ({
-                                  ...prev,
-                                  [day.id]: e.target.value
-                                }))}
-                                sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                                    borderRadius: 2,
-                                    color: 'white',
-                                    '&:hover': {
-                                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                                    },
-                                    '&.Mui-focused': {
-                                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                                      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
-                                    },
-                                    '& fieldset': {
-                                      border: 'none'
-                                    }
-                                  },
-                                  '& .MuiInputLabel-root': {
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    '&.Mui-focused': {
-                                      color: 'rgba(59, 130, 246, 0.8)'
-                                    }
-                                  },
-                                  '& .MuiSelect-icon': {
-                                    color: 'rgba(255, 255, 255, 0.7)'
-                                  }
-                                }}
-                              >
-                                <MenuItem value="ALL" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>All Categories</MenuItem>
-                                {Object.values(ExerciseCategory).map((category) => (
-                                  <MenuItem key={category} value={category} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                    {category.charAt(0) + category.slice(1).toLowerCase()}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-
-                            <FormControl fullWidth sx={{ mb: 2 }}>
-                              <InputLabel sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Exercise</InputLabel>
-                              <Select
-                                value={selectedExercises[day.id] || ''}
-                                label="Exercise"
-                                onChange={(e) => setSelectedExercises(prev => ({
-                                  ...prev,
-                                  [day.id]: e.target.value
-                                }))}
-                                sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                                    borderRadius: 2,
-                                    color: 'white',
-                                    '&:hover': {
-                                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                                    },
-                                    '&.Mui-focused': {
-                                      borderColor: 'rgba(59, 130, 246, 0.5)',
-                                      boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
-                                    },
-                                    '& fieldset': {
-                                      border: 'none'
-                                    }
-                                  },
-                                  '& .MuiInputLabel-root': {
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    '&.Mui-focused': {
-                                      color: 'rgba(59, 130, 246, 0.8)'
-                                    }
-                                  },
-                                  '& .MuiSelect-icon': {
-                                    color: 'rgba(255, 255, 255, 0.7)'
-                                  }
-                                }}
-                              >
-                                {filteredExercises(day.id)
-                                  .map((exercise) => (
-                                    <MenuItem key={exercise.id} value={exercise.id} sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                      {exercise.name}
-                                    </MenuItem>
-                                  ))}
-                              </Select>
-                            </FormControl>
-
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Button
-                                variant="contained"
-                                onClick={() => handleAddExercise(day.id)}
-                                disabled={!selectedExercises[day.id]}
-                                sx={{ 
-                                  flex: 1,
-                                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
-                                  border: '1px solid rgba(59, 130, 246, 0.2)',
-                                  color: 'white',
-                                  '&:hover': {
-                                    background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: '0 8px 25px -8px rgba(59, 130, 246, 0.3)'
-                                  },
-                                  '&:disabled': {
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    color: 'rgba(255, 255, 255, 0.3)'
-                                  }
-                                }}
-                              >
-                                Add
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                onClick={() => handleOpenNewExerciseDialog(dayIndex)}
-                                startIcon={<AddIcon />}
-                                sx={{
-                                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                                  color: 'rgba(255, 255, 255, 0.8)',
-                                  '&:hover': {
-                                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                                    background: 'rgba(255, 255, 255, 0.05)'
-                                  }
-                                }}
-                              >
-                                Create New
-                              </Button>
-                            </Box>
-                          </Box>
-                        )}
-                        
-                        {day.isRestDay ? (
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: 'rgba(255, 255, 255, 0.6)',
-                              textAlign: 'center',
-                              fontStyle: 'italic'
-                            }}
-                          >
-                            Rest Day - No exercises
-                          </Typography>
-                        ) : (
-                          <Droppable 
-                            droppableId={day.id} 
-                            isDropDisabled={day.isRestDay}
-                            type="EXERCISE"
-                            isCombineEnabled={false}
-                            ignoreContainerClipping={false}
-                          >
-                            {(provided, snapshot) => (
-                              <Box
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                sx={{ 
-                                  minHeight: 100,
-                                  backgroundColor: snapshot.isDraggingOver 
-                                    ? 'rgba(59, 130, 246, 0.1)' 
-                                    : 'rgba(255, 255, 255, 0.02)',
-                                  transition: 'background-color 0.2s ease',
-                                  borderRadius: 1,
-                                  padding: 1,
-                                  border: '1px dashed rgba(255, 255, 255, 0.1)'
-                                }}
-                              >
-                                {day.workoutExercises.map((exercise, index) => (
-                                  <Draggable
-                                    key={`${exercise.id}`}
-                                    draggableId={`${day.id}-exercise-${exercise.id}`}
-                                    index={index}
-                                    isDragDisabled={false}
-                                  >
-                                    {(provided, snapshot) => (
-                                      <Box
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        sx={{
-                                          p: 1.5,
-                                          mb: 1,
-                                          bgcolor: snapshot.isDragging 
-                                            ? 'rgba(59, 130, 246, 0.2)'
-                                            : 'rgba(255, 255, 255, 0.05)',
-                                          borderRadius: 1,
-                                          display: 'flex',
-                                          justifyContent: 'space-between',
-                                          alignItems: 'center',
-                                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                                          transition: 'all 0.2s ease',
-                                          '&:hover': {
-                                            background: 'rgba(255, 255, 255, 0.08)',
-                                            border: '1px solid rgba(255, 255, 255, 0.2)'
-                                          }
-                                        }}
-                                      >
-                                        <Typography sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.875rem' }}>
-                                          {exercise.name}
-                                        </Typography>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => removeExerciseFromDay(day.id, exercise.id)}
-                                          sx={{ 
-                                            color: 'rgba(239, 68, 68, 0.7)',
-                                            '&:hover': {
-                                              color: 'rgba(239, 68, 68, 0.9)',
-                                              background: 'rgba(239, 68, 68, 0.1)'
-                                            }
-                                          }}
-                                        >
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </Box>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </Box>
-                            )}
-                          </Droppable>
-                        )}
-                      </Box>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </DragDropContext>
+            <Grid container spacing={3}>
+              {[...workoutDays]
+                .sort((a, b) => a.dayNumber - b.dayNumber)
+                .map((day, dayIndex) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={day.id}>
+                  <WorkoutDayCard
+                    day={day}
+                    dayIndex={dayIndex}
+                    availableExercises={availableExercises}
+                    selectedCategories={selectedCategories}
+                    selectedExercises={selectedExercises}
+                    onRemoveDay={removeWorkoutDay}
+                    onToggleRestDay={toggleRestDay}
+                    onRemoveExercise={removeExerciseFromDay}
+                    onAddExercise={handleAddExercise}
+                    onCategoryChange={(dayId, category) => setSelectedCategories(prev => ({
+                      ...prev,
+                      [dayId]: category
+                    }))}
+                    onExerciseSelect={(dayId, exerciseId) => setSelectedExercises(prev => ({
+                      ...prev,
+                      [dayId]: exerciseId
+                    }))}
+                    onCreateExercise={handleOpenNewExerciseDialog}
+                  />
+                </Grid>
+              ))}
+            </Grid>
           </Box>
         </Box>
 
@@ -834,14 +543,14 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
             onClick={handleSave}
             disabled={!planName || workoutDays.length === 0}
             sx={{
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+              background: gradients.primary,
               border: '1px solid rgba(59, 130, 246, 0.2)',
               color: 'white',
               py: 1.5,
               fontSize: '1.1rem',
               fontWeight: 600,
               '&:hover': {
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                background: gradients.primaryHover,
                 transform: 'translateY(-2px)',
                 boxShadow: '0 12px 35px -8px rgba(59, 130, 246, 0.4)'
               },
@@ -864,7 +573,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
         onClose={handleCloseNewExerciseDialog}
         PaperProps={{
           sx: {
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)',
+            background: gradients.surfaceStrong,
             backdropFilter: 'blur(20px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
@@ -967,11 +676,11 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
             onClick={handleCreateAndAddExercise}
             disabled={!newExercise.name || !newExercise.category}
             sx={{
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.8) 100%)',
+              background: gradients.primary,
               border: '1px solid rgba(59, 130, 246, 0.2)',
               color: 'white',
               '&:hover': {
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(37, 99, 235, 0.9) 100%)',
+                background: gradients.primaryHover,
                 transform: 'translateY(-1px)',
                 boxShadow: '0 8px 25px -8px rgba(59, 130, 246, 0.3)'
               },
@@ -985,6 +694,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
           </GradientButton>
         </DialogActions>
       </Dialog>
+      </DndContext>
     </ResponsiveContainer>
   );
 } 

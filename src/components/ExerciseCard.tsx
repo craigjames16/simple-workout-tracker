@@ -5,6 +5,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { motion } from "framer-motion";
 import SetRow from './SetRow';
 import { ExerciseTracking } from '@/types/workout-tracking';
+import { gradients } from '@/lib/theme-constants';
 
 interface ExerciseCardProps {
   exercise: ExerciseTracking;
@@ -53,7 +54,7 @@ export default function ExerciseCard({
           mb: 3,
           borderRadius: 2, // Changed from 4 to 2 (8px)
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+          background: gradients.surface,
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'

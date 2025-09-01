@@ -415,7 +415,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       const data = await response.json();
       setWorkoutInstance(data);
 
-      const newExercise = data.workout.exercises.find(
+      const newExercise = data.workoutExercises.find(
         (ex: WorkoutExercise) => ex.exercise.id === parseInt(selectedExercise)
       );
 
@@ -670,7 +670,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           <Box sx={{ 
             textAlign: 'center', 
             py: 8,
-            background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(156, 39, 176, 0.1) 100%)',
+            background: gradients.glass,
             borderRadius: 1,
             border: '1px dashed rgba(255,255,255,0.2)'
           }}>
@@ -719,14 +719,14 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
           <Box sx={{
             borderRadius: 2,
             overflow: 'hidden',
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)',
+            background: gradients.surface,
             backdropFilter: 'blur(20px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
           }}>
             <Box sx={{
               p: { xs: 2, sm: 3 },
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)',
+              background: gradients.glass,
                               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             }}>
               <GradientButton
