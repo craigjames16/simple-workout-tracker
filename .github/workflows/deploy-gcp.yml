@@ -8,8 +8,8 @@ on:
 env:
   PROJECT_ID: data-gym-470817  # Replace with your actual GCP project ID
   SERVICE_NAME: data-gym
-  REGION: northamerica-northeast2
-  REGISTRY_REGION: northamerica-northeast2
+  REGION: us-east1
+  REGISTRY_REGION: us-east1
 
 jobs:
   deploy:
