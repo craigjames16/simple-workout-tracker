@@ -49,7 +49,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#1e1e1e',
-          backgroundImage: gradients.secondary,
+          backgroundImage: gradients.surface,
           border: borders.default,
           backdropFilter: 'blur(20px)',
         },

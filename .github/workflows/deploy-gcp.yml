@@ -38,6 +38,7 @@ jobs:
             --build-arg GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
             --build-arg GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
             --build-arg NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
+            --build-arg NEXTAUTH_URL=tracker.fluffylab.cloud \
             --build-arg API_ENDPOINT=${{ secrets.API_ENDPOINT }} \
             --build-arg AWS_REGION=${{ secrets.AWS_REGION }} \
             --build-arg AWS_SNS_TOPIC_ARN=${{ secrets.AWS_SNS_TOPIC_ARN }} \
