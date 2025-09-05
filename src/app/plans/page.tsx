@@ -92,10 +92,14 @@ export default function PlansPage() {
   }
 
   return (
-    <ResponsiveContainer sx={{ mt: 4, pb: 4 }}>
-         <Box sx={{
-         p: { xs: 2, sm: 3 },
-          }}>
+    <ResponsiveContainer maxWidth="md">
+      <Box sx={{
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+        px: { xs: 2, sm: 3 },
+        pt: { xs: 6, sm: 6, md: 6 },
+      }}>
         <Box sx={{
           pb: { xs: 2, sm: 3 },
         }}>
@@ -108,7 +112,7 @@ export default function PlansPage() {
             Plans
           </Typography>
           </Box>  
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 0, mt: 3 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 0 }}>
           {plans.map((plan) => (
             <Box
               key={plan.id}

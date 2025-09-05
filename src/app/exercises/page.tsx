@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Container,
   Paper,
   Typography,
   CircularProgress,
@@ -156,9 +155,9 @@ export default function ExercisesPage() {
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
@@ -170,7 +169,11 @@ export default function ExercisesPage() {
   return (
     <ResponsiveContainer maxWidth="md">  
       <Box sx={{
-         p: { xs: 2, sm: 3 },
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+        px: { xs: 2, sm: 3 },
+        pt: { xs: 6, sm: 6, md: 6 },
       }}>
         <Box sx={{
           pb: { xs: 2, sm: 3 },

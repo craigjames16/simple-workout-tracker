@@ -124,7 +124,7 @@ export default function MesocyclesPage() {
 
   if (loading) {
     return (
-      <ResponsiveContainer sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
       </ResponsiveContainer>
     );

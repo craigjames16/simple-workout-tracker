@@ -112,9 +112,9 @@ const NextWorkout = ({
   
   if (loading) {
     return (
-      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </ResponsiveContainer>
+      </Container>
     );
   }
   
@@ -307,10 +307,8 @@ export default function TrackPage() {
 
   if (loading) {
     return (
-      <ResponsiveContainer maxWidth="lg">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <CircularProgress />
-        </Box>
+      <ResponsiveContainer maxWidth="lg" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
       </ResponsiveContainer>
     );
   }
@@ -318,7 +316,13 @@ export default function TrackPage() {
   if (error) {
     return (
       <ResponsiveContainer maxWidth="lg">
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+             <Box sx={{
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+        px: { xs: 2, sm: 3 },
+        pt: { xs: 6, sm: 6, md: 6 },
+      }}>
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
@@ -340,7 +344,8 @@ export default function TrackPage() {
   return (
     <ResponsiveContainer maxWidth="lg">
       <Box sx={{
-        p: { xs: 2, sm: 3 }, 
+        px: { xs: 2, sm: 3 }, 
+        pt: { xs: 6, sm: 6, md: 6 },
         height: '100%', 
         display: 'flex',
         flexDirection: 'column',

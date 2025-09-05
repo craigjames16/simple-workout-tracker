@@ -136,6 +136,7 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
         display: 'flex',
         flexDirection: 'column',
         p: { xs: 2, sm: 3 },
+        pt: { xs: 6, sm: 6, md: 6 },
       }}>
         {/* Header Section */}
         <Box sx={{

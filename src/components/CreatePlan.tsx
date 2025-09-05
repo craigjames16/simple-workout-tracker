@@ -354,7 +354,8 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     <ResponsiveContainer maxWidth="lg">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <Box sx={{
-        p: { xs: 2, sm: 3 }, 
+        px: { xs: 2, sm: 3 }, 
+        pt: { xs: 6, sm: 6, md: 6 },
         height: '100%', 
         display: 'flex',
         flexDirection: 'column',

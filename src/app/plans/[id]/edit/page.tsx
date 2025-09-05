@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import CreatePlan from '@/components/CreatePlan';
-import { Container, CircularProgress, Typography } from '@mui/material';
+import { CircularProgress, Typography } from '@mui/material';
+import { ResponsiveContainer } from '@/components';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -37,17 +38,17 @@ export default function EditPlanPage({ params }: Props) {
 
   if (loading) {
     return (
-      <Container sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Container>
+      </ResponsiveContainer>
     );
   }
 
   if (error || !plan) {
     return (
-      <Container sx={{ mt: 4 }}>
+      <ResponsiveContainer sx={{ mt: 4 }}>
         <Typography color="error">{error || 'Plan not found'}</Typography>
-      </Container>
+      </ResponsiveContainer>
     );
   }
 

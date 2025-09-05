@@ -118,6 +118,7 @@ const theme = createTheme({
     },
   },
   typography: {
+    fontFamily: '"Archivo", "Roboto", "Helvetica", "Arial", sans-serif',
     button: {
       textTransform: 'none',
     },
