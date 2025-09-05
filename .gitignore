@@ -59,3 +59,4 @@ Thumbs.db
 /backups
 .superdesign
 github-actions-secret.json
+github-actions-key.json

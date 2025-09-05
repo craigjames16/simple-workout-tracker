@@ -598,20 +598,9 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '50vh',
-        px: 2
-      }}>
-        <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} />
-          <Typography variant="h6" sx={{ mt: 2, color: 'text.secondary' }}>
-            Loading your workout...
-          </Typography>
-        </Box>
-      </Box>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </ResponsiveContainer>
     );
   }
 

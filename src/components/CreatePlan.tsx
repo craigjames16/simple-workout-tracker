@@ -186,7 +186,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   };
 
   const toggleRestDay = (dayId: string) => {
-    setWorkoutDays(workoutDays.map(day => {
+    setWorkoutDays(prevDays => prevDays.map(day => {
       if (day.id === dayId) {
         return {
           ...day,
@@ -199,7 +199,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
   };
 
   const removeExerciseFromDay = (dayId: string, exerciseId: number) => {
-    setWorkoutDays(workoutDays.map(day => {
+    setWorkoutDays(prevDays => prevDays.map(day => {
       if (day.id === dayId) {
         return {
           ...day,
@@ -289,7 +289,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
       const createdExercise = await response.json();
 
       if (creatingExerciseForDayIndex !== null) {
-        setWorkoutDays(workoutDays.map((day, index) => {
+        setWorkoutDays(prevDays => prevDays.map((day, index) => {
           if (index === creatingExerciseForDayIndex && !day.isRestDay) {
             return {
               ...day,
@@ -323,7 +323,7 @@ export default function CreatePlan({ initialPlan, mode = 'create' }: Props) {
     if (selectedExercise) {
       const exercise = availableExercises.find(ex => ex.id === parseInt(selectedExercise));
       if (exercise) {
-        setWorkoutDays(workoutDays.map(day => {
+        setWorkoutDays(prevDays => prevDays.map(day => {
           if (day.id === dayId && !day.isRestDay) {
             return {
               ...day,

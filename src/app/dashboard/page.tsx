@@ -478,10 +478,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <ResponsiveContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-          <CircularProgress />
-        </Box>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
       </ResponsiveContainer>
     );
   }

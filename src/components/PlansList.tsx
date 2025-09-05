@@ -91,7 +91,6 @@ export default function PlansList() {
 
   const getActivePlanInstance = (plan: Plan): PlanInstance | undefined => {
     console.log("GET ACTIVE PLAN INSTANCE")
-    console.log(plan.instances?.find(instance => instance.status === 'IN_PROGRESS'))
     return plan.instances?.find(instance => instance.status === 'IN_PROGRESS');
   };
 

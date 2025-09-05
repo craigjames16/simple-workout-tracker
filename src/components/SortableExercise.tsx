@@ -33,7 +33,6 @@ export function SortableExercise({ id, exercise, dayId, order, onRemove }: Sorta
     <Box
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
       sx={{
         p: 1.5,
         mb: 1,
@@ -44,18 +43,26 @@ export function SortableExercise({ id, exercise, dayId, order, onRemove }: Sorta
         alignItems: 'center',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         transition: 'all 0.2s ease',
-        cursor: 'grab',
         '&:hover': {
           background: 'rgba(255, 255, 255, 0.08)',
           border: '1px solid rgba(255, 255, 255, 0.2)'
-        },
-        '&:active': {
-          cursor: 'grabbing'
         }
       }}
       style={style}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box 
+        {...listeners}
+        sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1.5,
+          flex: 1,
+          cursor: 'grab',
+          '&:active': {
+            cursor: 'grabbing'
+          }
+        }}
+      >
         <Box
           sx={{
             width: 24,
@@ -86,7 +93,12 @@ export function SortableExercise({ id, exercise, dayId, order, onRemove }: Sorta
       </Box>
       <IconButton
         size="small"
-        onClick={() => onRemove(dayId, exercise.id)}
+        onClick={(e) => {
+          console.log('Removing exercise', exercise.id);
+          e.stopPropagation();
+          
+          onRemove(dayId, exercise.id);
+        }}
         sx={{ 
           color: 'rgba(239, 68, 68, 0.7)',
           '&:hover': {

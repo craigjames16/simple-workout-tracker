@@ -112,11 +112,9 @@ const NextWorkout = ({
   
   if (loading) {
     return (
-      <Card elevation={3} sx={{ mb: 3 }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-          <CircularProgress size={28} />
-        </CardContent>
-      </Card>
+      <ResponsiveContainer maxWidth="md" sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </ResponsiveContainer>
     );
   }
   
