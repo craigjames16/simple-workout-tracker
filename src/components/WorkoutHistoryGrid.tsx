@@ -143,11 +143,6 @@ export default function WorkoutHistoryGrid({
                     <Typography variant="caption" sx={{ fontSize: '0.7rem', opacity: 0.8 }}>
                       {workout.isRestDay ? 'Rest' : `Day ${dayIndex + 1}`}
                     </Typography>
-                    {isCompleted && (
-                      <Typography sx={{ fontSize: '1rem' }}>
-                        {workout.isRestDay ? '😴' : '✅'}
-                      </Typography>
-                    )}
                   </>
                 ) : null}
               </Box>

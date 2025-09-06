@@ -66,8 +66,8 @@ const navItems = [
               <NextImage
                 src="/beaker_logo512.png"
                 alt="Data Gym Logo"
-                width={isMobile ? 40 : 50}
-                height={isMobile ? 40 : 50}
+                width={isMobile ? 50 : 50}
+                height={isMobile ? 50 : 50}
                 priority
                 unoptimized
                 style={{
