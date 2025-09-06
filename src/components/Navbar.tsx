@@ -64,13 +64,14 @@ const navItems = [
               }}
             >
               <NextImage
-                src={`/beaker_logo512.png?v=${Date.now()}`}
+                src="/beaker_logo512.png"
                 alt="Data Gym Logo"
-                width={50}
-                height={50}
+                width={isMobile ? 40 : 50}
+                height={isMobile ? 40 : 50}
+                priority
+                unoptimized
                 style={{
-                  marginRight: '8px',
-                  // marginTop: '8px'
+                  marginRight: isMobile ? '4px' : '8px',
                 }}
               />
               {isMobile ? null : (<Typography
