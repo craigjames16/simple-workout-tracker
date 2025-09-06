@@ -101,9 +101,6 @@ const navItems = [
               width: '100%'
             }}
           >
-            {/* Logo and App Name - Always left aligned */}
-   
-
             {isMobile ? (
               <>
                 {/* Mobile view - icons only across the top */}
@@ -116,7 +113,7 @@ const navItems = [
                     p: 2
                   }}
                 >
-                  {navItems.map((item) => (
+                  {navItems.map((item, index) => (
                     <IconButton
                       key={item.href}
                       color="inherit"
@@ -129,7 +126,7 @@ const navItems = [
                         minWidth: 40,
                         width: 50,
                         height: 50,
-                        mr: 4,
+                        mr: index === navItems.length - 1 ? 0 : {xs: 2, md: 4},
                         background: pathname === item.href 
                           ? gradients.glassHover
                           : item.highlight
