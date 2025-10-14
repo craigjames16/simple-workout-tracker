@@ -2,8 +2,8 @@ import { withAuth } from "next-auth/middleware"
 
 export default withAuth({
   pages: {
-    signIn: "/auth/signin",
-    error: "/auth/error",
+    signIn: "/signin",
+    error: "/error",
   },
   callbacks: {
     authorized: ({ req }) => !!req.cookies.get("next-auth.session-token") || !!req.cookies.get("__Secure-next-auth.session-token")
@@ -18,6 +18,7 @@ export const config = {
       "/exercises",
       "/workouts",
       "/mesocycle",
+      "/account",
       "/api/plans/:path*", 
       "/api/exercises/:path*",
       "/api/workout-instances/:path*",
