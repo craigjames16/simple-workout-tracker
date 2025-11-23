@@ -137,9 +137,23 @@ export async function GET() {
     // OR we have no in-progress iterations at all
     // We need to create a new iteration starting with day 1
     else if (currentMesocycle.plan?.days?.length > 0) {
+      // Fetch all instances (including completed) to find the max iteration number
+      const allInstances = await prisma.planInstance.findMany({
+        where: {
+          mesocycleId: currentMesocycle.id,
+        },
+        select: {
+          iterationNumber: true,
+        },
+        orderBy: {
+          iterationNumber: 'desc',
+        },
+        take: 1,
+      });
+
       // Calculate the next iteration number
-      const lastIterationNumber = currentMesocycle.instances.length > 0 
-        ? (currentMesocycle.instances[0].iterationNumber || 1) 
+      const lastIterationNumber = allInstances.length > 0 && allInstances[0].iterationNumber != null
+        ? allInstances[0].iterationNumber
         : 0;
       
       // Get the first day from the plan
@@ -151,6 +165,7 @@ export async function GET() {
         isRestDay: firstPlanDay.isRestDay,
         workoutId: firstPlanDay.workout?.id,
         workoutName: firstPlanDay.workout?.name,
+        mesocycleId: currentMesocycle.id,
         needsNewIteration: true, // Flag to indicate client should create a new iteration
         inProgress: false,
       });

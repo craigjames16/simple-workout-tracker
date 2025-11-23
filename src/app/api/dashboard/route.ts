@@ -4,10 +4,91 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"
 import { ExerciseCategory } from '@prisma/client';
 
-// Define the SetVolume type at the top of the file
-type SetVolume = {
-  volume: number;
+type MetricValue = {
+  value: number;
   date: Date;
+};
+
+type MetricKey = 'volume' | 'count';
+
+type MetricSeries = Record<
+  string,
+  Array<Record<string, { date: Date } & Partial<Record<MetricKey, number>>>>
+>;
+
+const fetchExercisesWithCompletedSets = async (userId: string) => {
+  return prisma.exercise.findMany({
+    where: {
+      OR: [
+        { userId },
+        { userId: null }
+      ]
+    },
+    include: {
+      sets: {
+        where: {
+          workoutInstance: {
+            userId,
+            completedAt: {
+              not: null
+            }
+          }
+        },
+        include: {
+          workoutInstance: {
+            select: {
+              id: true,
+              startedAt: true,
+              completedAt: true
+            }
+          }
+        }
+      }
+    }
+  });
+};
+
+const buildMuscleGroupMetric = (
+  exercises: Awaited<ReturnType<typeof fetchExercisesWithCompletedSets>>,
+  valueMapper: (set: (typeof exercises)[number]['sets'][number]) => number
+) => {
+  return exercises.reduce((acc, exercise) => {
+    const muscleGroup = exercise.category;
+
+    exercise.sets.forEach(set => {
+      const instanceId = set.workoutInstance.id;
+
+      if (!acc[muscleGroup]) {
+        acc[muscleGroup] = {};
+      }
+
+      if (!acc[muscleGroup][instanceId]) {
+        acc[muscleGroup][instanceId] = {
+          value: 0,
+          date: set.workoutInstance.startedAt
+        };
+      }
+
+      acc[muscleGroup][instanceId].value += valueMapper(set);
+    });
+
+    return acc;
+  }, {} as Record<ExerciseCategory, Record<string, MetricValue>>);
+};
+
+const formatMetricResponse = (
+  metric: ReturnType<typeof buildMuscleGroupMetric>,
+  valueKey: MetricKey
+) => {
+  return Object.entries(metric).reduce((acc, [category, instances]) => {
+    acc[category] = Object.entries(instances).map(([instanceId, data]) => ({
+      [instanceId]: {
+        [valueKey]: data.value,
+        date: data.date
+      }
+    }));
+    return acc;
+  }, {} as MetricSeries);
 };
 
 export async function GET(request: NextRequest) {
@@ -19,74 +100,25 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const data = searchParams.get('data');
 
-  if (data === 'muscleGroups') {
+  if (data === 'muscleGroupVolume' || data === 'muscleGroups') {
     try {
-      const exercises = await prisma.exercise.findMany({
-        where: {
-          OR: [
-            { userId: session.user.id },
-            { userId: null } // Include default exercises
-          ]
-        },
-        include: {
-          sets: {
-            where: {
-              workoutInstance: {
-                userId: session.user.id,
-                completedAt: {
-                  not: null
-                }
-              }
-            },
-            include: {
-              workoutInstance: {
-                select: {
-                  id: true,
-                  startedAt: true,
-                  completedAt: true
-                }
-              }
-            }
-          }
-        }
-      });
-      
-      // Organize the data by muscle group and instanceId. E.g {Chest: [{id: 1, volume: 100, date: Date}, {id: 2, volume: 200, date: Date}]}
-      const volumeByMuscleGroup = exercises.reduce((acc, exercise) => {
-        const muscleGroup = exercise.category;
-        
-        exercise.sets.forEach(set => {
-          const instanceId = set.workoutInstance.id;
-          
-          if (!acc[muscleGroup]) {
-            acc[muscleGroup] = {};
-          }
-          
-          if (!acc[muscleGroup][instanceId]) {
-            acc[muscleGroup][instanceId] = {
-              volume: 0,
-              date: set.workoutInstance.startedAt
-            };
-          }
-          
-          acc[muscleGroup][instanceId].volume += set.reps * set.weight;
-        });
-        
-        return acc;
-      }, {} as Record<string, Record<string, SetVolume>>);
-
-      // Transform the nested object into the desired array format for the chart
-      const formattedVolume = Object.entries(volumeByMuscleGroup).reduce((acc, [category, instances]) => {
-        acc[category] = Object.entries(instances).map(([instanceId, data]) => ({
-          [instanceId]: data
-        }));
-        return acc;
-      }, {} as Record<string, Array<Record<string, SetVolume>>>);
-
+      const exercises = await fetchExercisesWithCompletedSets(session.user.id);
+      const volumeMetric = buildMuscleGroupMetric(exercises, (set) => set.reps * set.weight);
+      const formattedVolume = formatMetricResponse(volumeMetric, 'volume');
       return NextResponse.json(formattedVolume);
     } catch (error) {
-      console.error('Error fetching muscle groups:', error);
-      return NextResponse.json({ error: 'Error fetching muscle groups' }, { status: 500 });
+      console.error('Error fetching muscle group volume:', error);
+      return NextResponse.json({ error: 'Error fetching muscle group volume' }, { status: 500 });
+    }
+  } else if (data === 'muscleGroupSets') {
+    try {
+      const exercises = await fetchExercisesWithCompletedSets(session.user.id);
+      const setMetric = buildMuscleGroupMetric(exercises, () => 1);
+      const formattedSets = formatMetricResponse(setMetric, 'count');
+      return NextResponse.json(formattedSets);
+    } catch (error) {
+      console.error('Error fetching muscle group sets:', error);
+      return NextResponse.json({ error: 'Error fetching muscle group sets' }, { status: 500 });
     }
   } else if (data === 'exercises') {
     try {
