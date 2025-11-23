@@ -9,6 +9,8 @@
     "lint": "next lint",
     "clean": "rm -rf .next",
     "seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts",
+    "pull:prod-data": "ts-node --project scripts/tsconfig.json scripts/exportProdData.ts",
+    "db:seed:prod": "prisma db seed",
     "test-db": "ts-node src/lib/db-test.ts",
     "generate-icons": "ts-node scripts/generate-icons.ts",
     "mcp": "npx @playwright/mcp@latest --port 8931",
