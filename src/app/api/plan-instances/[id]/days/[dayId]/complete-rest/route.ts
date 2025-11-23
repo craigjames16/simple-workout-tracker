@@ -97,9 +97,79 @@ export async function POST(
             }
           }
         },
-        planInstance: true
+        planInstance: {
+          include: {
+            days: {
+              include: {
+                planDay: true,
+                workoutInstance: true
+              }
+            },
+            mesocycle: {
+              include: {
+                instances: {
+                  include: {
+                    days: {
+                      include: {
+                        planDay: true,
+                        workoutInstance: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     });
+
+    // Check if all days in the plan instance are complete
+    const planInstance = updatedPlanInstanceDay.planInstance;
+    if (planInstance) {
+      const allDaysComplete = planInstance.days.every(day => {
+        return day.planDay.isRestDay 
+          ? day.isComplete 
+          : day.workoutInstance?.completedAt != null;
+      });
+
+      if (allDaysComplete) {
+        console.log("All days complete for plan instance", planInstance.id);
+        try {
+          await prisma.planInstance.update({
+            where: { id: planInstance.id },
+            data: {
+              status: 'COMPLETE',
+              completedAt: new Date()
+            }
+          });
+          console.log(`Plan instance ${planInstance.id} marked as COMPLETE.`);
+
+          // If this is part of a mesocycle, check if all instances are complete
+          if (planInstance.mesocycle) {
+            const allInstancesComplete = planInstance.mesocycle.instances.every(instance => 
+              instance.days.every(day => 
+                day.planDay.isRestDay ? day.isComplete : day.workoutInstance?.completedAt != null
+              )
+            );
+
+            if (allInstancesComplete) {
+              // Update mesocycle to complete
+              await prisma.mesocycle.update({
+                where: { id: planInstance.mesocycle.id },
+                data: {
+                  status: 'COMPLETE',
+                  completedAt: new Date()
+                }
+              });
+              console.log(`Mesocycle ${planInstance.mesocycle.id} marked as COMPLETE.`);
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to update plan instance ${planInstance.id}:`, error);
+        }
+      }
+    }
 
     return NextResponse.json(updatedPlanInstanceDay);
   } catch (error) {

@@ -20,6 +20,9 @@ import CheckIcon from '@mui/icons-material/Check';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import GradientButton from '@/components/GradientButton';
+import ScheduleTimeline from '@/components/ScheduleTimeline';
+import WorkoutCalendar from '@/components/WorkoutCalendar';
+import MesocycleProgress from '@/components/MesocycleProgress';
 import { gradients } from '@/lib/theme-constants';
 
 interface CurrentMesocycle {
@@ -29,6 +32,45 @@ interface CurrentMesocycle {
     id: number;
     name: string;
   };
+}
+
+
+interface PlanInstanceDay {
+  id: number;
+  planInstanceId: number;
+  planDayId: number;
+  isComplete: boolean;
+  createdAt: string;
+  updatedAt: string;
+  planDay: {
+    id: number;
+    isRestDay: boolean;
+    dayNumber: number;
+    workout?: {
+      id: number;
+      name: string;
+    } | null;
+  };
+  workoutInstance: {
+    id: number;
+    completedAt: string | null;
+    workout: {
+      id: number;
+      name: string;
+    };
+  } | null;
+  planInstance: {
+    id: number;
+    iterationNumber: number | null;
+    status: string | null;
+    startedAt: string;
+    completedAt: string | null;
+  };
+}
+
+interface ScheduleData {
+  previousDays: PlanInstanceDay[];
+  upcomingDays: PlanInstanceDay[];
 }
 
 // Next Workout Component
@@ -41,7 +83,7 @@ const NextWorkout = ({
   onStartWorkout: (iterationId: number, dayId: number) => Promise<void>;
   isStartingWorkout: boolean;
 }) => {
-  const [nextWorkout, setNextWorkout] = useState<any>(null);
+  const [nextWorkout, setNextWorkout] = useState<PlanInstanceDay | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,16 +95,19 @@ const NextWorkout = ({
       }
       
       try {
-        const response = await fetch(`/api/workout-instances/latest`);
+        const response = await fetch(`/api/mesocycles/${currentMesocycle.id}/schedule`);
         
         if (!response.ok) {
-          throw new Error('Failed to fetch next workout');
+          throw new Error('Failed to fetch schedule');
         }
         
-        const data = await response.json();
-        setNextWorkout(data);
+        const data = await response.json() as ScheduleData;
+        
+        // Get the first upcoming day
+        const firstUpcomingDay = data.upcomingDays.length > 0 ? data.upcomingDays[0] : null;
+        setNextWorkout(firstUpcomingDay);
       } catch (err) {
-        console.error('Error fetching next workout:', err);
+        console.error('Error fetching schedule:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
@@ -75,16 +120,20 @@ const NextWorkout = ({
   const handleStartWorkout = async () => {
     if (!nextWorkout) return;
 
-    if (nextWorkout.needsNewIteration) {
+    // Check if we need to create a new iteration (day has placeholder id)
+    if (nextWorkout.id === -1 || nextWorkout.planInstanceId === -1) {
       // Create a new iteration first
       try {
+        const iterationNumber = nextWorkout.planInstance?.iterationNumber || 1;
         const response = await fetch(`/api/plan-instances`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            planId: currentMesocycle?.plan.id
+            planId: currentMesocycle?.plan.id,
+            mesocycleId: currentMesocycle?.id,
+            iterationNumber: typeof iterationNumber === 'number' ? iterationNumber : undefined
           })
         });
 
@@ -93,20 +142,62 @@ const NextWorkout = ({
         }
 
         const newIteration = await response.json();
-        // Now start the workout with the new iteration's first day
-        const firstDay = newIteration.days[0];
-        onStartWorkout(newIteration.id, firstDay.id);
+        // Get the first day from the new iteration that matches the planDayId
+        const firstDay = newIteration.days.find((d: any) => d.planDayId === nextWorkout.planDayId) || newIteration.days[0];
+        
+        // Check if it's a rest day - if so, complete it instead of starting a workout
+        if (firstDay.planDay.isRestDay || !firstDay.planDay.workout) {
+          // Complete the rest day
+          const completeResponse = await fetch(
+            `/api/plan-instances/${newIteration.id}/days/${firstDay.id}/complete-rest`,
+            {
+              method: 'POST',
+            }
+          );
+          
+          if (!completeResponse.ok) {
+            throw new Error('Failed to complete rest day');
+          }
+          
+          // Reload the page to show the next workout
+          window.location.reload();
+        } else {
+          // Start the workout with the new iteration's first day
+          onStartWorkout(newIteration.id, firstDay.id);
+        }
       } catch (err) {
         console.error('Error creating new iteration:', err);
         setError(err instanceof Error ? err.message : 'Failed to create new iteration');
       }
     } else {
       // Start workout with existing iteration
-      if (!nextWorkout.iterationId || !nextWorkout.dayId) {
+      if (!nextWorkout.planInstanceId || !nextWorkout.id) {
         setError('Missing required workout information. Please try refreshing the page.');
         return;
       }
-      onStartWorkout(nextWorkout.iterationId, nextWorkout.dayId);
+      
+      // Check if it's a rest day
+      if (nextWorkout.planDay?.isRestDay) {
+        try {
+          const response = await fetch(
+            `/api/plan-instances/${nextWorkout.planInstanceId}/days/${nextWorkout.id}/complete-rest`,
+            {
+              method: 'POST',
+            }
+          );
+          
+          if (!response.ok) {
+            throw new Error('Failed to complete rest day');
+          }
+          
+          window.location.reload();
+        } catch (err) {
+          console.error('Error completing rest day:', err);
+          setError(err instanceof Error ? err.message : 'Failed to complete rest day');
+        }
+      } else {
+        onStartWorkout(nextWorkout.planInstanceId, nextWorkout.id);
+      }
     }
   };
   
@@ -130,7 +221,7 @@ const NextWorkout = ({
     );
   }
   
-  if (!nextWorkout) {
+  if (!nextWorkout || !nextWorkout.planDay) {
     return (
       <Card elevation={3} sx={{ mb: 3 }}>
         <CardContent>
@@ -142,7 +233,11 @@ const NextWorkout = ({
     );
   }
   
-  const isRestDay = nextWorkout.isRestDay;
+  const isRestDay = nextWorkout.planDay?.isRestDay || false;
+  const workoutName = nextWorkout.workoutInstance?.workout?.name || nextWorkout.planDay?.workout?.name || 'Workout Day';
+  const iterationNumber = nextWorkout.planInstance?.iterationNumber || 'Next';
+  const hasWorkoutInstance = !!nextWorkout.workoutInstance;
+  const isWorkoutInProgress = hasWorkoutInstance && !nextWorkout.workoutInstance?.completedAt;
   
   return (
     <Card 
@@ -156,28 +251,13 @@ const NextWorkout = ({
         border: '1px solid rgba(255, 255, 255, 0.1)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}
-    >
-      <Box sx={{ 
-        p: { xs: 2, sm: 3 },
-      }}>
-        <Typography 
-          variant="h6" 
-          sx={{ 
-            fontWeight: 700,
-            color: 'white',
-            fontSize: { xs: '1.125rem', sm: '1.25rem' }
-          }}
-        >
-          Next Workout
-        </Typography>
-      </Box>
-      
+    > 
       <CardContent sx={{ px: { xs: 1.5, sm: 2 }, py: { xs: 1.5, sm: 2 } }}>
         <Box sx={{ 
           display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
+          flexDirection: { xs: 'column', sm: 'column' },
           alignItems: { xs: 'center', sm: 'center' },
-          justifyContent: 'space-between',
+          // justifyContent: 'space-between',
           gap: { xs: 2, sm: 0 }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
@@ -189,14 +269,14 @@ const NextWorkout = ({
                 height: 32
               }}
             >
-              {isRestDay ? nextWorkout.dayNumber : <FitnessCenterIcon fontSize="small" />}
+              {isRestDay ? (nextWorkout.planDay?.dayNumber || 'R') : <FitnessCenterIcon fontSize="small" />}
             </Avatar>
             <Box>
               <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                Day {nextWorkout.dayNumber}: {isRestDay ? 'Rest Day' : nextWorkout.workoutName}
+                Day {nextWorkout.planDay?.dayNumber || '?'}: {isRestDay ? 'Rest Day' : workoutName}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Week {nextWorkout.iterationNumber}
+                {typeof iterationNumber === 'number' ? `Week ${iterationNumber}` : iterationNumber}
               </Typography>
             </Box>
           </Box>
@@ -208,24 +288,10 @@ const NextWorkout = ({
                 color="info"
                 size="small"
                 startIcon={<CheckIcon />}
-                onClick={async () => {
-                  try {
-                    const response = await fetch(`/api/plan-instances/${nextWorkout.iterationId}/days/${nextWorkout.dayId}/complete-rest`, {
-                      method: 'POST',
-                    });
-                    
-                    if (!response.ok) {
-                      throw new Error('Failed to complete rest day');
-                    }
-                    
-                    window.location.reload();
-                  } catch (error) {
-                    console.error('Error completing rest day:', error);
-                    alert('Failed to complete rest day. Please try again.');
-                  }
-                }}
+                onClick={handleStartWorkout}
+                disabled={isStartingWorkout}
               >
-                Complete Rest Day
+                {isStartingWorkout ? 'Completing...' : 'Complete Rest Day'}
               </GradientButton>
             ) : (
               <GradientButton 
@@ -235,11 +301,12 @@ const NextWorkout = ({
                 onClick={handleStartWorkout}
                 disabled={isStartingWorkout}
               >
-                {isStartingWorkout ? 'Starting...' : (nextWorkout.inProgress ? 'Continue Workout' : 'Start Workout')}
+                {isStartingWorkout ? 'Starting...' : (isWorkoutInProgress ? 'Continue Workout' : 'Start Workout')}
               </GradientButton>
             )}
           </Box>
         </Box>
+        <ScheduleTimeline sx={{ mt: 4 }} mesocycleId={currentMesocycle?.id || null} compact />
       </CardContent>
     </Card>
   );
@@ -248,6 +315,7 @@ const NextWorkout = ({
 export default function TrackPage() {
   const router = useRouter();
   const [currentMesocycle, setCurrentMesocycle] = useState<CurrentMesocycle | null>(null);
+  const [currentMesocycleId, setCurrentMesocycleId] = useState<number | null>(null);
   const [isStartingWorkout, setIsStartingWorkout] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -260,11 +328,11 @@ export default function TrackPage() {
         const data = await res.json();
         // Find the mesocycle in progress
         const inProgress = data.find((m: any) => m.status === 'IN_PROGRESS');
-        if (inProgress) {
-          setCurrentMesocycle(inProgress);
-        } else if (data.length > 0) {
-          // If no mesocycle is in progress, use the first one
-          setCurrentMesocycle(data[0]);
+        const selectedMesocycle = inProgress || (data.length > 0 ? data[0] : null);
+        
+        if (selectedMesocycle) {
+          setCurrentMesocycle(selectedMesocycle);
+          setCurrentMesocycleId(selectedMesocycle.id);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch mesocycles');
@@ -370,6 +438,12 @@ export default function TrackPage() {
           onStartWorkout={startWorkoutInstance}
           isStartingWorkout={isStartingWorkout}
         />
+
+        <WorkoutCalendar mesocycleId={currentMesocycle?.id || null} />
+
+        <Box sx={{ mt: 4 }}>
+          <MesocycleProgress initialMesocycleId={currentMesocycleId} />
+        </Box>
       </Box>
     </ResponsiveContainer>
   );

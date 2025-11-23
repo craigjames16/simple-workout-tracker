@@ -19,6 +19,7 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ChatIcon from '@mui/icons-material/Chat';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { usePathname } from 'next/navigation';
 import { gradients, themeColors } from '@/lib/theme-constants';
 import { ResponsiveContainer } from './ResponsiveContainer';
@@ -28,6 +29,7 @@ const navItems = [
   { text: 'Dashboard', href: '/dashboard', icon: <HomeIcon /> },
   { text: 'Exercises', href: '/exercises', icon: <SportsGymnasticsIcon /> },
   { text: 'Plans', href: '/plans', icon: <ListAltIcon /> },
+  { text: 'Account', href: '/account', icon: <AccountCircleIcon /> },
 ];
 
  export default function Navbar() {

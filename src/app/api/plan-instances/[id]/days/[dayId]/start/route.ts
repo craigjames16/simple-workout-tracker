@@ -53,8 +53,37 @@ export async function POST(
       );
     }
 
-    // If a workout instance already exists, just return it
+    // If a workout instance already exists, ensure it has mesocycleId if the plan instance has one
     if (planInstanceDay.workoutInstance) {
+      // If the plan instance has a mesocycle but the workout instance doesn't, update it
+      if (planInstanceDay.planInstance.mesocycleId && !planInstanceDay.workoutInstance.mesocycleId) {
+        const updatedWorkoutInstance = await prisma.workoutInstance.update({
+          where: { id: planInstanceDay.workoutInstance.id },
+          data: {
+            mesocycle: {
+              connect: { id: planInstanceDay.planInstance.mesocycleId }
+            }
+          },
+          include: {
+            workout: {
+              include: {
+                workoutExercises: {
+                  include: {
+                    exercise: true
+                  }
+                }
+              }
+            },
+            workoutExercises: {
+              include: {
+                exercise: true,
+                workout: true
+              }
+            }
+          }
+        });
+        return NextResponse.json(updatedWorkoutInstance);
+      }
       return NextResponse.json(planInstanceDay.workoutInstance);
     }
 
