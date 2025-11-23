@@ -7,7 +7,7 @@ import {
   Select, MenuItem, FormControl, InputLabel, IconButton, Menu, Dialog, DialogTitle,
   DialogContent, DialogActions, LinearProgress
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -244,6 +244,126 @@ const ExerciseCard = ({ exercise }: { exercise: Exercise }) => {
   );
 };
 
+type MetricKey = 'volume' | 'count';
+
+const buildRadarOption = (
+  data: Record<string, any[]> | null,
+  metricKey: MetricKey,
+  chartTitle: string
+) => {
+  if (!data) return null;
+
+  const muscleMetrics: Array<{ name: string; value: number }> = [];
+  const legendLabel = metricKey === 'volume' ? 'Volume Data' : 'Set Data';
+
+  const calculateMetricValue = (instances: any[]) => {
+    const extractMetric = (instance: any) => {
+      const entry = Object.values(instance)[0] as Record<string, number>;
+      return entry?.[metricKey] ?? 0;
+    };
+
+    if (metricKey === 'count') {
+      return instances.reduce(
+        (acc: number, instance: any) => acc + extractMetric(instance),
+        0
+      );
+    }
+
+    return extractMetric(instances[instances.length - 1]);
+  };
+
+  Object.entries(data).forEach(([muscleGroup, instances]) => {
+    if (!Array.isArray(instances) || !instances.length) {
+      return;
+    }
+
+    muscleMetrics.push({
+      name: muscleGroup,
+      value: calculateMetricValue(instances)
+    });
+  });
+
+  if (!muscleMetrics.length) return null;
+
+  const globalMax = Math.max(
+    ...muscleMetrics.map((metric) => metric.value),
+    1
+  );
+  const indicatorMax = Math.ceil(globalMax * 1.2);
+  const indicators = muscleMetrics.map(({ name }) => ({
+    name,
+    max: indicatorMax
+  }));
+  const latestValues = muscleMetrics.map(({ value }) =>
+    Number(value.toFixed(2))
+  );
+
+  return {
+    title: {
+      text: chartTitle,
+      left: 'center',
+      top: 4,
+      textStyle: {
+        color: 'rgba(255,255,255,0.85)',
+        fontSize: 16
+      }
+    },
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      data: [legendLabel],
+      top: 32,
+      textStyle: {
+        color: 'rgba(255,255,255,0.85)'
+      }
+    },
+    radar: {
+      indicator: indicators,
+      radius: '60%',
+      center: ['50%', '60%'],
+      splitNumber: 5,
+      axisName: {
+        color: 'rgba(255,255,255,0.85)',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(255,255,255,0.2)'
+        }
+      },
+      splitArea: {
+        show: false
+      },
+      axisLine: {
+        lineStyle: {
+          color: 'rgba(255,255,255,0.2)'
+        }
+      }
+    },
+    series: [
+      {
+        name: chartTitle,
+        type: 'radar',
+        data: [
+          {
+            value: latestValues,
+            name: legendLabel
+          }
+        ],
+        areaStyle: {
+          opacity: 0.1
+        },
+        symbol: 'circle',
+        symbolSize: 5,
+        lineStyle: {
+          width: 2
+        }
+      }
+    ]
+  };
+};
+
 
 
 export default function DashboardPage() {
@@ -254,6 +374,14 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const radarVolumeOption = useMemo(
+    () => buildRadarOption(volumeData, 'volume', 'Muscle Group Volume'),
+    [volumeData]
+  );
+  const radarSetOption = useMemo(
+    () => buildRadarOption(setData, 'count', 'Muscle Group Sets'),
+    [setData]
+  );
 
   // Fetch muscle group metrics for volume and set counts
   useEffect(() => {
@@ -375,6 +503,23 @@ export default function DashboardPage() {
           <Box sx={{ height: '100%', overflow: 'auto' }}>
             {volumeData ? (
               <Box>
+                {radarVolumeOption && (
+                  <Box
+                    sx={{
+                      mb: 4,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      background: gradients.surface,
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                    }}
+                  >
+                    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                      <EChartsReact style={{ width: '100%', height: 360 }} option={radarVolumeOption} />
+                    </Box>
+                  </Box>
+                )}
                 {Object.entries(volumeData as Record<string, any[]>).map(([muscleGroup, instances]: [string, any[]]) => {
                   // Transform the data for ECharts
                   interface TransformedDataPoint {
@@ -551,6 +696,23 @@ export default function DashboardPage() {
           <Box sx={{ height: '100%', overflow: 'auto' }}>
             {setData ? (
               <Box>
+                {radarSetOption && (
+                  <Box
+                    sx={{
+                      mb: 4,
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      background: gradients.surface,
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                    }}
+                  >
+                    <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                      <EChartsReact style={{ width: '100%', height: 360 }} option={radarSetOption} />
+                    </Box>
+                  </Box>
+                )}
                 {Object.entries(setData as Record<string, any[]>).map(([muscleGroup, instances]: [string, any[]]) => {
                   interface SetTransformedDataPoint {
                     instanceId: string;
