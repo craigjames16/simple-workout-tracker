@@ -26,9 +26,8 @@ import { ResponsiveContainer } from './ResponsiveContainer';
 
 const navItems = [
   { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
-  { text: 'Dashboard', href: '/dashboard', icon: <HomeIcon /> },
-  { text: 'Exercises', href: '/exercises', icon: <SportsGymnasticsIcon /> },
-  { text: 'Plans', href: '/plans', icon: <ListAltIcon /> },
+  { text: 'Data', href: '/data', icon: <HomeIcon /> },
+  { text: 'Plan', href: '/plan', icon: <ListAltIcon /> },
   { text: 'Account', href: '/account', icon: <AccountCircleIcon /> },
 ];
 

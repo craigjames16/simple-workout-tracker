@@ -22,7 +22,6 @@ import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import GradientButton from '@/components/GradientButton';
 import ScheduleTimeline from '@/components/ScheduleTimeline';
 import WorkoutCalendar from '@/components/WorkoutCalendar';
-import MesocycleProgress from '@/components/MesocycleProgress';
 import { gradients } from '@/lib/theme-constants';
 
 interface CurrentMesocycle {
@@ -315,7 +314,6 @@ const NextWorkout = ({
 export default function TrackPage() {
   const router = useRouter();
   const [currentMesocycle, setCurrentMesocycle] = useState<CurrentMesocycle | null>(null);
-  const [currentMesocycleId, setCurrentMesocycleId] = useState<number | null>(null);
   const [isStartingWorkout, setIsStartingWorkout] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -332,7 +330,6 @@ export default function TrackPage() {
         
         if (selectedMesocycle) {
           setCurrentMesocycle(selectedMesocycle);
-          setCurrentMesocycleId(selectedMesocycle.id);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch mesocycles');
@@ -399,9 +396,9 @@ export default function TrackPage() {
               variant="contained"
               color="primary"
               component={Link}
-              href="/dashboard"
+              href="/data"
             >
-              Go to Dashboard
+              Go to Data
             </Button>
           </Box>
         </Box>
@@ -440,10 +437,6 @@ export default function TrackPage() {
         />
 
         <WorkoutCalendar mesocycleId={currentMesocycle?.id || null} />
-
-        <Box sx={{ mt: 4 }}>
-          <MesocycleProgress initialMesocycleId={currentMesocycleId} />
-        </Box>
       </Box>
     </ResponsiveContainer>
   );

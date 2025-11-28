@@ -92,7 +92,7 @@ export default function SignUp() {
       if (result?.error) {
         setError('An account with this email already exists');
       } else {
-        router.push('/dashboard');
+        router.push('/data');
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
@@ -107,7 +107,7 @@ export default function SignUp() {
 
     try {
       await signIn('google', {
-        callbackUrl: '/dashboard',
+        callbackUrl: '/data',
         redirect: true,
       });
     } catch (error) {

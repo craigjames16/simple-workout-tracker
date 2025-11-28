@@ -50,7 +50,7 @@ export default function SignIn() {
       if (result?.error) {
         setError('Invalid email or password');
       } else {
-        router.push('/dashboard');
+        router.push('/data');
       }
     } catch (error) {
       setError('An error occurred. Please try again.');
@@ -65,7 +65,7 @@ export default function SignIn() {
 
     try {
       await signIn('google', {
-        callbackUrl: '/dashboard',
+        callbackUrl: '/data',
         redirect: true,
       });
     } catch (error) {

@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EChartsReact from 'echarts-for-react';
 import { gradients, themeColors } from '@/lib/theme-constants';
 import GradientButton from '@/components/GradientButton';
+import { VolumeSetRadarChart } from '@/components/dashboard/VolumeSetRadarChart';
 
 interface Exercise {
   name: string;
@@ -58,13 +59,9 @@ interface MesocycleListItem {
   status?: string;
 }
 
-interface MesocycleProgressProps {
-  initialMesocycleId?: number | null;
-}
-
-export default function MesocycleProgress({ initialMesocycleId }: MesocycleProgressProps) {
+export default function MesocycleProgress() {
   const [mesocycles, setMesocycles] = useState<MesocycleListItem[]>([]);
-  const [selectedMesocycleId, setSelectedMesocycleId] = useState<number | null>(initialMesocycleId || null);
+  const [selectedMesocycleId, setSelectedMesocycleId] = useState<number | null>(null);
   const [mesocycle, setMesocycle] = useState<CurrentMesocycle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +72,7 @@ export default function MesocycleProgress({ initialMesocycleId }: MesocycleProgr
   const [plans, setPlans] = useState<any[]>([]);
   const [newMesocycle, setNewMesocycle] = useState({ name: '', planId: '', iterations: 4 });
 
-  // Fetch all mesocycles
+  // Fetch all mesocycles and select initial one
   useEffect(() => {
     const fetchMesocycles = async () => {
       try {
@@ -83,7 +80,8 @@ export default function MesocycleProgress({ initialMesocycleId }: MesocycleProgr
         if (!res.ok) throw new Error('Failed to fetch mesocycles');
         const data = await res.json();
         setMesocycles(data);
-        if (data.length > 0 && !selectedMesocycleId) {
+        if (data.length > 0) {
+          // Find mesocycle in progress, or use the first one
           const inProgress = data.find((m: any) => m.status === 'IN_PROGRESS');
           setSelectedMesocycleId(inProgress ? inProgress.id : data[0].id);
         }
@@ -105,9 +103,10 @@ export default function MesocycleProgress({ initialMesocycleId }: MesocycleProgr
     setLoading(true);
     const fetchMesocycleData = async () => {
       try {
-        const res = await fetch(`/api/dashboard?data=mesocycle&id=${selectedMesocycleId}`);
-        if (!res.ok) throw new Error('Failed to fetch mesocycle data');
-        const data = await res.json();
+        const mesocycleRes = await fetch(`/api/dashboard?data=mesocycle&id=${selectedMesocycleId}`);
+        
+        if (!mesocycleRes.ok) throw new Error('Failed to fetch mesocycle data');
+        const data = await mesocycleRes.json();
         if (data.error) setError(data.error);
         else setMesocycle(data);
       } catch (err) {
@@ -316,72 +315,13 @@ export default function MesocycleProgress({ initialMesocycleId }: MesocycleProgr
             ))}
           </Select>
         </FormControl>
-
-        <IconButton onClick={handleMenuOpen} sx={{ ml: 1, borderRadius: 1 }}>
-          <MoreVertIcon />
-        </IconButton>
       </Box>
 
-      {/* Management Menu */}
-      <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={() => { setHistoryOpen(true); handleMenuClose(); }}>
-          <HistoryIcon fontSize="small" sx={{ mr: 1 }} /> History
-        </MenuItem>
-        <MenuItem onClick={() => { setCreateOpen(true); handleMenuClose(); }}>
-          <AddIcon fontSize="small" sx={{ mr: 1 }} /> Create New
-        </MenuItem>
-        <MenuItem onClick={() => { setDeleteOpen(true); handleMenuClose(); }} sx={{ color: 'error.main' }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete Mesocycle
-        </MenuItem>
-      </Menu>
-
-      {/* Mesocycle Header */}
-      <Box sx={{ 
-        mb: 4,
-        borderRadius: 2,
-        overflow: 'hidden',
-        background: gradients.surface,
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-      }}>
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <FitnessCenterIcon sx={{ 
-              mr: 1.5, 
-              color: 'white',
-              fontSize: '1.5rem'
-            }} />
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                fontWeight: 700,
-                color: 'white',
-                fontSize: { xs: '1.5rem', sm: '2rem' }
-              }}
-            >
-              {mesocycle.name}
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <CalendarTodayIcon sx={{ 
-              mr: 1, 
-              color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '1rem'
-            }} />
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                color: 'rgba(255, 255, 255, 0.8)',
-                fontWeight: 500,
-                letterSpacing: '0.025em'
-              }}
-            >
-              Based on plan: {mesocycle.plan.name}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
+      {/* Radar Chart - Volume & Sets by Muscle Group */}
+      <VolumeSetRadarChart 
+        mesocycleId={selectedMesocycleId} 
+        title="Mesocycle Volume & Sets by Muscle Group"
+      />
 
       {/* Total Volume per Week Chart */}
       <Box sx={{ 
@@ -406,76 +346,143 @@ export default function MesocycleProgress({ initialMesocycleId }: MesocycleProgr
           </Typography>
         </Box>
         <Box sx={{ p: { xs: 2, sm: 3 } }}>
-          {mesocycle.iterationVolumes && mesocycle.iterationVolumes.length > 0 ? (
-            <EChartsReact
-              style={{ width: '100%', height: 300 }}
-              option={{
-                tooltip: { 
-                  trigger: 'axis',
+          {mesocycle.iterationVolumes && mesocycle.iterationVolumes.length > 0 ? (() => {
+            // Get all workout days (non-rest days) sorted by day number
+            const workoutDays = mesocycle.planDays
+              .filter(day => !day.isRestDay)
+              .sort((a, b) => a.dayNumber - b.dayNumber);
+
+            // Get all iteration numbers that have data
+            const iterations = mesocycle.iterationVolumes
+              .map(v => v.iterationNumber)
+              .sort((a, b) => a - b);
+
+            // Build raw data: for each day, get volume for each iteration
+            const rawData: number[][] = workoutDays.map(day => {
+              return iterations.map(iterationNumber => {
+                const iteration = day.iterations.find(
+                  iter => iter.iterationNumber === iterationNumber && iter.completedAt
+                );
+                if (!iteration) return 0;
+                return iteration.exercises.reduce((sum, ex) => sum + (ex.volume || 0), 0);
+              });
+            });
+
+            // Calculate total volume for each iteration (week)
+            const totalData: number[] = [];
+            for (let i = 0; i < iterations.length; ++i) {
+              let sum = 0;
+              for (let j = 0; j < rawData.length; ++j) {
+                sum += rawData[j][i];
+              }
+              totalData.push(sum);
+            }
+
+            // Theme-based color palette matching the app's purple/blue theme
+            const themeColors = [
+              '#8884d8', // Purple (matches radar chart)
+              '#6366f1', // Indigo
+              '#8b5cf6', // Violet
+              '#a855f7', // Purple
+              '#c084fc', // Light purple
+              '#7c3aed', // Deep purple
+              '#5b21b6', // Dark purple
+              '#4f46e5', // Indigo
+            ];
+
+            // Create series for each day
+            const series = workoutDays.map((day, dayIndex) => {
+              const dayName = `Day ${day.dayNumber}`;
+              const color = themeColors[dayIndex % themeColors.length];
+              return {
+                name: dayName,
+                type: 'bar' as const,
+                stack: 'total',
+                barWidth: '60%',
+                label: {
+                  show: true,
                   formatter: (params: any) => {
-                    const data = params[0];
-                    return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
-                  }
+                    const value = params.value;
+                    const total = totalData[params.dataIndex];
+                    if (total <= 0) return '0%';
+                    const percentage = (value / total) * 100;
+                    return Math.round(percentage * 10) / 10 + '%';
+                  },
+                  fontSize: 11,
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: 'bold'
                 },
-                grid: { left: 80, right: 30, bottom: 50, top: 30 },
-                xAxis: {
-                  type: 'category',
-                  data: mesocycle.iterationVolumes.map(v => `Week ${v.iterationNumber}`),
-                  name: 'Week',
-                  nameLocation: 'center',
-                  nameGap: 30,
-                  axisLabel: { fontSize: 14 },
-                  splitLine: { show: false }
-                },
-                yAxis: {
-                  type: 'value',
-                  name: 'Volume',
-                  nameLocation: 'center',
-                  nameGap: 50,
-                  axisLabel: { fontSize: 14 },
-                  splitLine: { show: false },
-                  axisLine: { show: false },
-                  axisTick: { show: false }
-                },
-                series: [
-                  {
-                    data: (mesocycle.iterationVolumes || []).map((v, index) => {
-                      let percentChange = 0;
-                      if (index > 0 && mesocycle.iterationVolumes) {
-                        const prevVolume = mesocycle.iterationVolumes[index - 1]?.totalVolume || 0;
-                        percentChange = prevVolume > 0 ? ((v.totalVolume - prevVolume) / prevVolume * 100) : 0;
-                      }
-                      return {
-                        value: v.totalVolume,
-                        percentChange: percentChange
-                      };
-                    }),
-                    type: 'bar',
-                    itemStyle: { color: '#8884d8', borderRadius: [4, 4, 0, 0] },
-                    barWidth: '60%',
-                    label: {
-                      show: true,
-                      position: 'top',
-                      formatter: (params: any) => {
-                        const percentChange = params.data.percentChange;
-                        if (percentChange === 0) return '';
-                        const sign = percentChange > 0 ? '+' : '';
-                        return `${sign}${percentChange.toFixed(1)}%`;
-                      },
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      color: (params: any) => {
-                        const percentChange = params.data.percentChange;
-                        if (percentChange > 0) return '#4caf50';
-                        if (percentChange < 0) return '#f44336';
-                        return '#666';
-                      }
+                data: rawData[dayIndex].map((d, iterationIndex) => {
+                  const total = totalData[iterationIndex];
+                  return total <= 0 ? 0 : d;
+                }),
+                itemStyle: {
+                  color: color
+                }
+              };
+            });
+
+            return (
+              <EChartsReact
+                style={{ width: '100%', height: 300 }}
+                option={{
+                  tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                      type: 'shadow'
+                    },
+                    formatter: (params: any) => {
+                      let result = `${params[0].name}<br/>`;
+                      let total = 0;
+                      params.forEach((param: any) => {
+                        const value = param.value;
+                        total += value;
+                        result += `${param.marker}${param.seriesName}: ${value.toLocaleString()}<br/>`;
+                      });
+                      result += `<strong>Total: ${total.toLocaleString()}</strong>`;
+                      return result;
                     }
-                  }
-                ]
-              }}
-            />
-          ) : (
+                  },
+                  legend: {
+                    data: workoutDays.map(day => `Day ${day.dayNumber}`),
+                    bottom: 0,
+                    textStyle: {
+                      color: 'rgba(255,255,255,0.85)',
+                      fontSize: 12
+                    },
+                    itemGap: 20,
+                    itemWidth: 14,
+                    itemHeight: 14
+                  },
+                  grid: { left: 80, right: 30, bottom: 50, top: 30 },
+                  xAxis: {
+                    type: 'category',
+                    data: iterations.map(iter => `Week ${iter}`),
+                    name: 'Week',
+                    nameLocation: 'center',
+                    nameGap: 30,
+                    axisLabel: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+                    splitLine: { show: false },
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
+                  },
+                  yAxis: {
+                    type: 'value',
+                    name: 'Volume',
+                    nameLocation: 'center',
+                    nameGap: 50,
+                    axisLabel: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
+                    splitLine: { 
+                      show: true,
+                      lineStyle: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    axisLine: { show: false },
+                    axisTick: { show: false }
+                  },
+                  series
+                }}
+              />
+            );
+          })() : (
             <Box sx={{ 
               height: 300, 
               display: 'flex', 
