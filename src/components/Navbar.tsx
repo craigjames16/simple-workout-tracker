@@ -22,6 +22,7 @@ import RepeatIcon from '@mui/icons-material/Repeat';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import ChatIcon from '@mui/icons-material/Chat';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { gradients, themeColors } from '@/lib/theme-constants';
@@ -40,6 +41,7 @@ const navItems = [
   const router = useRouter();
   const { data: session } = useSession();
   const isLoggedIn = !!session;
+  const isTrackDetailPage = pathname.match(/^\/track\/\d+$/);
 
   // Get current bottom nav value based on pathname
   const getBottomNavValue = () => {
@@ -78,28 +80,53 @@ const navItems = [
         }}>
           {isMobile ? (
             <>
-              {/* Mobile top nav - Logo on left */}
-              <Box 
-                component={Link}
-                href="/"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    opacity: 0.8
-                  }
-                }}
-              >
-                <NextImage
-                  src="/beaker_logo512.png"
-                  alt="Data Gym Logo"
-                  width={36}
-                  height={36}
-                  priority
-                  unoptimized
-                />
-              </Box>
+              {/* Mobile top nav - Logo on left or Back button on track/[id] */}
+              {isTrackDetailPage ? (
+                <IconButton
+                  onClick={() => router.back()}
+                  size="small"
+                  sx={{
+                    borderRadius: 2,
+                    p: 1,
+                    width: 40,
+                    height: 40,
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                      transform: 'translateY(-1px)',
+                      color: 'white'
+                    },
+                  }}
+                >
+                  <ArrowBackIcon />
+                </IconButton>
+              ) : (
+                <Box 
+                  component={Link}
+                  href="/"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      opacity: 0.8
+                    }
+                  }}
+                >
+                  <NextImage
+                    src="/beaker_logo512.png"
+                    alt="Data Gym Logo"
+                    width={36}
+                    height={36}
+                    priority
+                    unoptimized
+                  />
+                </Box>
+              )}
               {isLoggedIn ? (
                 <IconButton
                   color="inherit"
@@ -177,44 +204,70 @@ const navItems = [
             </>
           ) : (
             <>
-              {/* Desktop top nav - Logo and navigation items */}
-              <Box 
-                component={Link}
-                href="/"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  textDecoration: 'none',
-                  mr: 4,
-                  padding: 1.5,
-                  '&:hover': {
-                    opacity: 0.8
-                  }
-                }}
-              >
-                <NextImage
-                  src="/beaker_logo512.png"
-                  alt="Data Gym Logo"
-                  width={50}
-                  height={50}
-                  priority
-                  unoptimized
-                  style={{
-                    marginRight: '8px',
-                  }}
-                />
-                <Typography
-                  variant="h6"
+              {/* Desktop top nav - Logo and navigation items or Back button on track/[id] */}
+              {isTrackDetailPage ? (
+                <IconButton
+                  onClick={() => router.back()}
+                  size="medium"
                   sx={{
-                    fontWeight: 700,
-                    color: 'rgb(255, 255, 255)',
-                    fontSize: '1.5rem',
-                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                    mr: 2,
+                    borderRadius: 2,
+                    p: 1.5,
+                    width: 48,
+                    height: 48,
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderColor: 'rgba(255, 255, 255, 0.2)',
+                      transform: 'translateY(-1px)',
+                      color: 'white'
+                    },
                   }}
                 >
-                  Data Gym
-                </Typography>
-              </Box>
+                  <ArrowBackIcon />
+                </IconButton>
+              ) : (
+                <Box 
+                  component={Link}
+                  href="/"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                    mr: 4,
+                    padding: 1.5,
+                    '&:hover': {
+                      opacity: 0.8
+                    }
+                  }}
+                >
+                  <NextImage
+                    src="/beaker_logo512.png"
+                    alt="Data Gym Logo"
+                    width={50}
+                    height={50}
+                    priority
+                    unoptimized
+                    style={{
+                      marginRight: '8px',
+                    }}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      color: 'rgb(255, 255, 255)',
+                      fontSize: '1.5rem',
+                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    Data Gym
+                  </Typography>
+                </Box>
+              )}
               {isLoggedIn ? (
                 <>
                   <Box sx={{ 
@@ -330,8 +383,8 @@ const navItems = [
       {/* Spacer for fixed AppBar - using div to avoid MUI Box wrapper */}
       <div style={{ minHeight: isMobile ? '0' : '80px' }} />
 
-      {/* Bottom Navigation Bar (Mobile only) - Only show when logged in */}
-      {isMobile && isLoggedIn && (
+      {/* Bottom Navigation Bar (Mobile only) - Only show when logged in and not on track/[id] page */}
+      {isMobile && isLoggedIn && !pathname.match(/^\/track\/\d+$/) && (
         <Paper
           sx={{
             position: 'fixed',
@@ -410,7 +463,7 @@ const navItems = [
           </BottomNavigation>
         </Paper>
       )}
-      {isMobile && isLoggedIn && <Box sx={{ height: 70 }} />} {/* Spacer for fixed bottom nav on mobile */}
+      {isMobile && isLoggedIn && !pathname.match(/^\/track\/\d+$/) && <Box sx={{ height: 70 }} />} {/* Spacer for fixed bottom nav on mobile */}
     </>
   );
 } 
