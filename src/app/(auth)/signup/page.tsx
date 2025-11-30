@@ -124,7 +124,7 @@ export default function SignUp() {
           p: 4,
           borderRadius: borderRadius.large,
           background: themeColors.surface.medium,
-          border: `1px solid ${themeColors.surface.light}`,
+          border: '1px solid rgba(255, 255, 255, 0.15)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
         }}
       >
@@ -177,24 +177,34 @@ export default function SignUp() {
               mb: 2,
               '& .MuiOutlinedInput-root': {
                 background: themeColors.surface.dark,
-                border: `1px solid ${themeColors.surface.light}`,
+                border: `1px solid rgba(255, 255, 255, 0.1)`,
                 borderRadius: borderRadius.medium,
                 color: textStyles.primary.color,
                 '&:hover': {
-                  borderColor: themeColors.primary.main,
+                  borderColor: themeColors.surface.light,
                 },
                 '&.Mui-focused': {
-                  borderColor: themeColors.primary.main,
-                  boxShadow: `0 0 0 3px ${themeColors.primary.main}20`
+                  borderColor: themeColors.surface.light,
+                  boxShadow: 'none',
+                  outline: 'none',
+                  '& fieldset': {
+                    border: 'none',
+                    borderColor: 'transparent',
+                  }
                 },
                 '& fieldset': {
-                  border: 'none'
+                  border: 'none',
+                  borderColor: 'transparent',
+                },
+                '&:hover fieldset': {
+                  border: 'none',
+                  borderColor: 'transparent',
                 }
               },
               '& .MuiInputLabel-root': {
                 color: textStyles.secondary.color,
                 '&.Mui-focused': {
-                  color: themeColors.primary.main
+                  color: textStyles.secondary.color
                 }
               }
             }}
@@ -219,15 +229,16 @@ export default function SignUp() {
               mb: 2,
               '& .MuiOutlinedInput-root': {
                 background: themeColors.surface.dark,
-                border: `1px solid ${themeColors.surface.light}`,
+                border: `1px solid rgba(255, 255, 255, 0.15)`,
                 borderRadius: borderRadius.medium,
                 color: textStyles.primary.color,
                 '&:hover': {
-                  borderColor: themeColors.primary.main,
+                  borderColor: themeColors.surface.light,
                 },
                 '&.Mui-focused': {
-                  borderColor: themeColors.primary.main,
-                  boxShadow: `0 0 0 3px ${themeColors.primary.main}20`
+                  borderColor: themeColors.surface.light,
+                  boxShadow: 'none',
+                  outline: 'none'
                 },
                 '& fieldset': {
                   border: 'none'
@@ -236,7 +247,7 @@ export default function SignUp() {
               '& .MuiInputLabel-root': {
                 color: textStyles.secondary.color,
                 '&.Mui-focused': {
-                  color: themeColors.primary.main
+                  color: textStyles.secondary.color
                 }
               }
             }}
@@ -252,7 +263,15 @@ export default function SignUp() {
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
                     disabled={isLoading}
-                    sx={{ color: textStyles.muted.color }}
+                    sx={{ 
+                      color: textStyles.muted.color,
+                      '&:focus': {
+                        outline: 'none',
+                      },
+                      '&:focus-visible': {
+                        outline: 'none',
+                      }
+                    }}
                   >
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -273,15 +292,16 @@ export default function SignUp() {
               mb: 2,
               '& .MuiOutlinedInput-root': {
                 background: themeColors.surface.dark,
-                border: `1px solid ${themeColors.surface.light}`,
+                border: `1px solid rgba(255, 255, 255, 0.15)`,
                 borderRadius: borderRadius.medium,
                 color: textStyles.primary.color,
                 '&:hover': {
-                  borderColor: themeColors.primary.main,
+                  borderColor: themeColors.surface.light,
                 },
                 '&.Mui-focused': {
-                  borderColor: themeColors.primary.main,
-                  boxShadow: `0 0 0 3px ${themeColors.primary.main}20`
+                  borderColor: themeColors.surface.light,
+                  boxShadow: 'none',
+                  outline: 'none'
                 },
                 '& fieldset': {
                   border: 'none'
@@ -290,7 +310,7 @@ export default function SignUp() {
               '& .MuiInputLabel-root': {
                 color: textStyles.secondary.color,
                 '&.Mui-focused': {
-                  color: themeColors.primary.main
+                  color: textStyles.secondary.color
                 }
               }
             }}
@@ -306,7 +326,15 @@ export default function SignUp() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     edge="end"
                     disabled={isLoading}
-                    sx={{ color: textStyles.muted.color }}
+                    sx={{ 
+                      color: textStyles.muted.color,
+                      '&:focus': {
+                        outline: 'none',
+                      },
+                      '&:focus-visible': {
+                        outline: 'none',
+                      }
+                    }}
                   >
                     {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                   </IconButton>
@@ -389,6 +417,12 @@ export default function SignUp() {
               borderRadius: borderRadius.medium,
               color: 'white',
               border: 'none',
+              '&:focus': {
+                outline: 'none',
+              },
+              '&:focus-visible': {
+                outline: 'none',
+              }
             }}
           >
             {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -422,7 +456,7 @@ export default function SignUp() {
           disabled={isLoading}
           sx={{
             background: themeColors.surface.dark,
-            border: `1px solid ${themeColors.surface.light}`,
+            border: `1px solid rgba(255, 255, 255, 0.1)`,
             py: 1.5,
             fontSize: '1.1rem',
             fontWeight: 'bold',
@@ -431,9 +465,17 @@ export default function SignUp() {
             color: textStyles.primary.color,
             '&:hover': {
               background: themeColors.surface.medium,
-              borderColor: themeColors.primary.main,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
               transform: 'translateY(-1px)',
             },
+            '&:focus': {
+              outline: 'none',
+              borderColor: themeColors.surface.light,
+            },
+            '&:focus-visible': {
+              outline: 'none',
+              borderColor: themeColors.surface.light,
+            }
           }}
         >
           Continue with Google

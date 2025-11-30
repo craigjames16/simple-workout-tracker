@@ -74,17 +74,6 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
     >
       <CardContent>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar 
-            sx={{ 
-              bgcolor: 'primary.main', 
-              width: 40, 
-              height: 40, 
-              mr: 1.5,
-              fontSize: '1rem'
-            }}
-          >
-            {exercise.name.substring(0, 2).toUpperCase()}
-          </Avatar>
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" sx={{ fontWeight: 700, color: 'white' }}>
               {exercise.name}
@@ -116,15 +105,7 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
                 Max Weight
               </Typography>
               <Typography variant="body2" fontWeight="bold" color="white">
-                {exercise.prs.maxWeight} kg
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">
-                Max Reps
-              </Typography>
-              <Typography variant="body2" fontWeight="bold" color="white">
-                {exercise.prs.maxReps}
+                {exercise.prs.maxWeight} lbs
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>

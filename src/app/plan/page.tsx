@@ -42,7 +42,7 @@ export default function PlanPage() {
         display: 'flex',
         flexDirection: 'column',
         px: { xs: 2, sm: 3 },
-        pt: { xs: 6, sm: 6, md: 6 },
+        pt: { xs: 2, sm: 2, md: 2 },
       }}>
         <Box sx={{
           pb: { xs: 2, sm: 3 },

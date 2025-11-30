@@ -15,11 +15,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EChartsReact from 'echarts-for-react';
 import { gradients, themeColors } from '@/lib/theme-constants';
 import GradientButton from '@/components/GradientButton';
-import { VolumeSetRadarChart } from '@/components/dashboard/VolumeSetRadarChart';
+import { CombinedDataTab } from '@/components/dashboard/CombinedDataTab';
+import { MesocycleSelect } from '@/components/dashboard/MesocycleSelect';
 
 interface Exercise {
   name: string;
   volume: number;
+  category?: string;
 }
 
 interface WorkoutIteration {
@@ -80,7 +82,7 @@ export default function MesocycleProgress() {
         if (!res.ok) throw new Error('Failed to fetch mesocycles');
         const data = await res.json();
         setMesocycles(data);
-        if (data.length > 0) {
+        if (data.length > 0 && !selectedMesocycleId) {
           // Find mesocycle in progress, or use the first one
           const inProgress = data.find((m: any) => m.status === 'IN_PROGRESS');
           setSelectedMesocycleId(inProgress ? inProgress.id : data[0].id);
@@ -274,53 +276,20 @@ export default function MesocycleProgress() {
   return (
     <Box sx={{ height: '100%', overflow: 'auto' }}>
       {/* Mesocycle Selection */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <FormControl 
-          sx={{ 
-            minWidth: 220,
-            '& .MuiOutlinedInput-root': {
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: 2,
-              color: 'white',
-              '&:hover': {
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-              },
-              '&.Mui-focused': {
-                borderColor: themeColors.primary.main,
-                boxShadow: `0 0 0 3px rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`
-              },
-              '& fieldset': {
-                border: 'none'
-              }
-            },
-            '& .MuiInputLabel-root': {
-              color: 'rgba(255, 255, 255, 0.7)',
-              '&.Mui-focused': {
-                color: themeColors.primary.main
-              }
-            }
-          }} 
-          size="small"
-        >
-          <InputLabel id="mesocycle-select-label">Select Mesocycle</InputLabel>
-          <Select
-            labelId="mesocycle-select-label"
-            value={selectedMesocycleId ?? ''}
-            label="Select Mesocycle"
-            onChange={e => setSelectedMesocycleId(Number(e.target.value))}
-          >
-            {mesocycles.map((m) => (
-              <MenuItem key={m.id} value={m.id}>{m.name} ({m.plan?.name || 'No Plan'})</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      <MesocycleSelect
+        value={selectedMesocycleId}
+        onChange={(value) => setSelectedMesocycleId(typeof value === 'number' ? value : null)}
+        label="Select Mesocycle"
+        showPlanName={true}
+      />
 
-      {/* Radar Chart - Volume & Sets by Muscle Group */}
-      <VolumeSetRadarChart 
-        mesocycleId={selectedMesocycleId} 
-        title="Mesocycle Volume & Sets by Muscle Group"
+      {/* Combined Volume & Sets Data */}
+      <CombinedDataTab 
+        preSelectedMesocycleId={selectedMesocycleId} 
+        hideFilter={true}
+        hideBarCharts={true}
+        hideToggle={true}
+        sx={{ mb: 4 }}
       />
 
       {/* Total Volume per Week Chart */}
@@ -512,16 +481,6 @@ export default function MesocycleProgress() {
                 <Box sx={{ mb: 4 }}>
                   {/* Day Header */}
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: 'secondary.main',
-                        mr: 2,
-                        width: 40,
-                        height: 40
-                      }}
-                    >
-                      <FitnessCenterIcon />
-                    </Avatar>
                     <Typography variant="h6">
                       Day {day.dayNumber}
                     </Typography>
@@ -546,92 +505,175 @@ export default function MesocycleProgress() {
                           fontSize: { xs: '1.125rem', sm: '1.25rem' }
                         }}
                       >
-                        Total Day Volume
+                        Total Day Volume (By Muscle Group)
                       </Typography>
                     </Box>
                     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                      {day.iterations.filter((iteration) => !!iteration.completedAt).length > 0 ? (
-                        <EChartsReact
-                          style={{ width: '100%', height: 280 }}
-                          option={{
-                            tooltip: { 
-                              trigger: 'axis',
-                              formatter: (params: any) => {
-                                const data = params[0];
-                                return `${data.name}<br/>Volume: ${data.value.toLocaleString()}`;
+                      {day.iterations.filter((iteration) => !!iteration.completedAt).length > 0 ? (() => {
+                        const completedIterations = day.iterations
+                          .filter((iteration) => !!iteration.completedAt)
+                          .sort((a, b) => a.iterationNumber - b.iterationNumber);
+                        
+                        // Calculate total volumes and percentage changes per iteration
+                        const iterationTotals = completedIterations.map((iteration, index) => {
+                          const currentVolume = iteration.exercises.reduce((sum, ex) => sum + (ex.volume || 0), 0);
+                          let percentChange = 0;
+                          if (index > 0) {
+                            const prevVolume = completedIterations[index - 1].exercises.reduce((sum, ex) => sum + (ex.volume || 0), 0);
+                            percentChange = prevVolume > 0 ? ((currentVolume - prevVolume) / prevVolume * 100) : 0;
+                          }
+                          return {
+                            volume: currentVolume,
+                            percentChange
+                          };
+                        });
+
+                        const allCategories = new Set<string>();
+                        completedIterations.forEach(iteration => {
+                          iteration.exercises.forEach(ex => {
+                            if (ex.category) allCategories.add(ex.category);
+                            else allCategories.add('Other');
+                          });
+                        });
+                        const categories = Array.from(allCategories).sort();
+                        
+                        const CATEGORY_COLORS: Record<string, string> = {
+                          'BACK': '#3b82f6', // Blue
+                          'BICEPS': '#8b5cf6', // Purple
+                          'TRICEPS': '#be185d', // Muted Rose
+                          'CHEST': '#b91c1c', // Muted Red
+                          'SHOULDERS': '#f59e0b', // Orange
+                          'HAMSTRINGS': '#10b981', // Green
+                          'QUADS': '#059669', // Emerald
+                          'CALVES': '#14b8a6', // Teal
+                          'ABS': '#64748b', // Slate
+                          'CORE': '#64748b',
+                          'CARDIO': '#06b6d4', // Cyan
+                        };
+
+                        const getCategoryColor = (cat: string) => {
+                          return CATEGORY_COLORS[cat.toUpperCase()] || '#a1a1aa';
+                        };
+
+                        const series: any[] = categories.map((category) => ({
+                          name: category,
+                          type: 'bar',
+                          stack: 'total',
+                          barWidth: '60%',
+                          data: completedIterations.map(iteration => {
+                            return iteration.exercises
+                              .filter(ex => (ex.category || 'Other') === category)
+                              .reduce((sum, ex) => sum + (ex.volume || 0), 0);
+                          }),
+                          itemStyle: { color: getCategoryColor(category) },
+                          label: { show: false }
+                        }));
+
+                        // Add a transparent line series for displaying the percentage change on top
+                        series.push({
+                          name: 'Total Change',
+                          type: 'line',
+                          symbol: 'circle',
+                          symbolSize: 0,
+                          lineStyle: { opacity: 0 },
+                          data: iterationTotals.map(t => t.volume),
+                          label: {
+                            show: true,
+                            position: 'top',
+                            formatter: (params: any) => {
+                              const index = params.dataIndex;
+                              const percentChange = iterationTotals[index].percentChange;
+                              if (index === 0 || percentChange === 0) return '';
+                              const sign = percentChange > 0 ? '+' : '';
+                              // Use rich text formatting tags
+                              const style = percentChange > 0 ? 'pos' : 'neg';
+                              return `{${style}|${sign}${percentChange.toFixed(1)}%}`;
+                            },
+                            rich: {
+                              pos: {
+                                color: '#4caf50',
+                                fontWeight: 'bold',
+                                fontSize: 12
+                              },
+                              neg: {
+                                color: '#f44336',
+                                fontWeight: 'bold',
+                                fontSize: 12
                               }
-                            },
-                            grid: { 
-                              left: 80, 
-                              right: 30, 
-                              bottom: 50, 
-                              top: 60 
-                            },
-                            xAxis: {
-                              type: 'category',
-                              data: day.iterations
-                                .filter((iteration) => !!iteration.completedAt)
-                                .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                .map((iteration) => `Week ${iteration.iterationNumber}`),
-                              name: 'Week',
-                              nameLocation: 'center',
-                              nameGap: 30,
-                              axisLabel: { fontSize: 13 },
-                              splitLine: { show: false }
-                            },
-                            yAxis: {
-                              type: 'value',
-                              name: 'Volume',
-                              nameLocation: 'center',
-                              nameGap: 50,
-                              axisLabel: { fontSize: 13 },
-                              splitLine: { show: false },
-                              axisLine: { show: false },
-                              axisTick: { show: false }
-                            },
-                            series: [
-                              {
-                                data: day.iterations
-                                  .filter((iteration) => !!iteration.completedAt)
-                                  .sort((a, b) => a.iterationNumber - b.iterationNumber)
-                                  .map((iteration, index, sortedIterations) => {
-                                    const volume = iteration.exercises.reduce((sum, ex) => sum + (ex.volume || 0), 0);
-                                    let percentChange = 0;
-                                    if (index > 0) {
-                                      const prevVolume = sortedIterations[index - 1].exercises.reduce((sum, ex) => sum + (ex.volume || 0), 0);
-                                      percentChange = prevVolume > 0 ? ((volume - prevVolume) / prevVolume * 100) : 0;
+                            }
+                          },
+                          tooltip: { show: false } // Hide tooltip for this auxiliary series
+                        });
+
+                        return (
+                          <EChartsReact
+                            style={{ width: '100%', height: 300 }}
+                            option={{
+                              tooltip: { 
+                                trigger: 'axis',
+                                axisPointer: { type: 'shadow' },
+                                formatter: (params: any) => {
+                                  // Filter out the auxiliary series from tooltip
+                                  const validParams = params.filter((p: any) => p.seriesName !== 'Total Change');
+                                  if (validParams.length === 0) return '';
+
+                                  let result = `${validParams[0].name}<br/>`;
+                                  let total = 0;
+                                  validParams.forEach((param: any) => {
+                                    const value = param.value;
+                                    if (value > 0) {
+                                      total += value;
+                                      result += `${param.marker}${param.seriesName}: ${value.toLocaleString()}<br/>`;
                                     }
-                                    return {
-                                      value: volume,
-                                      percentChange: percentChange
-                                    };
-                                  }),
-                                type: 'bar',
-                                itemStyle: { color: '#4caf50', borderRadius: [4, 4, 0, 0] },
-                                barWidth: '60%',
-                                label: {
-                                  show: true,
-                                  position: 'top',
-                                  formatter: (params: any) => {
-                                    const percentChange = params.data.percentChange;
-                                    if (percentChange === 0) return '';
+                                  });
+                                  result += `<strong>Total: ${total.toLocaleString()}</strong>`;
+                                  
+                                  // Add percent change to tooltip
+                                  const index = validParams[0].dataIndex;
+                                  if (index > 0) {
+                                    const percentChange = iterationTotals[index].percentChange;
                                     const sign = percentChange > 0 ? '+' : '';
-                                    return `${sign}${percentChange.toFixed(1)}%`;
-                                  },
-                                  fontSize: 12,
-                                  fontWeight: 'bold',
-                                  color: (params: any) => {
-                                    const percentChange = params.data.percentChange;
-                                    if (percentChange > 0) return '#4caf50';
-                                    if (percentChange < 0) return '#f44336';
-                                    return '#666';
+                                    const color = percentChange > 0 ? '#4caf50' : percentChange < 0 ? '#f44336' : '#999';
+                                    result += `<br/><span style="color:${color}">Change: ${sign}${percentChange.toFixed(1)}%</span>`;
                                   }
+                                  
+                                  return result;
                                 }
-                              }
-                            ]
-                          }}
-                        />
-                      ) : (
+                              },
+                              legend: {
+                                data: categories,
+                                bottom: 0,
+                                textStyle: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
+                                itemGap: 20,
+                                itemWidth: 14,
+                                itemHeight: 14
+                              },
+                              grid: { left: 80, right: 30, bottom: 50, top: 30 },
+                              xAxis: {
+                                type: 'category',
+                                data: completedIterations.map((iteration) => `Week ${iteration.iterationNumber}`),
+                                name: 'Week',
+                                nameLocation: 'center',
+                                nameGap: 30,
+                                axisLabel: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+                                splitLine: { show: false },
+                                axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } }
+                              },
+                              yAxis: {
+                                type: 'value',
+                                name: 'Volume',
+                                nameLocation: 'center',
+                                nameGap: 50,
+                                axisLabel: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+                                splitLine: { show: true, lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                                axisLine: { show: false },
+                                axisTick: { show: false }
+                              },
+                              series: series
+                            }}
+                          />
+                        );
+                      })() : (
                         <Box sx={{ 
                           height: 280, 
                           display: 'flex', 
@@ -781,16 +823,6 @@ export default function MesocycleProgress() {
               ) : (
                 <Box sx={{ mb: 4 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <Avatar 
-                      sx={{ 
-                        bgcolor: 'info.main',
-                        mr: 2,
-                        width: 40,
-                        height: 40
-                      }}
-                    >
-                      {day.dayNumber}
-                    </Avatar>
                     <Typography variant="h6">
                       Day {day.dayNumber} - Rest Day
                     </Typography>
@@ -864,4 +896,3 @@ export default function MesocycleProgress() {
     </Box>
   );
 }
-

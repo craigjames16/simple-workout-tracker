@@ -7,8 +7,7 @@ import {
 import { useEffect, useState } from 'react';
 import { gradients, borders } from '@/lib/theme-constants';
 import { TabPanel, a11yProps } from '@/components/dashboard/TabPanel';
-import { VolumeDataTab } from '@/components/dashboard/VolumeDataTab';
-import { SetDataTab } from '@/components/dashboard/SetDataTab';
+import { CombinedDataTab } from '@/components/dashboard/CombinedDataTab';
 import { MesocycleDataTab } from '@/components/dashboard/MesocycleDataTab';
 import { ExerciseDataTab } from '@/components/dashboard/ExerciseDataTab';
 
@@ -43,35 +42,21 @@ interface ExerciseStats {
 
 export default function DashboardPage() {
   const [tabValue, setTabValue] = useState(0);
-  const [volumeData, setVolumeData] = useState<Record<string, any[]> | null>(null);
-  const [setData, setSetData] = useState<Record<string, any[]> | null>(null);
   const [exerciseStats, setExerciseStats] = useState<ExerciseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Fetch muscle group metrics for volume and set counts
+  // Fetch exercise stats
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const [volumeRes, setRes, exerciseStatsRes] = await Promise.all([
-          fetch('/api/dashboard?data=muscleGroupVolume'), // combine this endpoint and the one below. Display both on the same graph/tab
-          fetch('/api/dashboard?data=muscleGroupSets'),
-          fetch('/api/dashboard?data=exerciseStats')
-        ]);
+        const exerciseStatsRes = await fetch('/api/dashboard?data=exerciseStats');
 
-        if (!volumeRes.ok) throw new Error('Failed to fetch muscle group volume data');
-        if (!setRes.ok) throw new Error('Failed to fetch muscle group set data');
         if (!exerciseStatsRes.ok) throw new Error('Failed to fetch exercise stats data');
 
-        const [volumeJson, setJson, exerciseStatsJson] = await Promise.all([
-          volumeRes.json(), 
-          setRes.json(),
-          exerciseStatsRes.json()
-        ]);
-        setVolumeData(volumeJson);
-        setSetData(setJson);
+        const exerciseStatsJson = await exerciseStatsRes.json();
         setExerciseStats(exerciseStatsJson);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
@@ -112,7 +97,7 @@ export default function DashboardPage() {
         display: 'flex',
         flexDirection: 'column',
         px: { xs: 2, sm: 3 },
-        pt: { xs: 6, sm: 6, md: 6 },
+        pt: { xs: 2, sm: 2, md: 2 },
       }}>
         <Box sx={{
           pb: { xs: 2, sm: 3 },
@@ -170,26 +155,21 @@ export default function DashboardPage() {
               }
             }}
           >
-            <Tab label="Volume" {...a11yProps(0)} />
-            <Tab label="Sets" {...a11yProps(1)} />
-            <Tab label="Mesocycles" {...a11yProps(2)} />
-            <Tab label="Exercises" {...a11yProps(3)} />
+            <Tab label="Muscle Groups" {...a11yProps(0)} />
+            <Tab label="Mesocycles" {...a11yProps(1)} />
+            <Tab label="Exercises" {...a11yProps(2)} />
           </Tabs>
         </Box>
         
         <TabPanel value={tabValue} index={0}>
-          <VolumeDataTab volumeData={volumeData} />
+          <CombinedDataTab />
         </TabPanel>
         
         <TabPanel value={tabValue} index={1}>
-          <SetDataTab setData={setData} />
-        </TabPanel>
-        
-        <TabPanel value={tabValue} index={2}>
           <MesocycleDataTab />
         </TabPanel>
         
-        <TabPanel value={tabValue} index={3}>
+        <TabPanel value={tabValue} index={2}>
           <ExerciseDataTab exerciseStats={exerciseStats} />
         </TabPanel>
       </Box>

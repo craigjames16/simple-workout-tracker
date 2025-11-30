@@ -9,26 +9,43 @@ import { buildCombinedRadarOption } from './radarUtils';
 interface VolumeSetRadarChartProps {
   mesocycleId?: number | null;
   title?: string;
+  volumeData?: Record<string, any[]> | null;
+  setData?: Record<string, any[]> | null;
+  loading?: boolean;
+  error?: string | null;
 }
 
 export function VolumeSetRadarChart({ 
   mesocycleId, 
-  title = 'Volume & Sets by Muscle Group' 
+  title = 'Volume & Sets by Muscle Group',
+  volumeData: propVolumeData,
+  setData: propSetData,
+  loading: propLoading,
+  error: propError
 }: VolumeSetRadarChartProps) {
-  const [volumeData, setVolumeData] = useState<Record<string, any[]> | null>(null);
-  const [setData, setSetData] = useState<Record<string, any[]> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [fetchedVolumeData, setFetchedVolumeData] = useState<Record<string, any[]> | null>(null);
+  const [fetchedSetData, setFetchedSetData] = useState<Record<string, any[]> | null>(null);
+  const [internalLoading, setInternalLoading] = useState(false);
+  const [internalError, setInternalError] = useState<string | null>(null);
+
+  const isControlled = propVolumeData !== undefined || propSetData !== undefined;
+  
+  const volumeData = isControlled ? propVolumeData : fetchedVolumeData;
+  const setData = isControlled ? propSetData : fetchedSetData;
+  const loading = isControlled ? (propLoading ?? false) : internalLoading;
+  const error = isControlled ? propError : internalError;
 
   const radarOption = useMemo(
-    () => buildCombinedRadarOption(volumeData, setData, title),
+    () => buildCombinedRadarOption(volumeData ?? null, setData ?? null, title),
     [volumeData, setData, title]
   );
 
   useEffect(() => {
+    if (isControlled) return;
+
     const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+      setInternalLoading(true);
+      setInternalError(null);
       
       try {
         // Build query params - include mesocycleId only if provided
@@ -57,15 +74,15 @@ export function VolumeSetRadarChart({
               (instances: any) => Array.isArray(instances) && instances.length > 0
             );
             if (hasData) {
-              setVolumeData(volumeDataJson);
+              setFetchedVolumeData(volumeDataJson);
             } else {
-              setVolumeData(null);
+              setFetchedVolumeData(null);
             }
           } else {
-            setVolumeData(null);
+            setFetchedVolumeData(null);
           }
         } else {
-          setVolumeData(null);
+          setFetchedVolumeData(null);
         }
 
         // Handle set data
@@ -76,27 +93,27 @@ export function VolumeSetRadarChart({
               (instances: any) => Array.isArray(instances) && instances.length > 0
             );
             if (hasData) {
-              setSetData(setDataJson);
+              setFetchedSetData(setDataJson);
             } else {
-              setSetData(null);
+              setFetchedSetData(null);
             }
           } else {
-            setSetData(null);
+            setFetchedSetData(null);
           }
         } else {
-          setSetData(null);
+          setFetchedSetData(null);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
-        setVolumeData(null);
-        setSetData(null);
+        setInternalError(err instanceof Error ? err.message : 'Failed to fetch data');
+        setFetchedVolumeData(null);
+        setFetchedSetData(null);
       } finally {
-        setLoading(false);
+        setInternalLoading(false);
       }
     };
 
     fetchData();
-  }, [mesocycleId]);
+  }, [mesocycleId, isControlled]);
 
   if (loading) {
     return (
@@ -186,4 +203,3 @@ export function VolumeSetRadarChart({
     </Box>
   );
 }
-

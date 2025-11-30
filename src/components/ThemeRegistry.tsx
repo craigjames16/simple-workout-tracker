@@ -3,7 +3,7 @@
 import createCache from '@emotion/cache';
 import { useServerInsertedHTML } from 'next/navigation';
 import { CacheProvider } from '@emotion/react';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { ReactNode, useState } from 'react';
 import { gradients, glassMorphism, borders, borderRadius, shadows, menuStyles, buttonStyles } from '@/lib/theme-constants';
 
@@ -170,10 +170,10 @@ export default function ThemeRegistry({ children }: { children: ReactNode }) {
 
   return (
     <CacheProvider value={cache}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      <MuiThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+      </MuiThemeProvider>
     </CacheProvider>
   );
 } 

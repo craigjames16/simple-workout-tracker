@@ -22,6 +22,7 @@ import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import GradientButton from '@/components/GradientButton';
 import ScheduleTimeline from '@/components/ScheduleTimeline';
 import WorkoutCalendar from '@/components/WorkoutCalendar';
+import WorkoutHeatmap from '@/components/WorkoutHeatmap';
 import { gradients } from '@/lib/theme-constants';
 
 interface CurrentMesocycle {
@@ -381,13 +382,13 @@ export default function TrackPage() {
   if (error) {
     return (
       <ResponsiveContainer maxWidth="lg">
-             <Box sx={{
-        height: '100%', 
-        display: 'flex',
-        flexDirection: 'column',
-        px: { xs: 2, sm: 3 },
-        pt: { xs: 6, sm: 6, md: 6 },
-      }}>
+        <Box sx={{
+          height: '100%', 
+          display: 'flex',
+          flexDirection: 'column',
+          px: { xs: 2, sm: 3 },
+          pt: { xs: 6, sm: 6, md: 6 },
+        }}>
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
@@ -410,7 +411,7 @@ export default function TrackPage() {
     <ResponsiveContainer maxWidth="lg">
       <Box sx={{
         px: { xs: 2, sm: 3 }, 
-        pt: { xs: 6, sm: 6, md: 6 },
+        pt: { xs: 2, sm: 2, md: 2 },
         height: '100%', 
         display: 'flex',
         flexDirection: 'column',
@@ -437,6 +438,8 @@ export default function TrackPage() {
         />
 
         <WorkoutCalendar mesocycleId={currentMesocycle?.id || null} />
+
+        <WorkoutHeatmap />
       </Box>
     </ResponsiveContainer>
   );
