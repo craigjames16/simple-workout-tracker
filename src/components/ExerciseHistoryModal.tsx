@@ -54,6 +54,7 @@ const ExerciseHistoryChart = ({ history }: { history: HistoryInstance[] }) => {
       name: 'Volume',
       nameLocation: 'center',
       nameGap: 50,
+      splitNumber: 5,
       axisLabel: { fontSize: 14 },
       splitLine: { show: false },
       axisLine: { show: false },

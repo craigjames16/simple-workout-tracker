@@ -297,6 +297,7 @@ function CombinedBarChart({ muscleGroup, volumeInstances, setInstances, mode }: 
                         {
                           type: 'value',
                           name: isVolume ? 'Volume (kg)' : 'Sets',
+                          splitNumber: 5,
                           axisLabel: {
                             color: themeColors.text.primary,
                             formatter: `{value} ${unit}`
