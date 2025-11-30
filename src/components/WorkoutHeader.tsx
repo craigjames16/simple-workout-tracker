@@ -24,7 +24,7 @@ export default function WorkoutHeader({
   return (
     <Box sx={{
       position: 'sticky',
-      top: { xs: 95, sm: 95 },
+      top: { xs: 60, sm: 70 },
       zIndex: 1000,
       mx: { xs: 1, sm: 2 },
       mb: 2,

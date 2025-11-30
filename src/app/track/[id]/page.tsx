@@ -654,7 +654,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       />
 
       {/* Exercise List */}
-      <Box sx={{ px: { xs: 1, sm: 2 }, py: 5 }}>
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 8 }}>
         {exerciseTrackings.length === 0 ? (
           <Box sx={{ 
             textAlign: 'center', 
