@@ -1,9 +1,9 @@
-import { ThemeProvider } from '@mui/material/styles';
 import ThemeRegistry from '@/components/ThemeRegistry';
 import Navbar from '@/components/Navbar';
 import { NextAuthProvider } from './provider';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { snsBootstrap } from '@/lib/sns-boot';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata = {
   title: 'Workout Tracker',
@@ -67,8 +67,10 @@ export default async function RootLayout({
         <ErrorBoundary>
           <NextAuthProvider>
             <ThemeRegistry>
-              <Navbar />
-              {children}
+              <ThemeProvider>
+                <Navbar />
+                {children}
+              </ThemeProvider>
             </ThemeRegistry>
           </NextAuthProvider>
         </ErrorBoundary>

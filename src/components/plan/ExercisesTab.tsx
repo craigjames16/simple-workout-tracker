@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import {
-  Paper,
-  Typography,
-  CircularProgress,
   Box,
   Tabs,
   Tab,
+  CircularProgress,
+  Typography,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -27,13 +26,8 @@ import {
   IconButton,
   useMediaQuery,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer as RechartsContainer } from 'recharts';
-import FloatingActionButton from '@/components/FloatingActionButton';
-import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { motion } from "framer-motion";
-import GradientButton from '@/components/GradientButton';
 import ExerciseHistoryModal from '@/components/ExerciseHistoryModal';
 
 interface Exercise {
@@ -60,7 +54,11 @@ type ExercisesByCategory = {
 type SortColumn = 'name' | 'category' | 'highestWeight';
 type SortDirection = 'asc' | 'desc';
 
-export default function ExercisesPage() {
+export interface ExercisesTabRef {
+  openCreateDialog: () => void;
+}
+
+const ExercisesTab = forwardRef<ExercisesTabRef>((props, ref) => {
   const [exercises, setExercises] = useState<ExercisesByCategory>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +75,10 @@ export default function ExercisesPage() {
 
   const isMobile = useMediaQuery((theme: any) => theme.breakpoints.down('sm'));
 
+  useImperativeHandle(ref, () => ({
+    openCreateDialog: () => setOpenDialog(true),
+  }));
+
   useEffect(() => {
     const fetchExercises = async () => {
       try {
@@ -92,7 +94,6 @@ export default function ExercisesPage() {
         setLoading(false);
       }
     };
-
     fetchExercises();
   }, []);
 
@@ -110,7 +111,6 @@ export default function ExercisesPage() {
         throw new Error('Failed to create exercise');
       }
 
-      // Refresh exercises
       const updatedResponse = await fetch('/api/exercises');
       const data = await updatedResponse.json();
       setExercises(data);
@@ -153,57 +153,37 @@ export default function ExercisesPage() {
     });
   };
 
-  if (loading) {
-    return (
-      <ResponsiveContainer sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-        <CircularProgress />
-      </ResponsiveContainer>
-    );
-  }
-
   const categories = ['ALL', ...Object.keys(exercises)];
   const filteredExercises = selectedCategory === 'ALL' 
     ? getSortedExercises(Object.values(exercises).flat())
     : getSortedExercises(exercises[selectedCategory] || []);
 
   return (
-    <ResponsiveContainer maxWidth="md">  
-      <Box sx={{
-        height: '100%', 
-        display: 'flex',
-        flexDirection: 'column',
-        px: { xs: 2, sm: 3 },
-        pt: { xs: 6, sm: 6, md: 6 },
-      }}>
-        <Box sx={{
-          pb: { xs: 2, sm: 3 },
-        }}>
-        <Typography variant="h4"
-          sx={{ 
-            fontWeight: 700,
-            color: 'white',
-            fontSize: { xs: '1.5rem', sm: '2rem' }
-          }}>
-          Exercises
-        </Typography>
-        </Box>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs 
-            value={selectedCategory}
-            onChange={(_, newValue) => setSelectedCategory(newValue)}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            {categories.map((category) => (
-              <Tab 
-                key={category} 
-                label={category.charAt(0) + category.slice(1).toLowerCase()} 
-                value={category}
-              />
-            ))}
-          </Tabs>
-        </Box>
+    <Box>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs 
+          value={selectedCategory}
+          onChange={(_, newValue) => setSelectedCategory(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          {categories.map((category) => (
+            <Tab 
+              key={category} 
+              label={category.charAt(0) + category.slice(1).toLowerCase()} 
+              value={category}
+            />
+          ))}
+        </Tabs>
+      </Box>
 
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Typography color="error">{error}</Typography>
+      ) : (
         <TableContainer>
           <Table>
             <TableHead>
@@ -262,18 +242,7 @@ export default function ExercisesPage() {
             </TableBody>
           </Table>
         </TableContainer>
-
-      <ExerciseHistoryModal
-        open={showHistoryDialog}
-        onClose={() => setShowHistoryDialog(false)}
-        exerciseName={selectedExercise?.name || ''}
-        history={selectedExercise?.workoutInstances || []}
-      />
-
-      <FloatingActionButton
-        icon={<AddIcon />}
-        onClick={() => setOpenDialog(true)}
-      />
+      )}
 
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Create New Exercise</DialogTitle>
@@ -326,7 +295,18 @@ export default function ExercisesPage() {
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
-      </Box>
-    </ResponsiveContainer>
+
+      <ExerciseHistoryModal
+        open={showHistoryDialog}
+        onClose={() => setShowHistoryDialog(false)}
+        exerciseName={selectedExercise?.name || ''}
+        history={selectedExercise?.workoutInstances || []}
+      />
+    </Box>
   );
-} 
+});
+
+ExercisesTab.displayName = 'ExercisesTab';
+
+export default ExercisesTab;
+

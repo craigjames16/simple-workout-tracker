@@ -200,22 +200,6 @@ export default function WorkoutCalendar({ mesocycleId }: WorkoutCalendarProps) {
           style={calendarStyles}
           fixedWeeks
         />
-
-        {/* Legend */}
-        <Box sx={{ display: 'flex', gap: 3, mt: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CheckCircleIcon sx={{ fontSize: '1rem', color: '#4CAF50' }} />
-            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Completed
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FitnessCenterIcon sx={{ fontSize: '1rem', color: '#FFC107' }} />
-            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Upcoming
-            </Typography>
-          </Box>
-        </Box>
       </CardContent>
     </Card>
   );

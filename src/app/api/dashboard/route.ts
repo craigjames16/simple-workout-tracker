@@ -48,6 +48,41 @@ const fetchExercisesWithCompletedSets = async (userId: string) => {
   });
 };
 
+const fetchExercisesWithMesocycleSets = async (userId: string) => {
+  return prisma.exercise.findMany({
+    where: {
+      OR: [
+        { userId },
+        { userId: null }
+      ]
+    },
+    include: {
+      sets: {
+        where: {
+          workoutInstance: {
+            userId,
+            completedAt: {
+              not: null
+            },
+            mesocycleId: {
+              not: null
+            }
+          }
+        },
+        include: {
+          workoutInstance: {
+            select: {
+              id: true,
+              startedAt: true,
+              completedAt: true
+            }
+          }
+        }
+      }
+    }
+  });
+};
+
 const buildMuscleGroupMetric = (
   exercises: Awaited<ReturnType<typeof fetchExercisesWithCompletedSets>>,
   valueMapper: (set: (typeof exercises)[number]['sets'][number]) => number
@@ -297,6 +332,204 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.error('Error fetching mesocycle by id:', error);
       return NextResponse.json({ error: 'Error fetching mesocycle by id' }, { status: 500 });
+    }
+  } else if (data === 'mesocycleMuscleGroupVolume') {
+    try {
+      const mesocycleId = searchParams.get('mesocycleId');
+      let exercises;
+      
+      if (mesocycleId) {
+        // Fetch exercises with sets for a specific mesocycle
+        exercises = await prisma.exercise.findMany({
+          where: {
+            OR: [
+              { userId: session.user.id },
+              { userId: null }
+            ]
+          },
+          include: {
+            sets: {
+              where: {
+                workoutInstance: {
+                  userId: session.user.id,
+                  completedAt: {
+                    not: null
+                  },
+                  mesocycleId: parseInt(mesocycleId)
+                }
+              },
+              include: {
+                workoutInstance: {
+                  select: {
+                    id: true,
+                    startedAt: true,
+                    completedAt: true
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        // Fetch all mesocycle sets
+        exercises = await fetchExercisesWithMesocycleSets(session.user.id);
+      }
+      
+      const volumeMetric = buildMuscleGroupMetric(exercises, (set) => set.reps * set.weight);
+      const formattedVolume = formatMetricResponse(volumeMetric, 'volume');
+      return NextResponse.json(formattedVolume);
+    } catch (error) {
+      console.error('Error fetching mesocycle muscle group volume:', error);
+      return NextResponse.json({ error: 'Error fetching mesocycle muscle group volume' }, { status: 500 });
+    }
+  } else if (data === 'mesocycleMuscleGroupSets') {
+    try {
+      const mesocycleId = searchParams.get('mesocycleId');
+      let exercises;
+      
+      if (mesocycleId) {
+        // Fetch exercises with sets for a specific mesocycle
+        exercises = await prisma.exercise.findMany({
+          where: {
+            OR: [
+              { userId: session.user.id },
+              { userId: null }
+            ]
+          },
+          include: {
+            sets: {
+              where: {
+                workoutInstance: {
+                  userId: session.user.id,
+                  completedAt: {
+                    not: null
+                  },
+                  mesocycleId: parseInt(mesocycleId)
+                }
+              },
+              include: {
+                workoutInstance: {
+                  select: {
+                    id: true,
+                    startedAt: true,
+                    completedAt: true
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        // Fetch all mesocycle sets
+        exercises = await fetchExercisesWithMesocycleSets(session.user.id);
+      }
+      
+      const setMetric = buildMuscleGroupMetric(exercises, () => 1);
+      const formattedSets = formatMetricResponse(setMetric, 'count');
+      return NextResponse.json(formattedSets);
+    } catch (error) {
+      console.error('Error fetching mesocycle muscle group sets:', error);
+      return NextResponse.json({ error: 'Error fetching mesocycle muscle group sets' }, { status: 500 });
+    }
+  } else if (data === 'exerciseStats') {
+    try {
+      const exercises = await fetchExercisesWithCompletedSets(session.user.id);
+      
+      // Process exercises to calculate statistics
+      const exerciseStats = exercises.map(exercise => {
+        // Group sets by workout instance
+        const setsByInstance = new Map<number, typeof exercise.sets>();
+        
+        exercise.sets.forEach(set => {
+          const instanceId = set.workoutInstance.id;
+          if (!setsByInstance.has(instanceId)) {
+            setsByInstance.set(instanceId, []);
+          }
+          setsByInstance.get(instanceId)!.push(set);
+        });
+
+        // Calculate metrics
+        let totalSets = exercise.sets.length;
+        let totalVolume = 0;
+        let maxWeight = 0;
+        let maxReps = 0;
+        let maxVolume = 0;
+        let lastPerformedString: string | null = null;
+        const volumeProgression: Array<{
+          workoutInstanceId: number;
+          date: string;
+          volume: number;
+          sets: number;
+        }> = [];
+
+        exercise.sets.forEach(set => {
+          const volume = set.weight * set.reps;
+          totalVolume += volume;
+          maxWeight = Math.max(maxWeight, set.weight);
+          maxReps = Math.max(maxReps, set.reps);
+        });
+
+        // Calculate volume per workout instance and find max volume
+        setsByInstance.forEach((sets, instanceId) => {
+          const instanceVolume = sets.reduce((sum, set) => sum + (set.weight * set.reps), 0);
+          maxVolume = Math.max(maxVolume, instanceVolume);
+          
+          const instance = sets[0].workoutInstance;
+          const completedAt = instance.completedAt;
+          
+          // completedAt is guaranteed to be non-null due to query filter
+          if (completedAt !== null) {
+            const completedDate = completedAt instanceof Date ? completedAt : new Date(completedAt);
+            const completedDateString = completedDate.toISOString();
+            
+            if (!lastPerformedString || completedDateString > lastPerformedString) {
+              lastPerformedString = completedDateString;
+            }
+            
+            volumeProgression.push({
+              workoutInstanceId: instanceId,
+              date: completedDateString,
+              volume: instanceVolume,
+              sets: sets.length
+            });
+          }
+        });
+
+        // Sort volume progression by date
+        volumeProgression.sort((a, b) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        return {
+          id: exercise.id,
+          name: exercise.name,
+          category: exercise.category,
+          totalSets,
+          totalVolume,
+          prs: {
+            maxWeight,
+            maxReps,
+            maxVolume
+          },
+          lastPerformed: lastPerformedString || null,
+          volumeProgression
+        };
+      });
+
+      // Sort by total sets (descending)
+      const sortedExercises = exerciseStats.sort((a, b) => b.totalSets - a.totalSets);
+      
+      // Get top 3 and all exercises
+      const topExercises = sortedExercises.slice(0, 3);
+      const allExercises = sortedExercises;
+
+      return NextResponse.json({
+        topExercises,
+        allExercises
+      });
+    } catch (error) {
+      console.error('Error fetching exercise stats:', error);
+      return NextResponse.json({ error: 'Error fetching exercise stats' }, { status: 500 });
     }
   } else {
     return NextResponse.json({ error: 'Invalid data parameter' }, { status: 400 });
