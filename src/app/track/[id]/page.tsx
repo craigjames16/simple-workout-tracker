@@ -38,6 +38,7 @@ import {
   ExerciseResponse,
   WorkoutHistoryView
 } from '@/types/workout-tracking';
+import { useNavbar } from '@/contexts/NavbarContext';
 
 export default function TrackWorkout({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params) as { id: string };
@@ -71,10 +72,15 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
   });
   const [workoutHistory, setWorkoutHistory] = useState<WorkoutHistoryView[]>([]);
   const [historyAnchorEl, setHistoryAnchorEl] = useState<null | HTMLElement>(null);
+  const { setShowBackButton } = useNavbar();
 
   // Create refs for animation targets
   const setRefs = useRef<{ [key: string]: React.RefObject<HTMLElement> }>({});
   const particleContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setShowBackButton(true);
+  }, [setShowBackButton]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -654,7 +660,7 @@ export default function TrackWorkout({ params }: { params: Promise<{ id: string 
       />
 
       {/* Exercise List */}
-      <Box sx={{ px: { xs: 1, sm: 2 }, py: 8 }}>
+      <Box sx={{ px: { xs: 1, sm: 2 }, py: 7 }}>
         {exerciseTrackings.length === 0 ? (
           <Box sx={{ 
             textAlign: 'center', 

@@ -306,7 +306,7 @@ const NextWorkout = ({
             )}
           </Box>
         </Box>
-        <ScheduleTimeline sx={{ mt: 4 }} mesocycleId={currentMesocycle?.id || null} compact />
+        {/* <ScheduleTimeline sx={{ mt: 4 }} mesocycleId={currentMesocycle?.id || null} compact /> */}
       </CardContent>
     </Card>
   );

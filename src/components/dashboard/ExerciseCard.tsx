@@ -207,6 +207,7 @@ export function ExerciseCard({ exercise }: ExerciseCardProps) {
                     yAxis: [
                       {
                         type: 'value',
+                        splitNumber: 5,
                         axisLabel: {
                           fontSize: 10,
                           color: 'rgba(255, 255, 255, 0.7)'

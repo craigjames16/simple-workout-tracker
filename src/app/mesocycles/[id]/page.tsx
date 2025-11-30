@@ -15,6 +15,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Chip,
 } from '@mui/material';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import Link from 'next/link';
@@ -25,6 +26,10 @@ import { useRouter } from 'next/navigation';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import LinearProgress from '@mui/material/LinearProgress';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import { gradients, themeColors, borders } from '@/lib/theme-constants';
+import { useNavbar } from '@/contexts/NavbarContext';
 
 interface PlanInstance {
   id: number;
@@ -74,6 +79,11 @@ export default function MesocycleDetail({ params }: { params: Promise<{ id: stri
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const { id } = React.use(params);
+  const { setShowBackButton } = useNavbar();
+
+  useEffect(() => {
+    setShowBackButton(true);
+  }, [setShowBackButton]);  
 
   useEffect(() => {
     const fetchMesocycle = async () => {
@@ -202,172 +212,348 @@ export default function MesocycleDetail({ params }: { params: Promise<{ id: stri
   }
 
   const progress = calculateProgress(mesocycle.instances);
+  const currentIteration = getCurrentIteration(mesocycle.instances);
 
   return (
     <ResponsiveContainer>
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h5" gutterBottom>
-              {mesocycle.name}
-            </Typography>
-            <IconButton
-              onClick={(event) => setMenuAnchorEl(event.currentTarget)}
-              size="small"
-            >
-              <MoreVertIcon />
-            </IconButton>
-            <Menu
-              anchorEl={menuAnchorEl}
-              open={Boolean(menuAnchorEl)}
-              onClose={() => setMenuAnchorEl(null)}
-            >
-              <MenuItem
-                onClick={() => {
-                  setMenuAnchorEl(null);
-                  setDeleteDialogOpen(true);
-                }}
-                sx={{ color: 'error.main' }}
-              >
-                <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-                Delete Mesocycle
-              </MenuItem>
-            </Menu>
-          </Box>
-          <Typography color="text.secondary" gutterBottom>
-            Based on plan: {mesocycle.plan.name}
+      <Box sx={{
+        height: '100%', 
+        display: 'flex',
+        flexDirection: 'column',
+        p: { xs: 2, sm: 3 },
+        pt: { xs: 2, sm: 2, md: 2 },
+      }}>
+        {/* Header Section */}
+        <Box sx={{
+          pb: { xs: 2, sm: 3 },
+        }}>
+          <Typography 
+            variant="h4" 
+            sx={{ 
+              fontWeight: 700,
+              color: 'white',
+              fontSize: { xs: '1.5rem', sm: '2rem' }
+            }}
+          >
+            Mesocycle Details
           </Typography>
-          
-          <Box sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Progress: {Math.round(progress)}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {mesocycle.instances.filter(i => i.completedAt).length} / {mesocycle.iterations} Weeks completed
-              </Typography>
+        </Box>
+
+        {/* Mesocycle Header Box */}
+        <Box sx={{ 
+          mb: 4,
+          borderRadius: 2,
+          overflow: 'hidden',
+          background: gradients.surface,
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}>
+          <Box sx={{
+            p: { xs: 2, sm: 3 },
+          }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <FitnessCenterIcon sx={{ 
+                  mr: 1.5, 
+                  color: 'white',
+                  fontSize: '1.5rem'
+                }} />
+                <Typography 
+                  variant="h4" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'white',
+                    fontSize: { xs: '1.5rem', sm: '2rem' }
+                  }}
+                >
+                  {mesocycle.name}
+                </Typography>
+              </Box>
+              <IconButton 
+                onClick={(event) => setMenuAnchorEl(event.currentTarget)}
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&:hover': {
+                    color: 'white',
+                    background: 'rgba(255, 255, 255, 0.1)'
+                  }
+                }}
+              >
+                <MoreVertIcon />
+              </IconButton>
+            </Box>
+            
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.7)',
+                mb: 2
+              }}
+            >
+              Based on plan: {mesocycle.plan.name}
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
+              <Chip
+                size="small"
+                icon={<CalendarTodayIcon />}
+                label={`Started ${new Date(mesocycle.startedAt).toLocaleDateString()}`}
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  '& .MuiChip-icon': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  }
+                }}
+              />
+              {mesocycle.status === 'COMPLETE' && (
+                <Chip
+                  size="small"
+                  icon={<CheckCircleIcon />}
+                  label="Complete"
+                  sx={{
+                    background: 'rgba(34, 197, 94, 0.1)',
+                    border: '1px solid rgba(34, 197, 94, 0.2)',
+                    color: 'rgb(34, 197, 94)',
+                    '& .MuiChip-icon': {
+                      color: 'rgb(34, 197, 94)'
+                    }
+                  }}
+                />
+              )}
+              {currentIteration && (
+                <Chip
+                  size="small"
+                  icon={<PlayCircleIcon />}
+                  label={`Week ${currentIteration.iterationNumber} in progress`}
+                  sx={{
+                    background: `rgba(${themeColors.primary.main.replace('rgb(', '').replace(')', '')}, 0.1)`,
+                    border: borders.accent,
+                    color: themeColors.primary.main,
+                    '& .MuiChip-icon': {
+                      color: themeColors.primary.main
+                    }
+                  }}
+                />
+              )}
+            </Box>
+            
+            <Box sx={{ mb: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                  Progress: {Math.round(progress)}%
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                  {mesocycle.instances.filter(i => i.completedAt).length} / {mesocycle.iterations} weeks completed
+                </Typography>
+              </Box>
+              <LinearProgress 
+                variant="determinate" 
+                value={progress} 
+                sx={{ 
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  '& .MuiLinearProgress-bar': {
+                    borderRadius: 4,
+                    background: gradients.primary
+                  }
+                }}
+              />
             </Box>
           </Box>
         </Box>
-        <LinearProgress 
-              variant="determinate" 
-              value={progress} 
-              sx={{ 
-                height: 8,
-                mb: 2,
-                borderRadius: 4,
-                backgroundColor: 'grey.300',
-                '& .MuiLinearProgress-bar': {
-                  borderRadius: 4,
-                }
-              }}
-            />
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+        {/* Management Menu */}
+        <Menu
+          anchorEl={menuAnchorEl}
+          open={Boolean(menuAnchorEl)}
+          onClose={() => setMenuAnchorEl(null)}
+        >
+          <MenuItem
+            onClick={() => {
+              setMenuAnchorEl(null);
+              setDeleteDialogOpen(true);
+            }}
+            sx={{ color: 'error.main' }}
+          >
+            <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+            Delete Mesocycle
+          </MenuItem>
+        </Menu>
+
+        {/* Weeks List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           {mesocycle.instances
             .sort((a, b) => a.iterationNumber - b.iterationNumber)
             .map((instance) => {
+              const isComplete = isInstanceComplete(instance);
               return (
-                <Card
+                <Box
                   key={instance.id}
-                  sx={{ 
-                    display: 'flex',
-                    flexDirection: 'column',
-                    p: 2,
-                    gap: 2,
-                    transition: 'all 0.2s',
+                  sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    background: gradients.surface,
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 35px 60px -12px rgba(0, 0, 0, 0.35)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                    }
                   }}
                 >
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 2,
+                  <Box sx={{
+                    p: { xs: 2, sm: 3 },
                   }}>
-                    {getStatusIcon(instance.status)}
-                    <Box>
-                      <Typography 
-                        variant="h6" 
-                        component={Link}
-                        href={`/plans/instance/${instance.id}`}
-                        sx={{ 
-                          mb: 0.5,
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          '&:hover': {
-                            textDecoration: 'underline'
-                          }
-                        }}
-                      >
-                        Week {instance.iterationNumber}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Target RIR: {instance.rir}
-                      </Typography>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 2,
+                      mb: 2
+                    }}>
+                      {getStatusIcon(instance.status)}
+                      <Box sx={{ flex: 1 }}>
+                        <Typography 
+                          variant="h6" 
+                          component={Link}
+                          href={`/plans/instance/${instance.id}`}
+                          sx={{ 
+                            fontWeight: 700,
+                            color: 'white',
+                            fontSize: { xs: '1.125rem', sm: '1.25rem' },
+                            textDecoration: 'none',
+                            '&:hover': {
+                              textDecoration: 'underline'
+                            }
+                          }}
+                        >
+                          Week {instance.iterationNumber}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                          Target RIR: {instance.rir}
+                        </Typography>
+                      </Box>
+                      {isComplete && (
+                        <Chip
+                          size="small"
+                          icon={<CheckCircleIcon />}
+                          label="Complete"
+                          sx={{
+                            background: 'rgba(34, 197, 94, 0.1)',
+                            border: '1px solid rgba(34, 197, 94, 0.2)',
+                            color: 'rgb(34, 197, 94)',
+                            '& .MuiChip-icon': {
+                              color: 'rgb(34, 197, 94)'
+                            }
+                          }}
+                        />
+                      )}
                     </Box>
-                  </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {instance.days
-                      .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
-                      .map((day, index) => {
-                        const isRestDay = day.planDay.isRestDay;
-                        const isWorkoutStarted = day.workoutInstance && !day.workoutInstance.completedAt;
-                        const isWorkoutComplete = day.workoutInstance?.completedAt;
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {instance.days
+                        .sort((a, b) => a.planDay.dayNumber - b.planDay.dayNumber)
+                        .map((day, index) => {
+                          const isRestDay = day.planDay.isRestDay;
+                          const isWorkoutStarted = day.workoutInstance && !day.workoutInstance.completedAt;
+                          const isWorkoutComplete = day.workoutInstance?.completedAt;
 
-                        let onClick = undefined;
-                        if (isRestDay && !day.isComplete) {
-                          onClick = () => handleCompleteRestDay(instance.id, day.id);
-                        } else if (!isRestDay && !day.workoutInstance) {
-                          onClick = () => handleStartWorkout(instance.id, day.id);
-                        } else if (!isRestDay && (isWorkoutStarted || isWorkoutComplete)) {
-                          onClick = () => window.location.href = `/track/${day.workoutInstance?.id}`;
-                        }
+                          let onClick = undefined;
+                          if (isRestDay && !day.isComplete) {
+                            onClick = () => handleCompleteRestDay(instance.id, day.id);
+                          } else if (!isRestDay && !day.workoutInstance) {
+                            onClick = () => handleStartWorkout(instance.id, day.id);
+                          } else if (!isRestDay && (isWorkoutStarted || isWorkoutComplete)) {
+                            onClick = () => window.location.href = `/track/${day.workoutInstance?.id}`;
+                          }
 
-                        return (
-                          <Box
-                            key={index}
-                            component="div"
-                            onClick={onClick}
-                            sx={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              p: 1,
-                              borderRadius: 1,
-                              backgroundColor: day.isComplete ? 'success.dark' : 'background.paper',
-                              textDecoration: 'none',
-                              color: 'inherit',
-                              cursor: onClick ? 'pointer' : 'default',
-                              '&:hover': {
-                                backgroundColor: onClick ? 'action.hover' : 'inherit',
-                              },
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography variant="body2" sx={{ flexShrink: 0 }}>
-                                {isRestDay ? 'Rest Day' : 'Workout Day'}
-                              </Typography>
+                          return (
+                            <Box
+                              key={index}
+                              component="div"
+                              onClick={onClick}
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                p: 1.5,
+                                borderRadius: 1,
+                                background: day.isComplete 
+                                  ? 'rgba(34, 197, 94, 0.15)' 
+                                  : 'rgba(255, 255, 255, 0.05)',
+                                border: day.isComplete
+                                  ? '1px solid rgba(34, 197, 94, 0.3)'
+                                  : '1px solid rgba(255, 255, 255, 0.1)',
+                                textDecoration: 'none',
+                                color: 'inherit',
+                                cursor: onClick ? 'pointer' : 'default',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  background: onClick 
+                                    ? (day.isComplete 
+                                      ? 'rgba(34, 197, 94, 0.2)' 
+                                      : 'rgba(255, 255, 255, 0.1)')
+                                    : 'inherit',
+                                  transform: onClick ? 'translateX(4px)' : 'none',
+                                },
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography 
+                                  variant="body2" 
+                                  sx={{ 
+                                    flexShrink: 0,
+                                    color: day.isComplete ? 'rgb(34, 197, 94)' : 'rgba(255, 255, 255, 0.9)',
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  Day {day.planDay.dayNumber}: {isRestDay ? 'Rest Day' : 'Workout Day'}
+                                </Typography>
 
-                              <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                                {day.isComplete ? (
-                                  <CheckCircleIcon color="success" />
-                                ) : (
-                                  <PlayCircleOutlineIcon color="action" />
-                                )}
+                                <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                                  {day.isComplete ? (
+                                    <CheckCircleIcon sx={{ color: 'rgb(34, 197, 94)' }} />
+                                  ) : (
+                                    <PlayCircleOutlineIcon sx={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+                                  )}
+                                </Box>
                               </Box>
                             </Box>
-                          </Box>
-                        );
-                      })}
+                          );
+                        })}
+                    </Box>
                   </Box>
-                </Card>
+                </Box>
               );
             })}
         </Box>
 
         {mesocycle.status === 'COMPLETE' && (
-          <Box sx={{ mt: 3 }}>
-            Mesocycle completed! Great job!
+          <Box sx={{ 
+            mt: 4,
+            p: 3,
+            borderRadius: 2,
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.2)',
+            textAlign: 'center'
+          }}>
+            <CheckCircleIcon sx={{ fontSize: 48, color: 'rgb(34, 197, 94)', mb: 1 }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: 'rgb(34, 197, 94)',
+                fontWeight: 700
+              }}
+            >
+              Mesocycle completed! Great job!
+            </Typography>
           </Box>
         )}
-      </Paper>
+      </Box>
 
       <Dialog
         open={deleteDialogOpen}

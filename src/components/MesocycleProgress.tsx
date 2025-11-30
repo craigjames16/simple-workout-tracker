@@ -415,13 +415,16 @@ export default function MesocycleProgress() {
                   legend: {
                     data: workoutDays.map(day => `Day ${day.dayNumber}`),
                     bottom: 0,
+                    type: 'scroll',
+                    pageButtonItemGap: 5,
+                    pageIconSize: 10,
                     textStyle: {
                       color: 'rgba(255,255,255,0.85)',
-                      fontSize: 12
+                      fontSize: 10
                     },
-                    itemGap: 20,
-                    itemWidth: 14,
-                    itemHeight: 14
+                    itemGap: 8,
+                    itemWidth: 12,
+                    itemHeight: 12
                   },
                   grid: { left: 80, right: 30, bottom: 50, top: 30 },
                   xAxis: {
@@ -439,6 +442,7 @@ export default function MesocycleProgress() {
                     name: 'Volume',
                     nameLocation: 'center',
                     nameGap: 50,
+                    splitNumber: 5,
                     axisLabel: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
                     splitLine: { 
                       show: true,
@@ -664,6 +668,7 @@ export default function MesocycleProgress() {
                                 name: 'Volume',
                                 nameLocation: 'center',
                                 nameGap: 50,
+                                splitNumber: 5,
                                 axisLabel: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
                                 splitLine: { show: true, lineStyle: { color: 'rgba(255,255,255,0.1)' } },
                                 axisLine: { show: false },

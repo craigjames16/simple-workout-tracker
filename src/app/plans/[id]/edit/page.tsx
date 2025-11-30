@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import CreatePlan from '@/components/CreatePlan';
 import { CircularProgress, Typography } from '@mui/material';
 import { ResponsiveContainer } from '@/components';
+import { useNavbar } from '@/contexts/NavbarContext';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -13,9 +14,14 @@ export default function EditPlanPage({ params }: Props) {
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { setShowBackButton } = useNavbar();
 
   const { id } = React.use(params);
   const planId = id;
+
+  useEffect(() => {
+    setShowBackButton(true);
+  }, [setShowBackButton]);
 
   useEffect(() => {
     const fetchPlan = async () => {

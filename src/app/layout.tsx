@@ -4,6 +4,7 @@ import { NextAuthProvider } from './provider';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { snsBootstrap } from '@/lib/sns-boot';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { NavbarProvider } from '@/contexts/NavbarContext';
 
 export const metadata = {
   title: 'Workout Tracker',
@@ -68,8 +69,10 @@ export default async function RootLayout({
           <NextAuthProvider>
             <ThemeRegistry>
               <ThemeProvider>
-                <Navbar />
-                {children}
+                <NavbarProvider>
+                  <Navbar />
+                  {children}
+                </NavbarProvider>
               </ThemeProvider>
             </ThemeRegistry>
           </NextAuthProvider>

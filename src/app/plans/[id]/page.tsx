@@ -25,6 +25,7 @@ import HotelIcon from '@mui/icons-material/Hotel';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { useRouter } from 'next/navigation';
 import { gradients, themeColors, borders } from '@/lib/theme-constants';
+import { useNavbar } from '@/contexts/NavbarContext';
 
 interface Exercise {
   exercise: {
@@ -53,11 +54,17 @@ interface Plan {
 
 export default function PlanDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { setShowBackButton } = useNavbar();
   const [plan, setPlan] = useState<Plan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const awaitedParams = React.use(params);
+
+  // Show back button in navbar
+  useEffect(() => {
+    setShowBackButton(true);
+  }, [setShowBackButton]);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -136,7 +143,7 @@ export default function PlanDetailsPage({ params }: { params: Promise<{ id: stri
         display: 'flex',
         flexDirection: 'column',
         p: { xs: 2, sm: 3 },
-        pt: { xs: 6, sm: 6, md: 6 },
+        pt: { xs: 2, sm: 2, md: 2 },
       }}>
         {/* Header Section */}
         <Box sx={{

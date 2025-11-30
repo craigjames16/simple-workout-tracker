@@ -26,6 +26,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { gradients, themeColors } from '@/lib/theme-constants';
+import { useNavbar } from '@/contexts/NavbarContext';
 
 const navItems = [
   { text: 'Track', href: '/track', icon: <TimelineIcon />, highlight: true },
@@ -34,14 +35,22 @@ const navItems = [
   { text: 'Account', href: '/account', icon: <AccountCircleIcon /> },
 ];
 
- export default function Navbar() {
+export default function Navbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const isLoggedIn = !!session;
-  const isTrackDetailPage = pathname.match(/^\/track\/\d+$/);
+  const { showBackButton, onBackClick } = useNavbar();
+  
+  const handleBackClick = () => {
+    if (onBackClick) {
+      onBackClick();
+    } else {
+      router.back();
+    }
+  };
 
   // Get current bottom nav value based on pathname
   const getBottomNavValue = () => {
@@ -80,26 +89,18 @@ const navItems = [
         }}>
           {isMobile ? (
             <>
-              {/* Mobile top nav - Logo on left or Back button on track/[id] */}
-              {isTrackDetailPage ? (
+              {/* Mobile top nav - Logo on left or Back button */}
+              {showBackButton ? (
                 <IconButton
-                  onClick={() => router.back()}
+                  onClick={handleBackClick}
                   size="small"
                   sx={{
                     borderRadius: 2,
+                    border: 0,
                     p: 1,
                     width: 40,
                     height: 40,
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     color: 'rgba(255, 255, 255, 0.9)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                      transform: 'translateY(-1px)',
-                      color: 'white'
-                    },
                   }}
                 >
                   <ArrowBackIcon />
@@ -139,28 +140,11 @@ const navItems = [
                     p: 1,
                     width: 40,
                     height: 40,
-                    background: pathname === '/account' 
-                      ? gradients.glassHover
-                      : 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    border: 0,
                     color: 'rgba(255, 255, 255, 0.9)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
-                      background: pathname === '/account' 
-                        ? gradients.glassHover
-                        : 'rgba(255, 255, 255, 0.1)',
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                      transform: 'translateY(-1px)',
                       color: 'white'
                     },
-                    '&:focus': {
-                      outline: 'none',
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                    },
-                    '&:focus-visible': {
-                      outline: 'none',
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                    }
                   }}
                 >
                   <AccountCircleIcon />
@@ -204,10 +188,10 @@ const navItems = [
             </>
           ) : (
             <>
-              {/* Desktop top nav - Logo and navigation items or Back button on track/[id] */}
-              {isTrackDetailPage ? (
+              {/* Desktop top nav - Logo and navigation items or Back button */}
+              {showBackButton ? (
                 <IconButton
-                  onClick={() => router.back()}
+                  onClick={handleBackClick}
                   size="medium"
                   sx={{
                     mr: 2,
@@ -383,8 +367,8 @@ const navItems = [
       {/* Spacer for fixed AppBar - using div to avoid MUI Box wrapper */}
       <div style={{ minHeight: isMobile ? '0' : '80px' }} />
 
-      {/* Bottom Navigation Bar (Mobile only) - Only show when logged in and not on track/[id] page */}
-      {isMobile && isLoggedIn && !pathname.match(/^\/track\/\d+$/) && (
+      {/* Bottom Navigation Bar (Mobile only) - Only show when logged in and not showing back button */}
+      {isMobile && isLoggedIn && !showBackButton && (
         <Paper
           sx={{
             position: 'fixed',
@@ -463,7 +447,7 @@ const navItems = [
           </BottomNavigation>
         </Paper>
       )}
-      {isMobile && isLoggedIn && !pathname.match(/^\/track\/\d+$/) && <Box sx={{ height: 70 }} />} {/* Spacer for fixed bottom nav on mobile */}
+      {isMobile && isLoggedIn && !showBackButton && <Box sx={{ height: 70 }} />} {/* Spacer for fixed bottom nav on mobile */}
     </>
   );
 } 

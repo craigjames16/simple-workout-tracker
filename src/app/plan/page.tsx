@@ -6,9 +6,9 @@ import {
   Box,
   Tabs,
   Tab,
+  Button,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import FloatingActionButton from '@/components/FloatingActionButton';
 import { ResponsiveContainer } from '@/components/ResponsiveContainer';
 import { useRouter } from 'next/navigation';
 import { PlansTab, ExercisesTab, MesocyclesTab, type ExercisesTabRef, type MesocyclesTabRef } from '@/components/plan';
@@ -21,8 +21,8 @@ export default function PlanPage() {
   const exercisesTabRef = useRef<ExercisesTabRef>(null);
   const mesocyclesTabRef = useRef<MesocyclesTabRef>(null);
 
-  // Get FAB action based on active tab
-  const getFABAction = () => {
+  // Get button action based on active tab
+  const getButtonAction = () => {
     switch (activeTab) {
       case 'plans':
         return () => router.push('/plans/create');
@@ -32,6 +32,20 @@ export default function PlanPage() {
         return () => mesocyclesTabRef.current?.openCreateDialog();
       default:
         return () => {};
+    }
+  };
+
+  // Get button label based on active tab
+  const getButtonLabel = () => {
+    switch (activeTab) {
+      case 'plans':
+        return 'New Plan';
+      case 'exercises':
+        return 'New Exercise';
+      case 'mesocycles':
+        return 'New Mesocycle';
+      default:
+        return 'New';
     }
   };
 
@@ -46,6 +60,9 @@ export default function PlanPage() {
       }}>
         <Box sx={{
           pb: { xs: 2, sm: 3 },
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}>
           <Typography variant="h4"
             sx={{ 
@@ -55,6 +72,17 @@ export default function PlanPage() {
             }}>
             Plan
           </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={getButtonAction()}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
+          >
+            {getButtonLabel()}
+          </Button>
         </Box>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -78,11 +106,6 @@ export default function PlanPage() {
 
         {/* Mesocycles Tab */}
         {activeTab === 'mesocycles' && <MesocyclesTab ref={mesocyclesTabRef} />}
-
-        <FloatingActionButton
-          icon={<AddIcon />}
-          onClick={getFABAction()}
-        />
       </Box>
     </ResponsiveContainer>
   );
