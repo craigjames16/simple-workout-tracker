@@ -249,7 +249,7 @@ export async function GET(
           return iterA - iterB;
         }
         return a.planDay.dayNumber - b.planDay.dayNumber;
-      }).slice(0, 10); // Limit to next 10 days
+      });
       console.log('[Schedule] Total upcoming days after combining:', upcomingDays.length);
     } else {
       console.log('[Schedule] No in-progress instance found, checking for next instance...');
@@ -273,10 +273,51 @@ export async function GET(
         // If there are more iterations possible, show upcoming days from the plan
         if (nextIteration <= mesocycle.iterations) {
           console.log('[Schedule] Creating upcoming days from plan structure...');
-          // Return plan days as upcoming (these would be created when the next instance starts)
-          upcomingDays = mesocycle.plan.days.map((planDay, index) => ({
-            id: -1, // Placeholder ID
-            planInstanceId: -1, // Placeholder
+          // Generate plan days for all remaining iterations
+          const remainingIterations: number[] = [];
+          for (let i = nextIteration; i <= mesocycle.iterations; i++) {
+            remainingIterations.push(i);
+          }
+          
+          upcomingDays = remainingIterations.flatMap(iterationNumber =>
+            mesocycle.plan.days.map((planDay) => ({
+              id: -1, // Placeholder ID
+              planInstanceId: -1, // Placeholder
+              planDayId: planDay.id,
+              workoutInstanceId: null,
+              isComplete: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              planDay: {
+                ...planDay,
+                planId: mesocycle.plan.id
+              },
+              workoutInstance: null,
+              planInstance: {
+                id: -1,
+                iterationNumber: iterationNumber,
+                status: null,
+                startedAt: new Date(),
+                completedAt: null
+              }
+            }))
+          ) as typeof allPlanInstanceDays;
+          console.log('[Schedule] Created', upcomingDays.length, 'upcoming days from plan');
+        } else {
+          console.log('[Schedule] Next iteration exceeds max iterations, no upcoming days');
+        }
+      } else if (mesocycle.instances.length === 0) {
+        console.log('[Schedule] No instances exist, creating upcoming days from plan for all iterations...');
+        // No instances yet, show all plan days for all iterations as upcoming
+        const allIterations: number[] = [];
+        for (let i = 1; i <= mesocycle.iterations; i++) {
+          allIterations.push(i);
+        }
+        
+        upcomingDays = allIterations.flatMap(iterationNumber =>
+          mesocycle.plan.days.map((planDay) => ({
+            id: -1,
+            planInstanceId: -1,
             planDayId: planDay.id,
             workoutInstanceId: null,
             isComplete: false,
@@ -289,40 +330,13 @@ export async function GET(
             workoutInstance: null,
             planInstance: {
               id: -1,
-              iterationNumber: nextIteration,
+              iterationNumber: iterationNumber,
               status: null,
               startedAt: new Date(),
               completedAt: null
             }
-          })).slice(0, 10) as typeof allPlanInstanceDays; // Limit to next 10 days
-          console.log('[Schedule] Created', upcomingDays.length, 'upcoming days from plan');
-        } else {
-          console.log('[Schedule] Next iteration exceeds max iterations, no upcoming days');
-        }
-      } else if (mesocycle.instances.length === 0) {
-        console.log('[Schedule] No instances exist, creating upcoming days from plan for first iteration...');
-        // No instances yet, show all plan days as upcoming
-        upcomingDays = mesocycle.plan.days.map((planDay) => ({
-          id: -1,
-          planInstanceId: -1,
-          planDayId: planDay.id,
-          workoutInstanceId: null,
-          isComplete: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          planDay: {
-            ...planDay,
-            planId: mesocycle.plan.id
-          },
-          workoutInstance: null,
-          planInstance: {
-            id: -1,
-            iterationNumber: 1,
-            status: null,
-            startedAt: new Date(),
-            completedAt: null
-          }
-        })).slice(0, 10) as typeof allPlanInstanceDays; // Limit to next 10 days
+          }))
+        ) as typeof allPlanInstanceDays;
         console.log('[Schedule] Created', upcomingDays.length, 'upcoming days from plan (first iteration)');
       } else {
         console.log('[Schedule] No completed instances and instances exist, but none are in progress. Instance statuses:', 

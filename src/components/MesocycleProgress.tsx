@@ -283,15 +283,6 @@ export default function MesocycleProgress() {
         showPlanName={true}
       />
 
-      {/* Combined Volume & Sets Data */}
-      <CombinedDataTab 
-        preSelectedMesocycleId={selectedMesocycleId} 
-        hideFilter={true}
-        hideBarCharts={true}
-        hideToggle={true}
-        sx={{ mb: 4 }}
-      />
-
       {/* Total Volume per Week Chart */}
       <Box sx={{ 
         mb: 4,
