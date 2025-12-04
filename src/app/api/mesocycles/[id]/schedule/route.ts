@@ -109,21 +109,73 @@ export async function GET(
       daysCount: i.days.length
     })));
 
-    // Collect all planInstanceDays from all instances
-    const allPlanInstanceDays = mesocycle.instances.flatMap(instance => 
-      instance.days.map(day => ({
-        ...day,
-        planInstance: {
-          id: instance.id,
-          iterationNumber: instance.iterationNumber,
-          status: instance.status,
-          startedAt: instance.startedAt,
-          completedAt: instance.completedAt
+    // Fetch all mesocycles for the user to get completed days from all of them
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const allUserMesocycles = await prisma.mesocycle.findMany({
+      where: {
+        userId: session.user.id
+      },
+      include: {
+        instances: {
+          include: {
+            days: {
+              include: {
+                planDay: {
+                  include: {
+                    workout: {
+                      include: {
+                        workoutExercises: {
+                          include: {
+                            exercise: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                workoutInstance: {
+                  include: {
+                    workout: {
+                      include: {
+                        workoutExercises: {
+                          include: {
+                            exercise: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
-      }))
+      }
+    });
+
+    // Collect all planInstanceDays from ALL mesocycles
+    const allPlanInstanceDays = allUserMesocycles.flatMap(meso => 
+      meso.instances.flatMap(instance => 
+        instance.days.map(day => ({
+          ...day,
+          planInstance: {
+            id: instance.id,
+            iterationNumber: instance.iterationNumber,
+            status: instance.status,
+            startedAt: instance.startedAt,
+            completedAt: instance.completedAt
+          },
+          mesocycle: {
+            id: meso.id,
+            name: meso.name
+          }
+        }))
+      )
     );
 
-    console.log('[Schedule] Total planInstanceDays:', allPlanInstanceDays.length);
+    console.log('[Schedule] Total planInstanceDays from all mesocycles:', allPlanInstanceDays.length);
 
     // Determine if a day is complete
     const isDayComplete = (day: typeof allPlanInstanceDays[0]) => {
@@ -133,9 +185,19 @@ export async function GET(
       return day.workoutInstance?.completedAt != null || day.isComplete;
     };
 
-    // Filter completed days and sort by completion date (most recent first)
+    // Filter completed days from the past year and sort by completion date (most recent first)
     const completedDays = allPlanInstanceDays
-      .filter(day => isDayComplete(day))
+      .filter(day => {
+        if (!isDayComplete(day)) return false;
+        
+        // Get the completion date for filtering
+        const completionDate = day.planDay.isRestDay 
+          ? day.updatedAt 
+          : (day.workoutInstance?.completedAt || day.updatedAt);
+        
+        // Only include days from the past year
+        return completionDate >= oneYearAgo;
+      })
       .sort((a, b) => {
         // For rest days, use updatedAt. For workout days, use workoutInstance completedAt
         const dateA = a.planDay.isRestDay 
@@ -145,10 +207,9 @@ export async function GET(
           ? b.updatedAt
           : (b.workoutInstance?.completedAt || b.updatedAt);
         return dateB.getTime() - dateA.getTime();
-      })
-      .slice(0, 10); // Get the previous 10
+      });
 
-    console.log('[Schedule] Completed days:', completedDays.length);
+    console.log('[Schedule] Completed days from all mesocycles:', completedDays.length);
 
     // Find the current in-progress planInstance first, then fall back to NOT_STARTED if no IN_PROGRESS exists
     const inProgressInstance = mesocycle.instances.find(
@@ -176,7 +237,7 @@ export async function GET(
     if (inProgressInstance) {
       console.log('[Schedule] Processing in-progress instance...');
       // Get upcoming days from the in-progress instance (days that are not yet complete)
-      // Map them to include planInstance property to match allPlanInstanceDays structure
+      // Map them to include planInstance and mesocycle properties to match allPlanInstanceDays structure
       const currentInstanceDays = inProgressInstance.days
         .filter(day => !isDayComplete({
           ...day,
@@ -186,6 +247,10 @@ export async function GET(
             status: inProgressInstance.status,
             startedAt: inProgressInstance.startedAt,
             completedAt: inProgressInstance.completedAt
+          },
+          mesocycle: {
+            id: mesocycle.id,
+            name: mesocycle.name
           }
         }))
         .map(day => ({
@@ -196,6 +261,10 @@ export async function GET(
             status: inProgressInstance.status,
             startedAt: inProgressInstance.startedAt,
             completedAt: inProgressInstance.completedAt
+          },
+          mesocycle: {
+            id: mesocycle.id,
+            name: mesocycle.name
           }
         }));
       console.log('[Schedule] Incomplete days in in-progress instance:', currentInstanceDays.length);
@@ -233,6 +302,10 @@ export async function GET(
             status: null,
             startedAt: new Date(),
             completedAt: null
+          },
+          mesocycle: {
+            id: mesocycle.id,
+            name: mesocycle.name
           }
         }))
       ) as typeof allPlanInstanceDays;
@@ -299,6 +372,10 @@ export async function GET(
                 status: null,
                 startedAt: new Date(),
                 completedAt: null
+              },
+              mesocycle: {
+                id: mesocycle.id,
+                name: mesocycle.name
               }
             }))
           ) as typeof allPlanInstanceDays;
@@ -334,10 +411,14 @@ export async function GET(
               status: null,
               startedAt: new Date(),
               completedAt: null
+            },
+            mesocycle: {
+              id: mesocycle.id,
+              name: mesocycle.name
             }
           }))
         ) as typeof allPlanInstanceDays;
-        console.log('[Schedule] Created', upcomingDays.length, 'upcoming days from plan (first iteration)');
+        console.log('[Schedule] Created', upcomingDays.length, 'upcoming days from plan (all iterations)');
       } else {
         console.log('[Schedule] No completed instances and instances exist, but none are in progress. Instance statuses:', 
           mesocycle.instances.map(i => ({ id: i.id, status: i.status, iterationNumber: i.iterationNumber }))

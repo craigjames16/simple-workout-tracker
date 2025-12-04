@@ -77,6 +77,8 @@ model PlanInstance {
   updatedAt   DateTime         @updatedAt
   userId      String           // Add user association
   user        User             @relation(fields: [userId], references: [id])
+
+  @@unique([planId, mesocycleId, iterationNumber])
 }
 
 model PlanInstanceDay {
@@ -152,6 +154,8 @@ model ExerciseSet {
   reps             Int
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+
+  @@unique([workoutInstanceId, exerciseId, setNumber])
 }
 
 model Mesocycle {
