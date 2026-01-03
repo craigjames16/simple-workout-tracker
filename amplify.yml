@@ -3,7 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - npm ci --legacy-peer-deps
         - echo "DATABASE_URL=$DATABASE_URL" >> .env
         - echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET" >> .env
         - echo "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
