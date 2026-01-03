@@ -64,5 +64,8 @@
   },
   "prisma": {
     "seed": "ts-node --project prisma/tsconfig.json prisma/seed.ts"
+  },
+  "overrides": {
+    "@mui/system": "^6.3.1"
   }
 }
