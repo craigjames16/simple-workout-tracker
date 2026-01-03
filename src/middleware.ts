@@ -19,13 +19,9 @@ export const config = {
       "/workouts",
       "/mesocycle",
       "/account",
-      "/api/plans/:path*", 
-      "/api/exercises/:path*",
-      "/api/workout-instances/:path*",
-      "/api/plan-instances/:path*",
-      "/api/mesocycles/:path*",
       "/data",
-      "/api/dashboard",
+      // API routes are excluded - they handle their own authentication
+      // using getAuthUser which supports both cookies and Bearer tokens
       // "/((?!auth|api/auth|$).*)",
     ],
   } 

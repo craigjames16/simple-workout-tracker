@@ -25,47 +25,15 @@ export const authOptions: AuthOptions = {
             return null;
           }
 
-          // Check if this is a signup request
-          if (credentials.isSignUp === "true") {
-            // Check if user already exists
-            const existingUser = await prisma.user.findUnique({
-              where: { email: credentials.email },
-            });
-
-            if (existingUser) {
-              throw new Error("User already exists with this email");
-            }
-
-            // Create new user
-            const hashedPassword = await bcrypt.hash(credentials.password, 12);
-            const user = await prisma.user.create({
-              data: {
-                email: credentials.email,
-                password: hashedPassword,
-              },
-            });
-
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-            };
-          } else {
-            // Sign in request
-            const user = await prisma.user.findUnique({
-              where: { email: credentials.email },
-            });
-
-            if (!user || !user.password) {
-              return null;
-            }
-
-            const isPasswordValid = await bcrypt.compare(
+          try {
+            const { authenticateUser } = await import("@/lib/mobileAuth");
+            const user = await authenticateUser(
+              credentials.email,
               credentials.password,
-              user.password
+              credentials.isSignUp === "true"
             );
 
-            if (!isPasswordValid) {
+            if (!user) {
               return null;
             }
 
@@ -74,6 +42,9 @@ export const authOptions: AuthOptions = {
               email: user.email,
               name: user.name,
             };
+          } catch (error: any) {
+            // Re-throw errors (like "User already exists") so NextAuth can handle them
+            throw error;
           }
         },
       }),

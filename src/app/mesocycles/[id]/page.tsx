@@ -22,6 +22,7 @@ import Link from 'next/link';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import StopCircleIcon from '@mui/icons-material/StopCircle';
 import { useRouter } from 'next/navigation';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
@@ -77,6 +78,7 @@ export default function MesocycleDetail({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const { id } = React.use(params);
   const { setShowBackButton } = useNavbar();
@@ -137,6 +139,31 @@ export default function MesocycleDetail({ params }: { params: Promise<{ id: stri
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete mesocycle');
       setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      const response = await fetch(`/api/mesocycles/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'complete' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to complete mesocycle');
+      }
+
+      const updatedMesocycle = await response.json();
+      setMesocycle(updatedMesocycle);
+      setCompleteDialogOpen(false);
+      setMenuAnchorEl(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to complete mesocycle');
+      setCompleteDialogOpen(false);
     }
   };
 
@@ -372,6 +399,18 @@ export default function MesocycleDetail({ params }: { params: Promise<{ id: stri
           open={Boolean(menuAnchorEl)}
           onClose={() => setMenuAnchorEl(null)}
         >
+          {mesocycle.status !== 'COMPLETE' && (
+            <MenuItem
+              onClick={() => {
+                setMenuAnchorEl(null);
+                setCompleteDialogOpen(true);
+              }}
+              sx={{ color: 'warning.main' }}
+            >
+              <StopCircleIcon sx={{ mr: 1 }} fontSize="small" />
+              Complete Mesocycle
+            </MenuItem>
+          )}
           <MenuItem
             onClick={() => {
               setMenuAnchorEl(null);
@@ -568,6 +607,24 @@ export default function MesocycleDetail({ params }: { params: Promise<{ id: stri
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleDelete} color="error" variant="contained">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={completeDialogOpen}
+        onClose={() => setCompleteDialogOpen(false)}
+      >
+        <DialogTitle>Complete Mesocycle</DialogTitle>
+        <DialogContent>
+          Are you sure you want to complete this mesocycle? This will mark the mesocycle as complete. 
+          Your progress data will be preserved, but you won't be able to continue tracking workouts 
+          for this mesocycle.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCompleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleComplete} color="warning" variant="contained">
+            Complete
           </Button>
         </DialogActions>
       </Dialog>

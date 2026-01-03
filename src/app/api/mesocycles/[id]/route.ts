@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 import { Mesocycle, PlanInstance, PlanInstanceDay } from '@prisma/client';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
 
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,7 +18,7 @@ export async function GET(
     const mesocycle = await prisma.mesocycle.findFirst({
       where: {
         id: parseInt(awaitedParams.id),
-        userId: session.user.id
+        userId: userId
       },
       include: {
         plan: true,
@@ -79,10 +78,10 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
 
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -90,7 +89,7 @@ export async function DELETE(
     const mesocycle = await prisma.mesocycle.findFirst({
       where: {
         id: parseInt(awaitedParams.id),
-        userId: session.user.id
+        userId: userId
       },
       include: {
         instances: {
@@ -154,6 +153,120 @@ export async function DELETE(
     return NextResponse.json(
       { 
         error: 'Error deleting mesocycle', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const userId = await getAuthUser(request);
+  const awaitedParams = await params;
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const json = await request.json();
+    const { action } = json;
+
+    // Verify mesocycle exists and belongs to user
+    const mesocycle = await prisma.mesocycle.findFirst({
+      where: {
+        id: parseInt(awaitedParams.id),
+        userId: userId
+      }
+    });
+
+    if (!mesocycle) {
+      return NextResponse.json(
+        { error: 'Mesocycle not found' },
+        { status: 404 }
+      );
+    }
+
+    // Only allow completing if mesocycle is not already complete
+    if (mesocycle.status === 'COMPLETE') {
+      return NextResponse.json(
+        { error: 'Mesocycle is already complete' },
+        { status: 400 }
+      );
+    }
+
+    if (action === 'complete') {
+      // Update mesocycle and all associated PlanInstances to complete
+      const completedAt = new Date();
+      
+      const updatedMesocycle = await prisma.$transaction(async (tx) => {
+        // Update all PlanInstances that are in progress associated with this mesocycle
+        await tx.planInstance.updateMany({
+          where: { 
+            mesocycleId: parseInt(awaitedParams.id),
+            status: 'IN_PROGRESS'
+          },
+          data: {
+            status: 'COMPLETE',
+            completedAt: completedAt
+          }
+        });
+
+        // Update mesocycle to complete
+        return await tx.mesocycle.update({
+          where: { id: parseInt(awaitedParams.id) },
+          data: {
+            status: 'COMPLETE',
+            completedAt: completedAt
+          },
+          include: {
+            plan: true,
+            instances: {
+              include: {
+                days: {
+                  include: {
+                    planDay: {
+                      select: {
+                        isRestDay: true,
+                        dayNumber: true,
+                      }
+                    },
+                    workoutInstance: {
+                      include: {
+                        workoutExercises: {
+                          include: {
+                            exercise: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                plan: true
+              },
+              orderBy: {
+                iterationNumber: 'asc'
+              }
+            }
+          }
+        });
+      });
+
+      return NextResponse.json(updatedMesocycle);
+    }
+
+    return NextResponse.json(
+      { error: 'Invalid action' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Error updating mesocycle:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error updating mesocycle', 
         details: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }
