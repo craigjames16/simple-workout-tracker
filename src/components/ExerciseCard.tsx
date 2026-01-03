@@ -28,7 +28,7 @@ export default function ExerciseCard({
   onExerciseMenuOpen,
   onSetMenuOpen
 }: ExerciseCardProps) {
-  const setRefs = useRef<{ [key: string]: React.RefObject<HTMLElement> }>({});
+  const setRefs = useRef<{ [key: string]: React.MutableRefObject<HTMLElement | null> }>({});
 
   const getSetRef = (exerciseId: number, setIndex: number) => {
     const refKey = `set-${exerciseId}-${setIndex}`;
