@@ -439,7 +439,7 @@ export default function TrackPage() {
 
         <WorkoutCalendar mesocycleId={currentMesocycle?.id || null} />
 
-        <WorkoutHeatmap />
+        <WorkoutHeatmap mesocycleId={currentMesocycle?.id || null} />
       </Box>
     </ResponsiveContainer>
   );

@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 import { ExerciseCategory } from '@prisma/client'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const userId = await getAuthUser(request);
+    if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
     const exercises = await prisma.exercise.findMany({
       where: {
         OR: [
-          { userId: session.user.id },
+          { userId: userId },
           { userId: null }
         ]
       },
@@ -22,7 +21,7 @@ export async function GET() {
         sets: {
           where: {
             workoutInstance: {
-              userId: session.user.id
+              userId: userId
             }
           },
           orderBy: {
@@ -104,8 +103,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -125,7 +124,7 @@ export async function POST(request: Request) {
       data: {
         name,
         category,
-        userId: session.user.id
+        userId: userId
       }
     });
 
