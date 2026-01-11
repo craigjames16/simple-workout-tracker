@@ -11,19 +11,18 @@ import {
   Divider,
   Card,
   CardContent,
-  Grid,
-  Chip
+  Grid
 } from '@mui/material';
 import { 
   Person as PersonIcon, 
   Email as EmailIcon, 
   Logout as LogoutIcon,
-  Security as SecurityIcon,
   FitnessCenter as FitnessCenterIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { gradients, themeColors } from '@/lib/theme-constants';
 import { useRouter } from 'next/navigation';
+import PasswordSecurityCard from '@/components/PasswordSecurityCard';
 
 export default function AccountPage() {
   const { data: session, status } = useSession();
@@ -126,7 +125,7 @@ export default function AccountPage() {
                   </Typography>
                 </Box>
 
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <EmailIcon sx={{ color: 'rgba(255, 255, 255, 0.6)', mr: 1, fontSize: 20 }} />
                   <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mr: 1 }}>
                     Email:
@@ -134,19 +133,6 @@ export default function AccountPage() {
                   <Typography variant="body1" sx={{ color: 'white' }}>
                     {session.user.email}
                   </Typography>
-                </Box>
-
-                <Box sx={{ mt: 2 }}>
-                  <Chip 
-                    label="Google Account" 
-                    color="primary" 
-                    size="small"
-                    sx={{ 
-                      background: 'rgba(59, 130, 246, 0.2)',
-                      color: 'white',
-                      border: '1px solid rgba(59, 130, 246, 0.3)'
-                    }}
-                  />
                 </Box>
               </CardContent>
             </Card>
@@ -160,7 +146,7 @@ export default function AccountPage() {
             }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <SecurityIcon sx={{ color: themeColors.primary, mr: 1 }} />
+                  <FitnessCenterIcon sx={{ color: themeColors.primary, mr: 1 }} />
                   <Typography variant="h6" sx={{ color: 'white' }}>
                     Account Actions
                   </Typography>
@@ -213,6 +199,11 @@ export default function AccountPage() {
                 </Button>
               </CardContent>
             </Card>
+          </Grid>
+
+          {/* Password & Security */}
+          <Grid item xs={12}>
+            <PasswordSecurityCard />
           </Grid>
         </Grid>
       </Paper>
