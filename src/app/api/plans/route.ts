@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser";
 import { createPlan } from '@/services/planService';
 
-export async function GET() {
-  // Check authentication
-  const session = await getServerSession(authOptions);
-  if (!session) {
+export async function GET(request: Request) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const plans = await prisma.plan.findMany({
       where: {
-        userId: session.user.id
+        userId: userId
       },
       include: {
         days: {
@@ -53,15 +51,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
   try {
     const json = await request.json();
     const { name, days } = json;
-    const userId = session.user.id;
 
     const plan = await createPlan({ name, userId, days });
 

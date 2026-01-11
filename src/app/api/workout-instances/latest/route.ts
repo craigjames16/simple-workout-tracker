@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+export async function GET(request: NextRequest) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -13,7 +12,7 @@ export async function GET() {
     const latestWorkout = await prisma.workoutInstance.findFirst({
       where: {
         completedAt: null,
-        userId: session.user.id,
+        userId: userId,
       },
       orderBy: {
         startedAt: 'desc',
@@ -62,7 +61,7 @@ export async function GET() {
     // First try to find a mesocycle in progress
     const currentMesocycle = await prisma.mesocycle.findFirst({
       where: {
-        userId: session.user.id,
+        userId: userId,
         status: 'IN_PROGRESS',
       },
       include: {

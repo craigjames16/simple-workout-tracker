@@ -7,7 +7,7 @@ on:
 
 env:
   PROJECT_ID: data-gym-470817  # Replace with your actual GCP project ID
-  SERVICE_NAME: data-gym
+  SERVICE_NAME: meso-iq-prod
   REGION: us-east1
   REGISTRY_REGION: us-east1
 

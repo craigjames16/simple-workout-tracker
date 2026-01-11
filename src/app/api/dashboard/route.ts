@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser";
 import { ExerciseCategory } from '@prisma/client';
 
 type MetricValue = {
@@ -127,8 +126,8 @@ const formatMetricResponse = (
 };
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -137,7 +136,7 @@ export async function GET(request: NextRequest) {
 
   if (data === 'muscleGroupVolume' || data === 'muscleGroups') {
     try {
-      const exercises = await fetchExercisesWithCompletedSets(session.user.id);
+      const exercises = await fetchExercisesWithCompletedSets(userId);
       const volumeMetric = buildMuscleGroupMetric(exercises, (set) => set.reps * set.weight);
       const formattedVolume = formatMetricResponse(volumeMetric, 'volume');
       return NextResponse.json(formattedVolume);
@@ -147,7 +146,7 @@ export async function GET(request: NextRequest) {
     }
   } else if (data === 'muscleGroupSets') {
     try {
-      const exercises = await fetchExercisesWithCompletedSets(session.user.id);
+      const exercises = await fetchExercisesWithCompletedSets(userId);
       const setMetric = buildMuscleGroupMetric(exercises, () => 1);
       const formattedSets = formatMetricResponse(setMetric, 'count');
       return NextResponse.json(formattedSets);
@@ -160,7 +159,7 @@ export async function GET(request: NextRequest) {
       const exercises = await prisma.exercise.findMany({
         where: {
           OR: [
-            { userId: session.user.id },
+            { userId: userId },
             { userId: null } // Include default exercises
           ]
         },
@@ -168,7 +167,7 @@ export async function GET(request: NextRequest) {
           sets: {
             where: {
               workoutInstance: {
-                userId: session.user.id
+                userId: userId
               }
             },
             orderBy: { createdAt: 'desc' },
@@ -185,7 +184,7 @@ export async function GET(request: NextRequest) {
     try {
       const mesocycles = await prisma.mesocycle.findMany({
         where: {
-          userId: session.user.id
+          userId: userId
         },
         orderBy: { createdAt: 'desc' },
         take: 5,
@@ -211,7 +210,7 @@ export async function GET(request: NextRequest) {
       }
       const mesocycle = await prisma.mesocycle.findFirst({
         where: {
-          userId: session.user.id,
+          userId: userId,
           id: Number(id)
         },
         include: {
@@ -343,7 +342,7 @@ export async function GET(request: NextRequest) {
         exercises = await prisma.exercise.findMany({
           where: {
             OR: [
-              { userId: session.user.id },
+              { userId: userId },
               { userId: null }
             ]
           },
@@ -351,7 +350,7 @@ export async function GET(request: NextRequest) {
             sets: {
               where: {
                 workoutInstance: {
-                  userId: session.user.id,
+                  userId: userId,
                   completedAt: {
                     not: null
                   },
@@ -372,7 +371,7 @@ export async function GET(request: NextRequest) {
         });
       } else {
         // Fetch all mesocycle sets
-        exercises = await fetchExercisesWithMesocycleSets(session.user.id);
+        exercises = await fetchExercisesWithMesocycleSets(userId);
       }
       
       const volumeMetric = buildMuscleGroupMetric(exercises, (set) => set.reps * set.weight);
@@ -392,7 +391,7 @@ export async function GET(request: NextRequest) {
         exercises = await prisma.exercise.findMany({
           where: {
             OR: [
-              { userId: session.user.id },
+              { userId: userId },
               { userId: null }
             ]
           },
@@ -400,7 +399,7 @@ export async function GET(request: NextRequest) {
             sets: {
               where: {
                 workoutInstance: {
-                  userId: session.user.id,
+                  userId: userId,
                   completedAt: {
                     not: null
                   },
@@ -421,7 +420,7 @@ export async function GET(request: NextRequest) {
         });
       } else {
         // Fetch all mesocycle sets
-        exercises = await fetchExercisesWithMesocycleSets(session.user.id);
+        exercises = await fetchExercisesWithMesocycleSets(userId);
       }
       
       const setMetric = buildMuscleGroupMetric(exercises, () => 1);
@@ -433,7 +432,7 @@ export async function GET(request: NextRequest) {
     }
   } else if (data === 'exerciseStats') {
     try {
-      const exercises = await fetchExercisesWithCompletedSets(session.user.id);
+      const exercises = await fetchExercisesWithCompletedSets(userId);
       
       // Process exercises to calculate statistics
       const exerciseStats = exercises.map(exercise => {

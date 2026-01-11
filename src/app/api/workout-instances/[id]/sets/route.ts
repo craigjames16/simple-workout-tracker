@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 
 
 interface SetData {
@@ -19,10 +18,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
 
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -33,7 +32,7 @@ export async function POST(
     const pendingAdjustment = await prisma.adjustment.findFirst({
       where: {
         exerciseId,
-        userId: session.user.id,
+        userId: userId,
         completed: false
       }
     });
@@ -78,10 +77,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
   
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

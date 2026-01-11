@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 
 interface SetsByNumber {
   [key: number]: {
@@ -14,8 +13,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,7 +24,7 @@ export async function GET(
     const workoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(awaitedParams.id),
-        userId: session.user.id
+        userId: userId
       },
       include: {
         exerciseSets: true,

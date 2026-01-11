@@ -1,16 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
 
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -18,7 +17,7 @@ export async function POST(
 
     // Get the workout instance
     const workoutInstance = await prisma.workoutInstance.findUnique({
-      where: { id: parseInt(awaitedParams.id), userId: session.user.id },
+      where: { id: parseInt(awaitedParams.id), userId: userId },
       include: { workout: true },
     });
 
@@ -34,7 +33,7 @@ export async function POST(
       where: {
         workoutInstanceId: workoutInstance.id,
         workoutInstance: {
-          userId: session.user.id
+          userId: userId
         }
       },
       orderBy: {
@@ -59,7 +58,7 @@ export async function POST(
 
     // Fetch the updated workout instance with exercises
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
-      where: { id: parseInt(awaitedParams.id), userId: session.user.id },
+      where: { id: parseInt(awaitedParams.id), userId: userId },
       include: {
         exerciseSets: true,
         workoutExercises: {
@@ -149,23 +148,24 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const awaitedParams = await params;
-    const { exerciseId } = await request.json();
-    const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
+  const awaitedParams = await params;
   
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { exerciseId } = await request.json();
 
     // First get the workout instance to get its workout ID
     const workoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(awaitedParams.id),
-        userId: session.user.id
+        userId: userId
       },
       select: {
         workoutId: true,
@@ -192,7 +192,7 @@ export async function DELETE(
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(awaitedParams.id),
-        userId: session.user.id
+        userId: userId
       },
       include: {
         exerciseSets: true,

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser";
 import logger from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
   
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,7 +18,7 @@ export async function GET(
     const plan = await prisma.plan.findUnique({
       where: {
         id: parseInt(awaitedParams.id),
-        userId: session.user.id
+        userId: userId
       },
       include: {
         days: {
@@ -62,10 +61,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
+  const userId = await getAuthUser(request);
   const awaitedParams = await params;
 
-  if (!session) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
@@ -75,12 +74,12 @@ export async function PUT(
     const updatedPlan = await prisma.$transaction(async (tx) => {
       // Update plan name
       const plan = await tx.plan.update({
-        where: { id: parseInt(awaitedParams.id), userId: session.user.id },
+        where: { id: parseInt(awaitedParams.id), userId: userId },
         data: { name },
       });
       // Get existing days
       const existingDays = await tx.planDay.findMany({
-        where: { planId: plan.id, plan: { userId: session.user.id } },
+        where: { planId: plan.id, plan: { userId: userId } },
         include: {
           workout: {
             include: {
@@ -140,7 +139,7 @@ export async function PUT(
               const workout = await tx.workout.create({
                 data: {
                   name: `${plan.name} - Day ${dayNumber}`,
-                  userId: session.user.id,
+                  userId: userId,
                   workoutExercises: {
                     create: day.workoutExercises.map((exercise: any, exerciseIndex: number) => ({
                       exercise: {
@@ -171,7 +170,7 @@ export async function PUT(
             const workout = await tx.workout.create({
               data: {
                 name: `${plan.name} - Day ${dayNumber}`,
-                userId: session.user.id,
+                userId: userId,
                 workoutExercises: {
                   create: day.workoutExercises.map((exercise: any, exerciseIndex: number) => ({
                     exercise: {
@@ -231,10 +230,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const userId = await getAuthUser(request);
     const awaitedParams = await params;
 
-    if (!session?.user) {
+    if (!userId) {
       return new Response('Unauthorized', { status: 401 });
     }
 
@@ -245,7 +244,7 @@ export async function DELETE(
         where: {
           planId: parseInt(awaitedParams.id),
           plan: {
-            userId: session.user.id
+            userId: userId
           }
         },
         include: {
@@ -277,7 +276,7 @@ export async function DELETE(
         where: {
           planId: parseInt(awaitedParams.id),
           plan: {
-            userId: session.user.id
+            userId: userId
           }
         },
       });
@@ -286,7 +285,7 @@ export async function DELETE(
       await tx.plan.delete({
         where: {
           id: parseInt(awaitedParams.id),
-          userId: session.user.id,
+          userId: userId,
         },
       });
     });

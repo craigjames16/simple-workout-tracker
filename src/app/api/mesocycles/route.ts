@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 import { Mesocycle, PlanInstance, PlanInstanceDay, PlanDay, WorkoutInstance } from '@prisma/client';
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+export async function GET(request: Request) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const mesocycles = await prisma.mesocycle.findMany({
       where: {
-        userId: session.user.id
+        userId: userId
       },
       include: {
         plan: true,
@@ -47,8 +46,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -58,7 +57,7 @@ export async function POST(request: Request) {
 
     // First, get the plan to access its days
     const plan = await prisma.plan.findUnique({
-      where: { id: parseInt(planId), userId: session.user.id },
+      where: { id: parseInt(planId), userId: userId },
       include: {
         days: true
       }
@@ -75,7 +74,7 @@ export async function POST(request: Request) {
     const mesocycle = await prisma.mesocycle.create({
       data: {
         name,
-        userId: session.user.id,
+        userId: userId,
         planId: parseInt(planId),
         iterations,
         status: 'NOT_STARTED',
@@ -91,7 +90,7 @@ export async function POST(request: Request) {
         // Create plan instance
         const planInstance = await prisma.planInstance.create({
           data: {
-            userId: session.user.id,
+            userId: userId,
             planId: parseInt(planId),
             mesocycleId: mesocycle.id,
             iterationNumber,
@@ -118,7 +117,7 @@ export async function POST(request: Request) {
     const mesocycleWithInstances = await prisma.mesocycle.findFirst({
       where: {
         id: mesocycle.id,
-        userId: session.user.id
+        userId: userId
       },
       include: {
         plan: true,

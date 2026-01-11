@@ -1,18 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ workoutId: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(req);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const userId = session.user.id
 
     const { exerciseId, direction } = await req.json();
     const awaitedParams = await params;
