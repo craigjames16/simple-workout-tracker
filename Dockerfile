@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/
 # Copy package files and install dependencies
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
 COPY prisma ./prisma
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Set environment for Prisma generation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
