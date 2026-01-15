@@ -5,7 +5,7 @@ import { ExerciseCategory } from '@prisma/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -13,7 +13,8 @@ export async function GET(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const exerciseId = parseInt(params.id);
+    const { id } = await params;
+    const exerciseId = parseInt(id);
     if (isNaN(exerciseId)) {
       return NextResponse.json({ error: 'Invalid exercise ID' }, { status: 400 });
     }
@@ -170,7 +171,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -178,7 +179,8 @@ export async function PUT(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const exerciseId = parseInt(params.id);
+    const { id } = await params;
+    const exerciseId = parseInt(id);
     if (isNaN(exerciseId)) {
       return NextResponse.json({ error: 'Invalid exercise ID' }, { status: 400 });
     }
@@ -239,7 +241,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const userId = await getAuthUser(request);
@@ -247,7 +249,8 @@ export async function DELETE(
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const exerciseId = parseInt(params.id);
+    const { id } = await params;
+    const exerciseId = parseInt(id);
     if (isNaN(exerciseId)) {
       return NextResponse.json({ error: 'Invalid exercise ID' }, { status: 400 });
     }
