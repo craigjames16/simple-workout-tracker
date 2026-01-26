@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma';
 
-interface ExerciseInput {
+export interface ExerciseInput {
   id: string | number;
   order?: number;
 }
 
-interface DayInput {
+export interface DayInput {
   isRestDay: boolean;
   workoutExercises?: ExerciseInput[];
 }

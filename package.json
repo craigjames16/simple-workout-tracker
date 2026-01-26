@@ -45,13 +45,15 @@
     "next-auth": "^4.24.10",
     "next-pwa": "^5.6.0",
     "npx": "^10.2.2",
+    "openai": "^6.16.0",
     "react": "19.0.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "19.0.1",
     "react-markdown": "^9.0.3",
     "recharts": "^2.14.1",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.6.4",
