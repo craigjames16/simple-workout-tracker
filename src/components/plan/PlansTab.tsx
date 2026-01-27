@@ -119,8 +119,61 @@ export default function PlansTab() {
     return <Typography color="error">{error}</Typography>;
   }
 
+  const handleQuickWorkout = async () => {
+    try {
+      const response = await fetch('/api/workout-instances', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create workout');
+      }
+
+      const workoutInstance = await response.json();
+      window.location.href = `/track/${workoutInstance.id}`;
+    } catch (err) {
+      console.error('Error creating standalone workout:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create workout');
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 0 }}>
+      {/* Quick Workout CTA */}
+      <Box
+        sx={{
+          borderRadius: 2,
+          overflow: 'hidden',
+          background: gradients.surface,
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        }}
+      >
+        <Button
+          fullWidth
+          onClick={handleQuickWorkout}
+          startIcon={<FitnessCenterIcon />}
+          sx={{
+            justifyContent: 'flex-start',
+            p: 2,
+            textTransform: 'none',
+            color: 'white',
+            '&:hover': {
+              background: 'rgba(255, 255, 255, 0.05)',
+            },
+          }}
+        >
+          <Typography sx={{ fontWeight: 600 }}>
+            Quick Workout
+          </Typography>
+        </Button>
+      </Box>
+
       {/* AI Creator Section */}
       <Box
         sx={{
