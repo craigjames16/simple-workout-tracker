@@ -13,7 +13,20 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const { exerciseId } = await request.json();
+    const body = await request.json();
+    // Support both single exerciseId and array of exerciseIds
+    const exerciseIds = Array.isArray(body.exerciseId) 
+      ? body.exerciseId 
+      : body.exerciseId 
+        ? [body.exerciseId] 
+        : body.exerciseIds || [];
+
+    if (exerciseIds.length === 0) {
+      return NextResponse.json(
+        { error: 'No exercise IDs provided' },
+        { status: 400 }
+      );
+    }
 
     // Get the workout instance
     const workoutInstance = await prisma.workoutInstance.findUnique({
@@ -25,6 +38,50 @@ export async function POST(
       return NextResponse.json(
         { error: 'Workout instance not found' },
         { status: 404 }
+      );
+    }
+
+    // Check if any exercises are already in the workout instance
+    const existingExercises = await prisma.workoutExercise.findMany({
+      where: {
+        workoutInstanceId: workoutInstance.id,
+        exerciseId: { in: exerciseIds },
+      },
+      include: {
+        exercise: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (existingExercises.length > 0) {
+      const existingExerciseNames = existingExercises.map(we => we.exercise.name);
+      const existingIds = existingExercises.map(we => we.exerciseId);
+      
+      // If all exercises are already added
+      if (existingExercises.length === exerciseIds.length) {
+        return NextResponse.json(
+          { 
+            error: 'Exercise already added',
+            message: existingExerciseNames.length === 1
+              ? `${existingExerciseNames[0]} is already in this workout`
+              : `These exercises are already in this workout: ${existingExerciseNames.join(', ')}`,
+            existingExerciseIds: existingIds,
+          },
+          { status: 409 } // 409 Conflict
+        );
+      }
+      
+      // If some exercises are already added
+      return NextResponse.json(
+        { 
+          error: 'Some exercises already added',
+          message: `These exercises are already in this workout: ${existingExerciseNames.join(', ')}`,
+          existingExerciseIds: existingIds,
+        },
+        { status: 409 } // 409 Conflict
       );
     }
 
@@ -44,17 +101,20 @@ export async function POST(
       },
     });
 
-    const nextOrder = (highestOrder?.order ?? -1) + 1;
+    let currentOrder = (highestOrder?.order ?? -1) + 1;
 
-    // Add the exercise to the workout instance
-    const updatedWorkoutExercise = await prisma.workoutExercise.create({
-      data: {
-        workoutInstance: { connect: { id: workoutInstance.id } },
-        exercise: { connect: { id: exerciseId } },
-        // workout: { connect: { id: workoutInstance.workoutId } },
-        order: nextOrder,
-      },
-    });
+    // Add all exercises to the workout instance
+    await Promise.all(
+      exerciseIds.map((exerciseId: number) => 
+        prisma.workoutExercise.create({
+          data: {
+            workoutInstance: { connect: { id: workoutInstance.id } },
+            exercise: { connect: { id: exerciseId } },
+            order: currentOrder++,
+          },
+        })
+      )
+    );
 
     // Fetch the updated workout instance with exercises
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({

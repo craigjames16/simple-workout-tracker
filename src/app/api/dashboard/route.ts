@@ -62,10 +62,8 @@ const fetchExercisesWithMesocycleSets = async (userId: string) => {
             userId,
             completedAt: {
               not: null
-            },
-            mesocycleId: {
-              not: null
             }
+            // Removed mesocycleId filter to include standalone workouts
           }
         },
         include: {
