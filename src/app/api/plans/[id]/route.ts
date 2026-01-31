@@ -195,6 +195,19 @@ export async function PUT(
 
       // Clean up any extra days that are no longer needed
       const extraDays = existingDays.filter(day => day.dayNumber > days.length);
+      
+      // Check if any of the days being removed have been used in plan instances
+      for (const day of extraDays) {
+        const instanceDays = await tx.planInstanceDay.findFirst({
+          where: { planDayId: day.id },
+        });
+        
+        if (instanceDays) {
+          throw new Error('Cannot remove days from a plan that has been used. Days that are part of plan instances cannot be deleted.');
+        }
+      }
+      
+      // If no days are in use, proceed with deletion
       for (const day of extraDays) {
         if (day.workout) {
           await tx.workoutExercise.deleteMany({
@@ -218,6 +231,15 @@ export async function PUT(
     });
   } catch (error) {
     logger.error('Error updating plan:', { error: error instanceof Error ? error.message : JSON.stringify(error) });
+    
+    // Check if it's a validation error about removing used days
+    if (error instanceof Error && error.message.includes('Cannot remove days')) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Error updating plan' },
       { status: 500 }

@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       where: {
         OR: [
           { userId: userId },
-          { userId: null }
+          { userId: null },
         ]
       },
       include: {
@@ -44,10 +44,18 @@ export async function GET(request: Request) {
         }
       }
     });
-
+    
+    if (exercises.length === 0) {
+      return NextResponse.json({});
+    }
+    
     // Group exercises by category
     const exercisesByCategory = exercises.reduce((acc, exercise) => {
       const category = exercise.category;
+      if (!category) {
+        return acc;
+      }
+      
       if (!acc[category]) {
         acc[category] = [];
       }
@@ -87,13 +95,14 @@ export async function GET(request: Request) {
       });
 
       acc[category].push({
-        ...exercise,
+        id: exercise.id,
+        name: exercise.name,
+        category: exercise.category,
         workoutInstances,
         highestWeight
       });
       return acc;
     }, {} as Record<string, any>);
-
 
     return NextResponse.json(exercisesByCategory);
   } catch (error) {

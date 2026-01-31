@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       const planDay = planInstanceDay?.planDay;
       const planInstance = planInstanceDay?.planInstance;
       return NextResponse.json({
+        workoutInstanceId: latestWorkout.id,
         dayId: planInstanceDay?.id ?? null,
         dayNumber: planDay?.dayNumber ?? null,
         iterationId: planInstance?.id ?? null,

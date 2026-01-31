@@ -13,7 +13,43 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    const { exerciseId } = await request.json();
+    const body = await request.json();
+    // Support both single exerciseId and array of exerciseIds
+    const exerciseIds = Array.isArray(body.exerciseId) 
+      ? body.exerciseId 
+      : body.exerciseId 
+        ? [body.exerciseId] 
+        : body.exerciseIds || [];
+
+    if (!exerciseId) {
+      return NextResponse.json(
+        { error: 'Exercise ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Normalize to array format - support both single ID and array
+    const exerciseIdArray = Array.isArray(exerciseId) ? exerciseId : [exerciseId];
+    
+    // Validate and parse all exercise IDs
+    const parsedExerciseIds: number[] = [];
+    for (const id of exerciseIdArray) {
+      const parsed = parseInt(String(id));
+      if (isNaN(parsed)) {
+        return NextResponse.json(
+          { error: `Invalid exercise ID: ${id}` },
+          { status: 400 }
+        );
+      }
+      parsedExerciseIds.push(parsed);
+    }
+
+    if (parsedExerciseIds.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one exercise ID is required' },
+        { status: 400 }
+      );
+    }
 
     // Get the workout instance
     const workoutInstance = await prisma.workoutInstance.findUnique({
@@ -25,6 +61,50 @@ export async function POST(
       return NextResponse.json(
         { error: 'Workout instance not found' },
         { status: 404 }
+      );
+    }
+
+    // Check if any exercises are already in the workout instance
+    const existingExercises = await prisma.workoutExercise.findMany({
+      where: {
+        workoutInstanceId: workoutInstance.id,
+        exerciseId: { in: exerciseIds },
+      },
+      include: {
+        exercise: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (existingExercises.length > 0) {
+      const existingExerciseNames = existingExercises.map(we => we.exercise.name);
+      const existingIds = existingExercises.map(we => we.exerciseId);
+      
+      // If all exercises are already added
+      if (existingExercises.length === exerciseIds.length) {
+        return NextResponse.json(
+          { 
+            error: 'Exercise already added',
+            message: existingExerciseNames.length === 1
+              ? `${existingExerciseNames[0]} is already in this workout`
+              : `These exercises are already in this workout: ${existingExerciseNames.join(', ')}`,
+            existingExerciseIds: existingIds,
+          },
+          { status: 409 } // 409 Conflict
+        );
+      }
+      
+      // If some exercises are already added
+      return NextResponse.json(
+        { 
+          error: 'Some exercises already added',
+          message: `These exercises are already in this workout: ${existingExerciseNames.join(', ')}`,
+          existingExerciseIds: existingIds,
+        },
+        { status: 409 } // 409 Conflict
       );
     }
 
@@ -44,16 +124,17 @@ export async function POST(
       },
     });
 
-    const nextOrder = (highestOrder?.order ?? -1) + 1;
+    let nextOrder = (highestOrder?.order ?? -1) + 1;
 
-    // Add the exercise to the workout instance
-    const updatedWorkoutExercise = await prisma.workoutExercise.create({
-      data: {
-        workoutInstance: { connect: { id: workoutInstance.id } },
-        exercise: { connect: { id: exerciseId } },
-        // workout: { connect: { id: workoutInstance.workoutId } },
-        order: nextOrder,
-      },
+    // Add all exercises to the workout instance
+    // Use createMany for better performance when adding multiple exercises
+    await prisma.workoutExercise.createMany({
+      data: parsedExerciseIds.map((parsedExerciseId) => ({
+        workoutInstanceId: workoutInstance.id,
+        exerciseId: parsedExerciseId,
+        order: nextOrder++,
+      })),
+      skipDuplicates: true, // Skip if exercise already exists in workout
     });
 
     // Fetch the updated workout instance with exercises
@@ -141,7 +222,10 @@ export async function POST(
   } catch (error) {
     console.error('Error adding exercise:', error);
     return NextResponse.json(
-      { error: 'Error adding exercise' },
+      { 
+        error: 'Error adding exercise',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -160,6 +244,21 @@ export async function DELETE(
 
   try {
     const { exerciseId } = await request.json();
+
+    if (!exerciseId) {
+      return NextResponse.json(
+        { error: 'Exercise ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const parsedExerciseId = parseInt(String(exerciseId));
+    if (isNaN(parsedExerciseId)) {
+      return NextResponse.json(
+        { error: 'Invalid exercise ID' },
+        { status: 400 }
+      );
+    }
 
     // First get the workout instance to get its workout ID
     const workoutInstance = await prisma.workoutInstance.findUnique({
@@ -184,7 +283,7 @@ export async function DELETE(
     await prisma.workoutExercise.deleteMany({
       where: {
         workoutInstanceId: workoutInstance.id,
-        exerciseId: exerciseId,
+        exerciseId: parsedExerciseId,
       },
     });
 

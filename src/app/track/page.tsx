@@ -90,6 +90,7 @@ const NextWorkout = ({
   useEffect(() => {
     const fetchNextWorkout = async () => {
       if (!currentMesocycle) {
+        setNextWorkout(null);
         setLoading(false);
         return;
       }
@@ -221,13 +222,84 @@ const NextWorkout = ({
     );
   }
   
+  // Show empty state with CTAs when no mesocycle or no upcoming workouts
+  const handleStartSingleWorkout = async () => {
+    try {
+      const response = await fetch('/api/workout-instances', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create workout');
+      }
+
+      const workoutInstance = await response.json();
+      window.location.href = `/track/${workoutInstance.id}`;
+    } catch (err) {
+      console.error('Error creating standalone workout:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create workout');
+    }
+  };
+
+  const handleCreateMesocycle = () => {
+    window.location.href = '/plan';
+  };
+
   if (!nextWorkout || !nextWorkout.planDay) {
+
     return (
-      <Card elevation={3} sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography>
-            No upcoming workouts found. Please check your mesocycle configuration.
-          </Typography>
+      <Card 
+        elevation={0} 
+        sx={{ 
+          mb: 3, 
+          borderRadius: 2,
+          overflow: 'hidden',
+          background: gradients.surface,
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
+        <CardContent sx={{ px: { xs: 1.5, sm: 2 }, py: { xs: 1.5, sm: 2 } }}>
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+              {!currentMesocycle ? 'Get Started' : 'No Upcoming Workouts'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {!currentMesocycle 
+                ? 'Start a single workout or create a mesocycle to begin tracking your progress'
+                : 'Start a quick workout or check your mesocycle schedule'}
+            </Typography>
+          </Box>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            justifyContent: 'center'
+          }}>
+            <GradientButton
+              variant="contained"
+              fullWidth={false}
+              sx={{ flex: { xs: 1, sm: '0 1 auto' }, minWidth: { sm: 180 } }}
+              startIcon={<PlayArrowIcon />}
+              onClick={handleStartSingleWorkout}
+            >
+              Start Single Workout
+            </GradientButton>
+            <GradientButton
+              variant="outlined"
+              fullWidth={false}
+              sx={{ flex: { xs: 1, sm: '0 1 auto' }, minWidth: { sm: 180 } }}
+              startIcon={<FitnessCenterIcon />}
+              onClick={handleCreateMesocycle}
+            >
+              Create Mesocycle
+            </GradientButton>
+          </Box>
         </CardContent>
       </Card>
     );
