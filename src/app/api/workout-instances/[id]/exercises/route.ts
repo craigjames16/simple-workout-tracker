@@ -21,9 +21,32 @@ export async function POST(
         ? [body.exerciseId] 
         : body.exerciseIds || [];
 
-    if (exerciseIds.length === 0) {
+    if (!exerciseId) {
       return NextResponse.json(
-        { error: 'No exercise IDs provided' },
+        { error: 'Exercise ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Normalize to array format - support both single ID and array
+    const exerciseIdArray = Array.isArray(exerciseId) ? exerciseId : [exerciseId];
+    
+    // Validate and parse all exercise IDs
+    const parsedExerciseIds: number[] = [];
+    for (const id of exerciseIdArray) {
+      const parsed = parseInt(String(id));
+      if (isNaN(parsed)) {
+        return NextResponse.json(
+          { error: `Invalid exercise ID: ${id}` },
+          { status: 400 }
+        );
+      }
+      parsedExerciseIds.push(parsed);
+    }
+
+    if (parsedExerciseIds.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one exercise ID is required' },
         { status: 400 }
       );
     }
@@ -101,20 +124,18 @@ export async function POST(
       },
     });
 
-    let currentOrder = (highestOrder?.order ?? -1) + 1;
+    let nextOrder = (highestOrder?.order ?? -1) + 1;
 
     // Add all exercises to the workout instance
-    await Promise.all(
-      exerciseIds.map((exerciseId: number) => 
-        prisma.workoutExercise.create({
-          data: {
-            workoutInstance: { connect: { id: workoutInstance.id } },
-            exercise: { connect: { id: exerciseId } },
-            order: currentOrder++,
-          },
-        })
-      )
-    );
+    // Use createMany for better performance when adding multiple exercises
+    await prisma.workoutExercise.createMany({
+      data: parsedExerciseIds.map((parsedExerciseId) => ({
+        workoutInstanceId: workoutInstance.id,
+        exerciseId: parsedExerciseId,
+        order: nextOrder++,
+      })),
+      skipDuplicates: true, // Skip if exercise already exists in workout
+    });
 
     // Fetch the updated workout instance with exercises
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
@@ -201,7 +222,10 @@ export async function POST(
   } catch (error) {
     console.error('Error adding exercise:', error);
     return NextResponse.json(
-      { error: 'Error adding exercise' },
+      { 
+        error: 'Error adding exercise',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -220,6 +244,21 @@ export async function DELETE(
 
   try {
     const { exerciseId } = await request.json();
+
+    if (!exerciseId) {
+      return NextResponse.json(
+        { error: 'Exercise ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const parsedExerciseId = parseInt(String(exerciseId));
+    if (isNaN(parsedExerciseId)) {
+      return NextResponse.json(
+        { error: 'Invalid exercise ID' },
+        { status: 400 }
+      );
+    }
 
     // First get the workout instance to get its workout ID
     const workoutInstance = await prisma.workoutInstance.findUnique({
@@ -244,7 +283,7 @@ export async function DELETE(
     await prisma.workoutExercise.deleteMany({
       where: {
         workoutInstanceId: workoutInstance.id,
-        exerciseId: exerciseId,
+        exerciseId: parsedExerciseId,
       },
     });
 

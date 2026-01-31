@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth"
+import { getAuthUser } from "@/lib/getAuthUser"
 
 interface CreatePlanInstanceRequest {
   planId: string | number;
@@ -10,8 +9,8 @@ interface CreatePlanInstanceRequest {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const userId = await getAuthUser(request);
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -39,13 +38,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid mesocycleId" }, { status: 400 });
     }
 
-    // Check for existing in-progress plan instance
+    // Check for existing plan instance
+    // If mesocycleId and iterationNumber are provided, check for that specific combination
+    // (instances are created upfront when mesocycle is created)
+    // Otherwise, check for any in-progress instance
+    const whereClause: any = {
+      planId: planId,
+      userId: userId,
+    };
+
+    if (mesocycleId && iterationNumber !== undefined) {
+      // Check for specific iteration (may already exist from mesocycle creation)
+      whereClause.mesocycleId = mesocycleId;
+      whereClause.iterationNumber = iterationNumber;
+    } else {
+      // Check for any in-progress instance
+      whereClause.status = 'IN_PROGRESS';
+    }
+
     const existingInstance = await prisma.planInstance.findFirst({
-      where: {
-        planId: planId,
-        userId: session.user.id,
-        status: 'IN_PROGRESS'
-      },
+      where: whereClause,
       include: {
         days: {
           include: {
@@ -69,6 +81,34 @@ export async function POST(request: Request) {
     });
 
     if (existingInstance) {
+      // If instance exists but is not IN_PROGRESS, update it to IN_PROGRESS
+      if (existingInstance.status !== 'IN_PROGRESS') {
+        const updatedInstance = await prisma.planInstance.update({
+          where: { id: existingInstance.id },
+          data: { status: 'IN_PROGRESS' },
+          include: {
+            days: {
+              include: {
+                planDay: {
+                  include: {
+                    workout: {
+                      include: {
+                        workoutExercises: {
+                          include: {
+                            exercise: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                workoutInstance: true
+              }
+            }
+          }
+        });
+        return NextResponse.json(updatedInstance);
+      }
       return NextResponse.json(existingInstance);
     }
 
@@ -101,8 +141,6 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-
-    const userId = session.user.id; // Extract userId from session
 
     // Create new plan instance with its days and workout instances in a transaction
     const completePlanInstance = await prisma.$transaction(async (tx) => {
