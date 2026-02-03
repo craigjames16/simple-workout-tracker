@@ -2,66 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from "@/lib/getAuthUser"
 
-export async function POST(request: NextRequest) {
-  const userId = await getAuthUser(request);
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    const json = await request.json();
-    const name = json?.name || 'Workout';
-
-    // Create a simple workout first (required for WorkoutInstance)
-    const workout = await prisma.workout.create({
-      data: {
-        name,
-        userId: userId,
-      },
-    });
-
-    // Create the workout instance
-    const workoutInstance = await prisma.workoutInstance.create({
-      data: {
-        workout: {
-          connect: { id: workout.id }
-        },
-        user: {
-          connect: { id: userId }
-        },
-      },
-      include: {
-        workout: {
-          include: {
-            workoutExercises: {
-              include: {
-                exercise: true
-              }
-            }
-          }
-        },
-        workoutExercises: {
-          include: {
-            exercise: true,
-            workout: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json(workoutInstance);
-  } catch (error) {
-    console.error('Error creating standalone workout:', error);
-    return NextResponse.json(
-      { 
-        error: 'Error creating standalone workout', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      },
-      { status: 500 }
-    );
-  }
-}
-
 export async function GET(request: NextRequest) {
   const userId = await getAuthUser(request);
   if (!userId) {
