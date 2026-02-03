@@ -149,6 +149,7 @@ export async function GET(
       id: exercise.id,
       name: exercise.name,
       category: exercise.category,
+      userId: exercise.userId,
       prs: {
         maxWeight,
         maxReps,

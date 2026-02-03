@@ -21,19 +21,16 @@ export async function POST(
         ? [body.exerciseId] 
         : body.exerciseIds || [];
 
-    if (!exerciseId) {
+    if (exerciseIds.length === 0) {
       return NextResponse.json(
         { error: 'Exercise ID is required' },
         { status: 400 }
       );
     }
 
-    // Normalize to array format - support both single ID and array
-    const exerciseIdArray = Array.isArray(exerciseId) ? exerciseId : [exerciseId];
-    
     // Validate and parse all exercise IDs
     const parsedExerciseIds: number[] = [];
-    for (const id of exerciseIdArray) {
+    for (const id of exerciseIds) {
       const parsed = parseInt(String(id));
       if (isNaN(parsed)) {
         return NextResponse.json(
