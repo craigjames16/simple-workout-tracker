@@ -21,6 +21,12 @@ enum ExerciseCategory {
   CALVES
 }
 
+enum SetType {
+  REGULAR
+  DROP_SET
+  MYO_REP
+}
+
 model Exercise {
   id          Int               @id @default(autoincrement())
   name        String            @unique
@@ -150,12 +156,14 @@ model ExerciseSet {
   workoutInstance  WorkoutInstance @relation(fields: [workoutInstanceId], references: [id])
   workoutInstanceId Int
   setNumber        Int
+  subSetNumber     Int?
+  setType          SetType         @default(REGULAR)
   weight           Float
   reps             Int
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
-  @@unique([workoutInstanceId, exerciseId, setNumber])
+  @@unique([workoutInstanceId, exerciseId, setNumber, subSetNumber])
 }
 
 model Mesocycle {

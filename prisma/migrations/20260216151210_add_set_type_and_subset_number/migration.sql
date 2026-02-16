@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "ExerciseSet_workoutInstanceId_exerciseId_setNumber_subSetNumber" RENAME TO "ExerciseSet_workoutInstanceId_exerciseId_setNumber_subSetNu_key";

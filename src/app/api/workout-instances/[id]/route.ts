@@ -27,7 +27,12 @@ export async function GET(
         userId: userId
       },
       include: {
-        exerciseSets: true,
+        exerciseSets: {
+          orderBy: [
+            { setNumber: 'asc' },
+            { subSetNumber: { sort: 'asc', nulls: 'first' } }
+          ]
+        },
         workoutExercises: {
           include: {
             exercise: {
@@ -83,9 +88,10 @@ export async function GET(
               where: {
                 exerciseId: ex.exerciseId
               },
-              orderBy: {
-                setNumber: 'asc'
-              }
+              orderBy: [
+                { setNumber: 'asc' },
+                { subSetNumber: { sort: 'asc', nulls: 'first' } }
+              ]
             }
           },
           orderBy: {
@@ -105,7 +111,7 @@ export async function GET(
 
     return NextResponse.json(processedWorkoutInstance);
   } catch (error) {
-    console.error('Error in workout instance API:', error);
+    console.log('Error in workout instance API:', JSON.stringify(error));
     return NextResponse.json(
       { 
         error: 'Error fetching workout instance', 
