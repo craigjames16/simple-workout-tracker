@@ -7,6 +7,8 @@ interface SetData {
   reps: number;
   weight: number;
   setNumber: number;
+  subSetNumber?: number | null;
+  setType?: 'REGULAR' | 'DROP_SET' | 'MYO_REP';
 }
 
 interface RequestBody {
@@ -45,6 +47,8 @@ export async function POST(
             exerciseId: exerciseId,
             workoutInstanceId: parseInt(awaitedParams.id),
             setNumber: set.setNumber,
+            subSetNumber: set.subSetNumber ?? null,
+            setType: set.setType || 'REGULAR',
             weight: set.weight,
             reps: set.reps,
           }
@@ -85,8 +89,36 @@ export async function DELETE(
   }
 
   try {
-    const { setIds } = await request.json();
+    const { setIds, cascade } = await request.json();
 
+    // If cascade is true, find main sets being deleted and delete their sub-sets
+    if (cascade) {
+      const setsToDelete = await prisma.exerciseSet.findMany({
+        where: {
+          id: { in: setIds },
+          workoutInstanceId: parseInt(awaitedParams.id),
+          subSetNumber: null // Only main sets
+        },
+        select: {
+          setNumber: true,
+          exerciseId: true
+        }
+      });
+
+      // Delete sub-sets for each main set being deleted
+      for (const set of setsToDelete) {
+        await prisma.exerciseSet.deleteMany({
+          where: {
+            workoutInstanceId: parseInt(awaitedParams.id),
+            exerciseId: set.exerciseId,
+            setNumber: set.setNumber,
+            subSetNumber: { not: null }
+          }
+        });
+      }
+    }
+
+    // Delete the requested sets
     await prisma.exerciseSet.deleteMany({
       where: {
         id: {
