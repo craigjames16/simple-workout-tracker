@@ -48,6 +48,8 @@ export async function GET(
             createdAt: true,
             workoutInstanceId: true,
             setNumber: true,
+            subSetNumber: true,
+            setType: true,
             workoutInstance: {
               select: {
                 id: true,
@@ -138,7 +140,9 @@ export async function GET(
           sets: sets.sort((a, b) => a.setNumber - b.setNumber).map(set => ({
             weight: set.weight,
             reps: set.reps,
-            setNumber: set.setNumber
+            setNumber: set.setNumber,
+            subSetNumber: set.subSetNumber ?? null,
+            setType: set.setType
           }))
         };
       })

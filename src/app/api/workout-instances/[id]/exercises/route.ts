@@ -2,6 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUser } from "@/lib/getAuthUser"
 
+/** Reshape workout instance: nest sets under each workoutExercise, omit top-level exerciseSets */
+function reshapeWorkoutInstance(workoutInstance: {
+  exerciseSets: Array<{ exerciseId: number; setNumber: number; subSetNumber: number | null; [key: string]: unknown }>;
+  workoutExercises: Array<{ exerciseId: number; [key: string]: unknown }>;
+  [key: string]: unknown;
+}) {
+  const { exerciseSets, workoutExercises, ...rest } = workoutInstance;
+  const setsByExerciseId = new Map<number, typeof exerciseSets>();
+  for (const set of exerciseSets) {
+    const list = setsByExerciseId.get(set.exerciseId) ?? [];
+    list.push(set);
+    setsByExerciseId.set(set.exerciseId, list);
+  }
+  Array.from(setsByExerciseId.values()).forEach((list) => {
+    list.sort((a: { setNumber: number; subSetNumber: number | null }, b: { setNumber: number; subSetNumber: number | null }) => {
+      if (a.setNumber !== b.setNumber) return a.setNumber - b.setNumber;
+      const aSub = a.subSetNumber ?? -1;
+      const bSub = b.subSetNumber ?? -1;
+      return aSub - bSub;
+    });
+  });
+  const shapedExercises = workoutExercises.map((ex) => {
+    const sets = setsByExerciseId.get(ex.exerciseId) ?? [];
+    return { ...ex, sets };
+  });
+  return { ...rest, workoutExercises: shapedExercises };
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -134,11 +162,16 @@ export async function POST(
       skipDuplicates: true, // Skip if exercise already exists in workout
     });
 
-    // Fetch the updated workout instance with exercises
+    // Fetch the updated workout instance with exercises and sets
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
       where: { id: parseInt(awaitedParams.id), userId: userId },
       include: {
-        exerciseSets: true,
+        exerciseSets: {
+          orderBy: [
+            { setNumber: 'asc' },
+            { subSetNumber: { sort: 'asc', nulls: 'first' } }
+          ]
+        },
         workoutExercises: {
           include: {
             exercise: {
@@ -173,49 +206,8 @@ export async function POST(
       );
     }
 
-    // Add the processed workout instance logic back in
-    const processedWorkoutInstance = {
-      ...updatedWorkoutInstance,
-      workoutExercises: await Promise.all(updatedWorkoutInstance.workoutExercises.map(async ex => {
-        // Find the last completed workout instance for this exercise
-        const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
-          where: {
-            id: { not: updatedWorkoutInstance.id }, // Exclude current workout
-            completedAt: { not: null },
-            workout: {
-              workoutExercises: {
-                some: {
-                  exerciseId: ex.exerciseId
-                }
-              }
-            }
-          },
-          include: {
-            exerciseSets: {
-              where: {
-                exerciseId: ex.exerciseId
-              },
-              orderBy: {
-                setNumber: 'asc'
-              }
-            }
-          },
-          orderBy: {
-            completedAt: 'desc'
-          }
-        });
-
-        return {
-          ...ex,
-          exercise: {
-            ...ex.exercise
-          },
-          lastSets: lastCompletedWorkout?.exerciseSets || []
-        };
-      }))
-    };
-
-    return NextResponse.json(processedWorkoutInstance);
+    const response = reshapeWorkoutInstance(updatedWorkoutInstance as Parameters<typeof reshapeWorkoutInstance>[0]);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error adding exercise:', error);
     return NextResponse.json(
@@ -284,14 +276,19 @@ export async function DELETE(
       },
     });
 
-    // Fetch the updated workout instance
+    // Fetch the updated workout instance with sets
     const updatedWorkoutInstance = await prisma.workoutInstance.findUnique({
       where: {
         id: parseInt(awaitedParams.id),
         userId: userId
       },
       include: {
-        exerciseSets: true,
+        exerciseSets: {
+          orderBy: [
+            { setNumber: 'asc' },
+            { subSetNumber: { sort: 'asc', nulls: 'first' } }
+          ]
+        },
         workoutExercises: {
           include: {
             exercise: {
@@ -326,48 +323,8 @@ export async function DELETE(
       );
     }
 
-    const processedWorkoutInstance = {
-      ...updatedWorkoutInstance,
-      workoutExercises: await Promise.all(updatedWorkoutInstance.workoutExercises.map(async ex => {
-        // Find the last completed workout instance for this exercise
-        const lastCompletedWorkout = await prisma.workoutInstance.findFirst({
-          where: {
-            id: { not: updatedWorkoutInstance.id }, // Exclude current workout
-            completedAt: { not: null },
-            workout: {
-              workoutExercises: {
-                some: {
-                  exerciseId: ex.exerciseId
-                }
-              }
-            }
-          },
-          include: {
-            exerciseSets: {
-              where: {
-                exerciseId: ex.exerciseId
-              },
-              orderBy: {
-                setNumber: 'asc'
-              }
-            }
-          },
-          orderBy: {
-            completedAt: 'desc'
-          }
-        });
-
-        return {
-          ...ex,
-          exercise: {
-            ...ex.exercise
-          },
-          lastSets: lastCompletedWorkout?.exerciseSets || []
-        };
-      }))
-    };
-
-    return NextResponse.json(processedWorkoutInstance);
+    const response = reshapeWorkoutInstance(updatedWorkoutInstance as Parameters<typeof reshapeWorkoutInstance>[0]);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error removing exercise:', error);
     return NextResponse.json(
