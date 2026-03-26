@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       token,
     })
   } catch (error: any) {
-    console.error("Sign in error:", error)
+    console.log("Sign in error:", JSON.stringify(error))
     return NextResponse.json(
       { error: error.message || "Sign in failed" },
       { status: 500 }

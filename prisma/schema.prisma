@@ -219,6 +219,7 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?   // Add password field for credentials auth
+  deletedAt     DateTime? // Soft-delete: account disabled, data retained
   accounts      Account[]
   sessions      Session[]
   exercises     Exercise[]        // Add relation
