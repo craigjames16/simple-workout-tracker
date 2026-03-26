@@ -50,6 +50,10 @@ export async function authenticateUser(
       return null
     }
 
+    if (user.deletedAt) {
+      return null
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password)
 
     if (!isPasswordValid) {
@@ -113,10 +117,11 @@ export async function validateMobileToken(token: string): Promise<AuthUser | nul
         id: true,
         email: true,
         name: true,
+        deletedAt: true,
       },
     })
 
-    if (!user || !user.email) {
+    if (!user || !user.email || user.deletedAt) {
       return null
     }
 

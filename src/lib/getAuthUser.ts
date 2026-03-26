@@ -1,7 +1,16 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { validateMobileToken } from "@/lib/mobileAuth"
+import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
+
+async function isUserNotDeleted(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { deletedAt: true },
+  })
+  return !!user && user.deletedAt === null
+}
 
 /**
  * Get authenticated user from either:
@@ -14,6 +23,9 @@ export async function getAuthUser(request?: NextRequest | Request): Promise<stri
   // First, try to get session from cookies (web app)
   const session = await getServerSession(authOptions)
   if (session?.user?.id) {
+    if (!(await isUserNotDeleted(session.user.id))) {
+      return null
+    }
     return session.user.id
   }
 
@@ -38,7 +50,10 @@ export async function getAuthUser(request?: NextRequest | Request): Promise<stri
 export async function getAuthUserObject(request?: NextRequest | Request): Promise<{ id: string; email: string; name: string | null } | null> {
   // First, try to get session from cookies (web app)
   const session = await getServerSession(authOptions)
-  if (session?.user) {
+  if (session?.user?.id) {
+    if (!(await isUserNotDeleted(session.user.id))) {
+      return null
+    }
     return {
       id: session.user.id,
       email: session.user.email || "",

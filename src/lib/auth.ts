@@ -57,6 +57,19 @@ export const authOptions: AuthOptions = {
       strategy: "jwt",
     },
     callbacks: {
+      async signIn({ user }) {
+        if (!user?.id) {
+          return false
+        }
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { deletedAt: true },
+        })
+        if (dbUser?.deletedAt) {
+          return false
+        }
+        return true
+      },
       session: async ({ session, token }) => {
         if (session?.user && token?.sub) {
           session.user.id = token.sub;
